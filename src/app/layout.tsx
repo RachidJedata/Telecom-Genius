@@ -3,6 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Image from "next/image";
 import Link from "next/link";
+import { getServerSession } from "next-auth";
+import { authOptions } from "./api/auth/[...nextauth]/route";
+import SignOutButton from "./ui/components/signOut";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,11 +25,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await getServerSession(authOptions);
   return (
     <html lang="en">
       <body
@@ -50,8 +54,12 @@ export default function RootLayout({
                   TelecomGenius
                 </span>
               </Link>
+              {(session?.user) && (
+                <SignOutButton />
+              )}
             </div>
           </nav>
+
 
           {/* Add padding to account for fixed navbar */}
           <div className="pt-16">
