@@ -31,26 +31,26 @@ export default function Home() {
       <section className="py-20 px-4">
         <div className="max-w-6xl mx-auto text-center space-y-8 fade-in">
           <h1 className="hero-text">
-            Master Telecommunications
+            Master en Télécommunications
             <br />
-            With Expert Guidance
+            avec Guidance d'Expert
           </h1>
           <p className="text-xl text-primary text-muted-foreground max-w-2xl mx-auto">
-            Join our platform to learn from industry experts and advance your career in telecommunications.
+            Rejoignez notre plateforme pour apprendre auprès d'experts de l'industrie et faire avancer votre carrière en télécommunications.
           </p>
-          <HomeLink href="/login" text="Get Started" />
+          <HomeLink href="/login" text="Modules d'Apprentissage" />
         </div>
       </section>
 
       {/* Featured Modules */}
-      <section className="py-16 px-4 bg-accent/50">
+      <section className="py-16 px-4 dark:bg-gray-800 bg-accent/50">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-12">Learning Modules</h2>
+          <h2 className="text-3xl font-bold text-center mb-12">Modules d'Apprentissage</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {modules.map((module, index) => (
               <div
                 key={module.title}
-                className="glass-card p-6 fade-in hover:scale-105 transition duration-500"
+                className="glass-card  dark:bg-gray-950 rounded-lg p-6 fade-in hover:scale-105 transition duration-500"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <IconDisplay iconName={module.icon} />
@@ -65,11 +65,11 @@ export default function Home() {
       {/* CTA Section */}
       <section className="py-20 px-4">
         <div className="max-w-4xl mx-auto text-center space-y-6">
-          <h2 className="text-3xl font-bold">Ready to Begin Your Journey?</h2>
+          <h2 className="text-3xl font-bold">Prêt à Commencer Votre Voyage ?</h2>
           <p className="text-lg text-semiGgray text-muted-foreground">
-            Start learning telecommunications today with our comprehensive curriculum.
+            Commencez à apprendre les télécommunications dès aujourd'hui avec notre programme complet.
           </p>
-          <HomeLink href="/signup" text="Join Now"></HomeLink>
+          <HomeLink href="/signup" text="Rejoignez Maintenant"></HomeLink>
         </div>
       </section>
     </>

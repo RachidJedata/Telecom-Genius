@@ -1,34 +1,44 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
+// middleware.ts
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { getToken } from 'next-auth/jwt'
 
-export async function middleware(request:NextRequest) {
-  const path = request.nextUrl.pathname;
+const publicRoutes = ['/', '/login', '/signup']
+const authRoutes = ['/login', '/signup']
 
-  // Define the routes that should be restricted for authenticated users
-  const restrictedRoutes = ['/login', '/signup'];
+export async function middleware(request: NextRequest) {
+  const { pathname, search } = request.nextUrl
+  const token = await getToken({ req: request })
+  
+  // Construct callback URL with both path and query parameters
+  const callbackUrl = encodeURIComponent(`${pathname}${search}`)
 
-  // Get the user's session token
-  const token = await getToken({ req: request });
-
-  // If the user is authenticated and tries to access a restricted route, redirect to home
-  if (token && restrictedRoutes.includes(path)) {
-    return NextResponse.redirect(new URL('/', request.url));
+  // Handle public routes
+  if (publicRoutes.includes(pathname)) {
+    // Redirect authenticated users away from auth routes
+    if (token && authRoutes.includes(pathname)) {
+      return NextResponse.redirect(new URL('/', request.url))
+    }
+    return NextResponse.next()
   }
 
-  // Otherwise, allow the request to proceed
-  return NextResponse.next();
+  // Handle unauthenticated users
+  if (!token) {
+    return NextResponse.redirect(
+      new URL(`/login?callbackUrl=${callbackUrl}`, request.url)
+    )
+  }
+
+  // Prevent authenticated users from accessing auth routes
+  if (authRoutes.includes(pathname)) {
+    return NextResponse.redirect(new URL('/', request.url))
+  }
+
+  return NextResponse.next()
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for:
-     * - `/_next/static` (static files)
-     * - `/_next/image` (image optimization files)
-     * - `/favicon.ico` (favicon file)
-     */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
-};
-
-console.log('middleware is running');
+}

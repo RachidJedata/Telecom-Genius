@@ -10,7 +10,10 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
-  serverComponentsExternalPackages: ['@prisma/client', 'bcrypt']
+  serverComponentsExternalPackages: ['@prisma/client', 'bcrypt'],
+  images: {
+    domains: ['lh3.googleusercontent.com', 'avatars.githubusercontent.com'],
+  },
 };
 
 export default nextConfig;
