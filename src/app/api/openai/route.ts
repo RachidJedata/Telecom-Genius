@@ -1,5 +1,3 @@
-// src/app/api/openai/route.ts
-
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
