@@ -6,22 +6,22 @@ export default function Home() {
     {
       title: "Network Fundamentals",
       description: "Learn the basics of telecommunications networks",
-      icon: "networkWired",
+      icon: "Network",
     },
     {
       title: "5G Technology",
       description: "Master modern cellular networks",
-      icon: "signal",
+      icon: "SignalHigh",
     },
     {
       title: "Digital Communications",
       description: "Understand digital signal processing",
-      icon: "laptop",
+      icon: "LaptopMinimal",
     },
     {
       title: "Protocols & Standards",
       description: "Study key telecom protocols",
-      icon: "book",
+      icon: "BookOpenText",
     },
   ];
 
@@ -38,7 +38,7 @@ export default function Home() {
           <p className="text-xl text-primary text-muted-foreground max-w-2xl mx-auto">
             Rejoignez notre plateforme pour apprendre auprès d'experts de l'industrie et faire avancer votre carrière en télécommunications.
           </p>
-          <HomeLink href="/login" text="Modules d'Apprentissage" />
+          <HomeLink href="/courses" text="Modules d'Apprentissage" />
         </div>
       </section>
 
@@ -53,7 +53,7 @@ export default function Home() {
                 className="glass-card  dark:bg-gray-950 rounded-lg p-6 fade-in hover:scale-105 transition duration-500"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
-                <IconDisplay iconName={module.icon} />
+                <IconDisplay iconName={module.icon} className="w-12 h-12 text-primary mb-4" />
                 <h3 className="font-semibold text-lg mb-2">{module.title}</h3>
                 <p className="text-muted-foreground text-semiGgray">{module.description}</p>
               </div>

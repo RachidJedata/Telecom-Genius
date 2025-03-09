@@ -1,10 +1,15 @@
-import iconMap from "@/app/utils/icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import * as LucideIcons from "lucide-react";
+import { LucideProps } from "lucide-react";
 
-export default function IconDisplay({ iconName }: { iconName: string }) {
-    const icon = iconMap[iconName] || iconMap["networkWired"]; // Default to "coffee" if not found
+interface IconDisplayProps extends LucideProps {
+    iconName: string;
+}
 
-    return (
-        <FontAwesomeIcon className="w-12 h-12 text-primary mb-4" icon={icon} />
-    );
+export default function IconDisplay({ iconName, className, ...props }: IconDisplayProps) {
+    // console.log(iconName);
+    // iconName = 'network';
+    const LucideIcon = (LucideIcons as unknown as Record<string, React.FC<LucideProps>>)[iconName]
+        || LucideIcons.HelpCircle; // Fallback icon
+
+    return <LucideIcon className={className} {...props} />;
 }
