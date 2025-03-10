@@ -33,3 +33,45 @@ export async function saveUser(data: Prisma.UserCreateInput) {
         return { success: 0, errorMessage: "Failed to sign up please try again!" };
     }
 }
+
+export async function getCourses(limit: number, offset: number = 0) {
+    return await prisma.courses.findMany({
+        take: limit,
+        skip: offset,
+    });
+}
+
+export async function fetchCoursesPages() {
+    return await prisma.courses.count();
+}
+
+export async function getCourse(courseId: string) {
+    return await prisma.courses.findUnique({
+        include: {
+            chapters: true,
+        },
+        where: {
+            courseId: courseId
+        }
+    });
+}
+
+export async function getSimulation(simulationId: number | null) {
+    if (!simulationId) return null;
+    return await prisma.simulation.findUnique({
+        where: {
+            simulationId: simulationId
+        }
+    });
+}
+export async function getQuiz(chapterId: string) {
+    return await prisma.quizes.findMany({
+        where: {
+            chapters: {
+                some: {
+                    chapterId: chapterId,
+                },
+            },
+        },
+    });
+}

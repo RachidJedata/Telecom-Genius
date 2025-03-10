@@ -15,178 +15,20 @@ import { Progress } from "./progress"
 import { Button } from "./button"
 import { Label } from "./label"
 import { Card } from "./card"
+import { Quizes } from "@prisma/client"
 
-interface QuizQuestion {
-  id: string
-  question: string
-  options: string[]
-  correctAnswer: number
-  explanation: string
-}
-
-// Sample quiz questions for each chapter
-const chapterQuizzes: Record<string, QuizQuestion[]> = {
-  "wireless-fundamentals": [
-    {
-      id: "wf-q1",
-      question: "Which of the following frequency ranges is typically used for Wi-Fi networks?",
-      options: ["900 MHz", "2.4 GHz", "10 GHz", "50 GHz"],
-      correctAnswer: 1,
-      explanation:
-        "Wi-Fi networks typically operate in the 2.4 GHz and 5 GHz frequency bands. The 2.4 GHz band is the most commonly used frequency range for Wi-Fi.",
-    },
-    {
-      id: "wf-q2",
-      question: "What is modulation in wireless communications?",
-      options: [
-        "The process of increasing signal power",
-        "The process of varying properties of a carrier signal with a modulating signal",
-        "The process of filtering unwanted frequencies",
-        "The process of converting analog signals to digital",
-      ],
-      correctAnswer: 1,
-      explanation:
-        "Modulation is the process of varying one or more properties of a periodic waveform (carrier signal) with a modulating signal that typically contains information to be transmitted.",
-    },
-    {
-      id: "wf-q3",
-      question: "Which of the following is NOT a type of wireless signal propagation?",
-      options: ["Reflection", "Diffraction", "Scattering", "Amplification"],
-      correctAnswer: 3,
-      explanation:
-        "The three main mechanisms of wireless signal propagation are reflection, diffraction, and scattering. Amplification is a process to increase signal strength, not a propagation mechanism.",
-    },
-    {
-      id: "wf-q4",
-      question: "What unit is used to measure frequency?",
-      options: ["Watts", "Decibels", "Hertz", "Meters"],
-      correctAnswer: 2,
-      explanation: "Frequency is measured in Hertz (Hz), which represents the number of cycles per second.",
-    },
-    {
-      id: "wf-q5",
-      question: "Which of the following modulation techniques is commonly used in digital communications?",
-      options: [
-        "Amplitude Modulation (AM)",
-        "Frequency Modulation (FM)",
-        "Quadrature Amplitude Modulation (QAM)",
-        "All of the above",
-      ],
-      correctAnswer: 3,
-      explanation:
-        "All of these modulation techniques are used in digital communications. AM and FM are also used in analog communications, while QAM is primarily used in digital systems.",
-    },
-  ],
-  "radio-networks": [
-    {
-      id: "rn-q1",
-      question: "What is a cell in cellular network terminology?",
-      options: [
-        "A mobile phone",
-        "A geographic area covered by a base station",
-        "A type of battery",
-        "A network protocol",
-      ],
-      correctAnswer: 1,
-      explanation:
-        "In cellular networks, a cell refers to a geographic area covered by a base station (cell tower). The network is divided into these cells to efficiently reuse frequencies.",
-    },
-    {
-      id: "rn-q2",
-      question: "What is handover in cellular networks?",
-      options: [
-        "The process of transferring a call from one cell to another",
-        "The process of authenticating a user",
-        "The process of encrypting data",
-        "The process of billing for services",
-      ],
-      correctAnswer: 0,
-      explanation:
-        "Handover (or handoff) is the process of transferring an ongoing call or data session from one cell to another without interruption as a mobile user moves between cells.",
-    },
-    {
-      id: "rn-q3",
-      question: "What does MIMO stand for in radio communications?",
-      options: [
-        "Mobile Input Mobile Output",
-        "Multiple Input Multiple Output",
-        "Modulated Input Modulated Output",
-        "Managed Input Managed Output",
-      ],
-      correctAnswer: 1,
-      explanation:
-        "MIMO stands for Multiple Input Multiple Output, which is a method for multiplying the capacity of a radio link using multiple transmission and receiving antennas.",
-    },
-    {
-      id: "rn-q4",
-      question: "Which of the following is NOT a cellular network generation?",
-      options: ["3G", "4G", "5G", "6H"],
-      correctAnswer: 3,
-      explanation:
-        "3G, 4G, and 5G are all generations of cellular network technology. 6H is not a standard generation designation (the next generation after 5G would be 6G).",
-    },
-    {
-      id: "rn-q5",
-      question: "What is the main purpose of Radio Resource Management (RRM)?",
-      options: [
-        "To manage user billing",
-        "To control co-channel interference and optimize radio transmission",
-        "To encrypt radio transmissions",
-        "To manage user authentication",
-      ],
-      correctAnswer: 1,
-      explanation:
-        "Radio Resource Management (RRM) is the system level control of co-channel interference and other radio transmission characteristics in wireless communication systems.",
-    },
-  ],
-  // Default quiz for other chapters
-  default: [
-    {
-      id: "default-q1",
-      question: "Which of the following is a benefit of digital signal processing?",
-      options: ["Lower power consumption", "Immunity to noise", "Flexibility in implementation", "All of the above"],
-      correctAnswer: 3,
-      explanation:
-        "Digital signal processing offers multiple benefits including lower power consumption, better immunity to noise, and flexibility in implementation through software changes.",
-    },
-    {
-      id: "default-q2",
-      question: "What is the primary purpose of a network protocol?",
-      options: [
-        "To encrypt data",
-        "To define rules for communication between devices",
-        "To increase network speed",
-        "To reduce hardware costs",
-      ],
-      correctAnswer: 1,
-      explanation:
-        "Network protocols define the rules and conventions for communication between network devices, including message formatting, transmission, reception, and error handling.",
-    },
-    {
-      id: "default-q3",
-      question: "Which layer of the OSI model is responsible for routing?",
-      options: ["Physical Layer", "Data Link Layer", "Network Layer", "Transport Layer"],
-      correctAnswer: 2,
-      explanation:
-        "The Network Layer (Layer 3) of the OSI model is responsible for routing packets between networks, addressing, and path determination.",
-    },
-  ],
-}
-
-export function ChapterQuiz({ chapterId }: { chapterId: string }) {
+export function ChapterQuiz({ quiz }: { quiz: Quizes[] }) {
   const [isOpen, setIsOpen] = useState(false)
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([])
   const [showResults, setShowResults] = useState(false)
   const [score, setScore] = useState(0)
 
-  // Get questions for this chapter or use default
-  const questions = chapterQuizzes[chapterId] || chapterQuizzes.default
 
   const handleStartQuiz = () => {
     setIsOpen(true)
     setCurrentQuestionIndex(0)
-    setSelectedAnswers(Array(questions.length).fill(-1))
+    setSelectedAnswers(Array(quiz.length).fill(-1))
     setShowResults(false)
     setScore(0)
   }
@@ -198,13 +40,13 @@ export function ChapterQuiz({ chapterId }: { chapterId: string }) {
   }
 
   const handleNextQuestion = () => {
-    if (currentQuestionIndex < questions.length - 1) {
+    if (currentQuestionIndex < quiz.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1)
     } else {
       // Calculate score
       let correctCount = 0
       selectedAnswers.forEach((answer, index) => {
-        if (answer === questions[index].correctAnswer) {
+        if (answer === quiz[index].correctAnswerIndex) {
           correctCount++
         }
       })
@@ -225,13 +67,13 @@ export function ChapterQuiz({ chapterId }: { chapterId: string }) {
 
   const handleRestartQuiz = () => {
     setCurrentQuestionIndex(0)
-    setSelectedAnswers(Array(questions.length).fill(-1))
+    setSelectedAnswers(Array(quiz.length).fill(-1))
     setShowResults(false)
     setScore(0)
   }
 
-  const currentQuestion = questions[currentQuestionIndex]
-  const progress = ((currentQuestionIndex + 1) / questions.length) * 100
+  const currentQuestion = quiz[currentQuestionIndex]
+  const progress = ((currentQuestionIndex + 1) / quiz.length) * 100
 
   return (
     <>
@@ -252,7 +94,7 @@ export function ChapterQuiz({ chapterId }: { chapterId: string }) {
               <div className="mb-4">
                 <div className="flex justify-between text-sm text-gray-500 mb-2">
                   <span>
-                    Question {currentQuestionIndex + 1} of {questions.length}
+                    Question {currentQuestionIndex + 1} of {quiz.length}
                   </span>
                   <span>Progress: {Math.round(progress)}%</span>
                 </div>
@@ -283,7 +125,7 @@ export function ChapterQuiz({ chapterId }: { chapterId: string }) {
                   Previous
                 </Button>
                 <Button onClick={handleNextQuestion} disabled={selectedAnswers[currentQuestionIndex] === -1}>
-                  {currentQuestionIndex === questions.length - 1 ? "Finish" : "Next"}
+                  {currentQuestionIndex === quiz.length - 1 ? "Finish" : "Next"}
                 </Button>
               </DialogFooter>
             </>
@@ -295,17 +137,17 @@ export function ChapterQuiz({ chapterId }: { chapterId: string }) {
                 </div>
                 <h3 className="text-xl font-bold">Quiz Results</h3>
                 <p className="text-gray-500 mt-2">
-                  You scored {score} out of {questions.length} ({Math.round((score / questions.length) * 100)}%)
+                  You scored {score} out of {quiz.length} ({Math.round((score / quiz.length) * 100)}%)
                 </p>
               </div>
 
               <div className="space-y-6 mt-6">
-                {questions.map((question, index) => {
-                  const isCorrect = selectedAnswers[index] === question.correctAnswer
+                {quiz.map((question, index) => {
+                  const isCorrect = selectedAnswers[index] === question.correctAnswerIndex
 
                   return (
                     <Card
-                      key={question.id}
+                      key={question.quizId}
                       className={`p-4 border ${isCorrect ? "border-green-200 bg-green-50 dark:bg-green-900/10 dark:border-green-900" : "border-red-200 bg-red-50 dark:bg-red-900/10 dark:border-red-900"}`}
                     >
                       <div className="flex items-start gap-3">
@@ -327,11 +169,11 @@ export function ChapterQuiz({ chapterId }: { chapterId: string }) {
 
                             {!isCorrect && (
                               <p className="font-medium text-green-600 dark:text-green-400 mt-1">
-                                Correct answer: {question.options[question.correctAnswer]}
+                                Correct answer: {question.options[question.correctAnswerIndex]}
                               </p>
                             )}
 
-                            <p className="mt-2 text-gray-600 dark:text-gray-400">{question.explanation}</p>
+                            <p className="mt-2 text-gray-600 dark:text-gray-400">{question.explaination}</p>
                           </div>
                         </div>
                       </div>

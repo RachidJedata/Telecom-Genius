@@ -96,7 +96,7 @@ export default async function RootLayout({
           </div>
 
           <Footer />
-          {/* {(session?.user) && (<AiChatButton />)} */}
+          {(session?.user) && (<AiChatButton />)}
         </ThemeProvider>
       </body>
     </html>
