@@ -29,25 +29,34 @@ model User {
 }
 
 model Courses {
-  courseId    String     @id @default(uuid()) @map("course_id")
-  name        String
-  description String
-  icon        String
-  quizId      Int        @map("quiz_id")
-  quiz        Quizes     @relation(fields: [quizId], references: [quizId])
-  chapters    Chapters[]
+  courseId     String     @id @default(uuid()) @map("course_id")
+  title        String
+  description  String
+  icon         String
+  chapters     Chapters[]
+}
+
+model Quizes {
+  quizId             Int        @id @default(autoincrement()) @map("quiz_id")
+  question           String
+  options            String[]
+  correctAnswerIndex Int        @map("correct_answer_index")
+  explaination       String  
+  chapters           Chapters[] @relation("QuizChapters")
 }
 
 model Chapters {
-  chapterId    String     @id @default(uuid()) @map("chapter_id")
+  chapterId    String      @id @default(uuid()) @map("chapter_id")
   name         String
   body         String
   icon         String
-  simulationId Int        @map("simulation_id")
-  courseId     String     @map("course_id")
-  course       Courses    @relation(fields: [courseId], references: [courseId])
-  simulation   Simulation @relation(fields: [simulationId], references: [simulationId])
+  simulationId Int?        @map("simulation_id")
+  courseId     String?     @map("course_id")
+  quizes       Quizes[]    @relation("QuizChapters")
+  course       Courses?    @relation(fields: [courseId], references: [courseId])
+  simulation   Simulation? @relation(fields: [simulationId], references: [simulationId])
 }
+
 
 model Simulation {
   simulationId Int        @id @default(autoincrement()) @map("simulation_id")
@@ -56,13 +65,4 @@ model Simulation {
   params       String // Parameters of API stored as JSON
   endPoint     String     @map("end_point")
   Chapters     Chapters[]
-}
-
-model Quizes {
-  quizId             Int       @id @default(autoincrement()) @map("quiz_id")
-  question           String
-  options            String[]
-  correctAnswerIndex Int       @map("correct_answer_index")
-  explaination       String
-  courses            Courses[]
 }
