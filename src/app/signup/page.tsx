@@ -52,15 +52,15 @@ export default function SignUp() {
   };
 
   return (
-    <div className="min-h-screen flex items-center -mt-7 justify-center bg-accent">
+    <div className="min-h-screen flex items-center  dark:bg-gray-500 -mt-7 justify-center bg-accent">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-lg px-8 pt-5 space-y-6">       
+        <div className="bg-white  rounded-2xl  dark:bg-gray-900  shadow-lg px-8 pt-5 space-y-6">       
           <div className="space-y-2 text-center">
             <h1 className="text-2xl font-normal text-primary">Sign up</h1>
-            <p className="text-base text-semiGray">to continue to the platform</p>
+            <p className="text-base dark:text-primary/80 text-semiGray">to continue to the platform</p>
           </div>
 
-          {errorMessage && <p className="bg-red-400 text-accent py-2 rounded-lg pl-3 text-sm mb-4">{errorMessage}</p>}
+          {errorMessage && <p className="bg-red-400  text-accent py-2 rounded-lg pl-3 text-sm mb-4">{errorMessage}</p>}
           <div className="flex gap-2">
             <GoogleButton />
             <GithubButton />
@@ -71,7 +71,7 @@ export default function SignUp() {
               <div className="w-full border-t border-gray-300"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-semiGgray">Or</span>
+              <span className="px-2 dark:bg-gray-300 bg-white text-semiGgray">Or</span>
             </div>
           </div>
 
@@ -120,7 +120,7 @@ export default function SignUp() {
 
 
           <div className="mt-3 pb-2 text-center">
-            <p className="text-semiGgray">
+            <p className="dark:text-gray-400 text-semiGgray">
               Already have an account?{" "}
               <Link href="/login" className="text-primary hover:underline font-medium">
                 Sign in

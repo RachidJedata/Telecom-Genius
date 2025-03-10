@@ -22,12 +22,13 @@ export default function HuggingFaceChat() {
 
             const generatedText = data.result[0].generated_text;
             const cleanResponse = generatedText.split("<start_of_turn>model")[1]?.trim() || "";
-            
+
 
             setResponse(cleanResponse);
 
             /*
-            for Open AI here is the reponse but remove cleanResponse first
+            for Open AI ,here is the reponse but remove cleanResponse first
+            and change API endpoint to api/openai
             setResponse(data.result.choices[0].text);
              */
         } catch (error) {

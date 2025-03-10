@@ -9,7 +9,7 @@ export default function GithubButton() {
         <Button
             onClick={() => signIn('github', { callbackUrl: searchParams.get('callbackUrl') || '/' })}
             variant="outline"
-            className="w-full h-12 flex items-center justify-center gap-2 bg-white border-2 border-[#e2e8f0] hover:bg-accent hover:border-primary"
+            className="w-full  dark:bg-gray-600 dark:hover:border-primary/90 dark:border-primary/50  h-12 flex items-center justify-center gap-2 bg-white border-2 border-[#e2e8f0] hover:bg-accent hover:border-primary"
         >
             <svg
                 xmlns="http://www.w3.org/2000/svg"

@@ -115,7 +115,7 @@ export const authOptions: NextAuthOptions = {
                 name: user.name,
                 email: user.email,
                 avatar: user.image || '/avatars/default.svg',
-                provider: account.provider.toUpperCase() as Providers, 
+                provider: account.provider.toUpperCase() as Providers,
               },
             });
           }

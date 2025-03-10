@@ -9,7 +9,7 @@ export default function GoogleButton() {
         <Button
             onClick={() => signIn('google', { callbackUrl: searchParams.get('callbackUrl') || '/' })}
             variant="outline"
-            className="w-full h-12 flex items-center justify-center gap-2  bg-white border-2 border-[#e2e8f0] hover:bg-accent hover:border-primary"
+            className="w-full h-12 flex items-center justify-center gap-2 dark:hover:border-primary/90 dark:bg-gray-600 dark:border-primary/50  bg-white border-2 border-[#e2e8f0] hover:bg-accent hover:border-primary"
         >
             <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" className="w-5 h-5">
                 <path

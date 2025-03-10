@@ -1,5 +1,3 @@
-// src/app/api/openai/route.ts
-
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
@@ -8,12 +6,11 @@ const openai = new OpenAI({
 });
 
 export async function POST(req: NextRequest) {
-    const { prompt } = await req.json();
+    const { inputs } = await req.json();
     try {
-        // Use Chat Completions endpoint with "gpt-3.5-turbo"
         const completion = await openai.chat.completions.create({
             model: "gpt-3.5-turbo",
-            messages: [{ role: "user", content: prompt }],
+            messages: [{ role: "user", content: inputs }],
             max_tokens: 100,
         });
 

@@ -258,7 +258,7 @@ function SimulationVisualization({
         <div className="w-full h-full relative">
           <div className="absolute inset-0 flex items-center justify-center">
             <p className="text-gray-500 dark:text-gray-400 text-sm">
-              Visualization area - will be implemented by Rachid and Soulaimane
+              Visualization area - will be implemented here
             </p>
           </div>
 

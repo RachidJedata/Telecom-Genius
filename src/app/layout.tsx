@@ -8,6 +8,7 @@ import { authOptions } from "./api/auth/[...nextauth]/route";
 import SignOutButton from "./ui/components/signOut";
 import { ThemeProvider } from "./ui/components/theme-provider";
 import Footer from "./ui/components/footer";
+import { AiChatButton } from "./ui/components/ai-chat-button";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -93,8 +94,9 @@ export default async function RootLayout({
               {children}
             </div>
           </div>
-          <Footer />
 
+          <Footer />
+          {/* {(session?.user) && (<AiChatButton />)} */}
         </ThemeProvider>
       </body>
     </html>

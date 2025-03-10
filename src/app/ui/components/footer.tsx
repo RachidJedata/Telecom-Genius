@@ -10,13 +10,6 @@ import Image from "next/image"
 export function Footer() {
     const currentYear = new Date().getFullYear()
 
-    const scrollToTop = () => {
-        window.scrollTo({
-            top: 0,
-            behavior: "smooth",
-        })
-    }
-
     return (
         <footer className="relative bg-gradient-to-b from-accent to-white dark:from-gray-900 dark:to-gray-950 text-gray-700 dark:text-gray-200 pt-16 pb-8">
             {/* Decorative Elements */}
@@ -149,21 +142,9 @@ export function Footer() {
                         © {currentYear} TelecomGenius. All rights reserved.
                     </p>
 
-                    <div className="flex items-center gap-6">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                            Project of Final Year PFA | ISIC
-                        </p>
-
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            className="rounded-full border-gray-200 dark:border-gray-700"
-                            onClick={scrollToTop}
-                            aria-label="Scroll to top"
-                        >
-                            <ArrowUp className="h-4 w-4" />
-                        </Button>
-                    </div>
+                    <p className="text-xs text-gray-500 mr-20 dark:text-gray-400">
+                        Project of Final Year PFA | ISIC
+                    </p>
                 </div>
             </div>
         </footer>
