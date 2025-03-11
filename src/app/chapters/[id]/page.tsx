@@ -16,10 +16,12 @@ export default async function ChapterPage({
   params: { id: string };
   searchParams?: { chapterId?: string };
 }) {
-  const course = await getCourse(params.id);
+  const courseId = await params.id;
+  const course = await getCourse(courseId);
   if (!course) notFound();
   const chapters = course.chapters;
-  const chapter = (chapters.find(c => c.chapterId === searchParams?.chapterId)
+  const chapterId = await searchParams?.chapterId;
+  const chapter = (chapters.find(c => c.chapterId === chapterId)
     || chapters[0]) as any as Chapters;
 
   const quiz = await getQuiz(chapter.chapterId);
@@ -30,7 +32,7 @@ export default async function ChapterPage({
         <header className="flex justify-between items-center mb-8">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" asChild>
-              <Link href="/">
+              <Link href="/courses">
                 <ChevronLeft className="h-5 w-5" />
                 <span className="sr-only">Back to home</span>
               </Link>
@@ -44,10 +46,13 @@ export default async function ChapterPage({
             <div className="space-y-6">
               <ChapterNavigation chapters={chapters} currentChapterId={chapter.chapterId} />
 
-              <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4">
-                <h2 className="text-lg font-semibold mb-4 px-2 text-gray-800 dark:text-gray-200">Assessment</h2>
-                <ChapterQuiz quiz={quiz} />
-              </div>
+              {quiz.length > 0 && (
+
+                <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4">
+                  <h2 className="text-lg font-semibold mb-4 px-2 text-gray-800 dark:text-gray-200">Assessment</h2>
+                  <ChapterQuiz quiz={quiz} />
+                </div>
+              )}
             </div>
           </aside>
 
@@ -65,7 +70,6 @@ export default async function ChapterPage({
                 <div className="mb-6">
                   <h3 className="text-lg font-medium mb-4">{simulation.name}</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-6">{simulation.description}</p>
-
                   <SimulationControls simulation={simulation} />
                 </div>
               </section>

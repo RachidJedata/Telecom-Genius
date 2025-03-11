@@ -64,7 +64,7 @@ export async function getSimulation(simulationId: number | null) {
         }
     });
 }
-export async function getQuiz(chapterId: string) {
+export async function getQuiz(chapterId: string) {    
     return await prisma.quizes.findMany({
         where: {
             chapters: {

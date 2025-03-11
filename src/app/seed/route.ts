@@ -404,7 +404,7 @@ export async function GET(req: NextRequest) {
                 amplitude: { name: 'Amplitude', value: 1.0, unit: 'V', step: 0.1, min: 0.1, max: 10 },
                 freq: { name: 'Frequency', value: 5.0, unit: 'Hz', step: 0.5, min: 0.1, max: 100 },
                 phase: { name: 'Phase', value: 0.0, unit: 'rad', step: 0.1, min: -Math.PI, max: Math.PI },
-                fading_model: { name: 'Fading Model', value: 2, unit: '', step: 1, min: 1, max: 5, dropdown: [0, 1, 11, 2, 22] },
+                fading_model: { name: 'Fading Model', value: 2, unit: '', step: 1, min: 0, max: 22, dropdown: [0, 1, 11, 2, 22] },
                 num_paths: { name: 'Number of Paths', value: 500, unit: '', step: 10, min: 10, max: 1000 }
             }),
             endPoint: '/fading'

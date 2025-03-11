@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
             body: JSON.stringify({
                 inputs: message,
                 parameters: {
-                    max_new_tokens: 150,
+                    // max_new_tokens: 150,
                     temperature: 0.3,// Lower value = less creative
                     top_k: 50
                 },

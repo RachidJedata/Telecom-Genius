@@ -1,11 +1,12 @@
 "use client"
 import { ThemeToggle } from "./theme-toggle"
-import { Twitter, Facebook, Instagram, Linkedin, Mail, ArrowUp, Radio, Wifi } from "lucide-react"
+import { Mail, Wifi } from "lucide-react"
 import Link from "next/link"
 import { Button } from "./button"
 import { Input } from "./input"
 import { Separator } from "./separator"
 import Image from "next/image"
+import IconDisplay from "./iconDisplay"
 
 export function Footer() {
     const currentYear = new Date().getFullYear()
@@ -53,8 +54,6 @@ export function Footer() {
                             {[
                                 { label: "About Us", href: "/about" },
                                 { label: "Our Team", href: "/team" },
-                                { label: "Curriculum", href: "/curriculum" },
-                                { label: "Resources", href: "/resources" },
                                 { label: "Contact", href: "/contact" },
                             ].map((link, index) => (
                                 <li key={index}>
@@ -78,8 +77,6 @@ export function Footer() {
                                 { label: "Terms of Service", href: "/terms" },
                                 { label: "Privacy Policy", href: "/privacy" },
                                 { label: "Cookie Policy", href: "/cookies" },
-                                { label: "Accessibility", href: "/accessibility" },
-                                { label: "Licensing", href: "/licensing" },
                             ].map((link, index) => (
                                 <li key={index}>
                                     <Link
@@ -112,10 +109,10 @@ export function Footer() {
                         <h4 className="text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">Connect With Us</h4>
                         <div className="flex gap-3">
                             {[
-                                { icon: Twitter, href: "https://twitter.com", label: "Twitter" },
-                                { icon: Facebook, href: "https://facebook.com", label: "Facebook" },
-                                { icon: Instagram, href: "https://instagram.com", label: "Instagram" },
-                                { icon: Linkedin, href: "https://linkedin.com", label: "LinkedIn" },
+                                { icon: 'Twitter', href: "https://twitter.com", label: "Twitter" },
+                                { icon: 'Facebook', href: "https://facebook.com", label: "Facebook" },
+                                { icon: 'Instagram', href: "https://instagram.com", label: "Instagram" },
+                                { icon: 'Linkedin', href: "https://linkedin.com", label: "LinkedIn" },
                             ].map((social, index) => {
                                 const Icon = social.icon
                                 return (
@@ -127,7 +124,7 @@ export function Footer() {
                                         className="w-9 h-9 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
                                         aria-label={social.label}
                                     >
-                                        <Icon className="h-4 w-4" />
+                                        <IconDisplay iconName={social.icon} className="h-4 w-4" />
                                     </a>
                                 )
                             })}
