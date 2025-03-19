@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
     const HF_MODEL = "google/gemma-2b-it";
     // const HF_MODEL = "gpt2";     
     const message = `<start_of_turn>user
-                    [INST] Answer EXCLUSIVELY in technical bullet points about telecom:
+                    [INST] Answer EXCLUSIVELY in technical bullet points about telecom in french:
                     ${inputs} 
                     Do NOT include introductions or conclusions <end_of_turn>
                     <start_of_turn>model
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
                 inputs: message,
                 parameters: {
                     // max_new_tokens: 150,
-                    temperature: 0.3,// Lower value = less creative
+                    temperature: 0.7,// Lower value = less creative
                     top_k: 50
                 },
             }),
