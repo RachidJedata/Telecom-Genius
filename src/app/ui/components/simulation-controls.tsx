@@ -33,8 +33,7 @@ interface Parameters {
 export function SimulationControls({ simulation }: { simulation: Simulation }) {
   const defaultParameters = JSON.parse(simulation.params);
   const [paramValues, setParamValues] = useState<Parameters>(defaultParameters);
-
-  // console.log("I am here now here: " + paramValues);
+  
   const [isRunning, setIsRunning] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [autoRun, setAutoRun] = useState(false);
@@ -57,7 +56,7 @@ export function SimulationControls({ simulation }: { simulation: Simulation }) {
 
   const [data, setData] = useState<SignalData | null>(null);
   const runSimulation = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       const queryParams = new URLSearchParams(
         Object.entries(paramValues).map(([k, v]) => [k, v.convertedToMili ? (v.value / 1000).toFixed(4) :
