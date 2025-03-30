@@ -6,7 +6,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/app/ui/components/input"
 import { Button } from "./button"
 import { cn } from "@/app/lib/utils"
-import ReactMarkdown from "react-markdown"
+import MarkdownContent from "./markDown"
+
 
 export function AiChatButton() {
   const welcomePrompts = [
@@ -89,7 +90,7 @@ export function AiChatButton() {
                     message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted",
                   )}
                 >
-                  <ReactMarkdown>{message.content}</ReactMarkdown>
+                  <MarkdownContent content={message.content.trim()} />  
                 </div>
               </div>
             ))}
