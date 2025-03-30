@@ -115,6 +115,38 @@ def apply_fading(input_samples, fading_model, num_paths):
     faded_samples = np.convolve(input_samples, gain)
     return faded_samples, gain
 
+def db_to_watts(db: float) -> float:
+    """Convertir Decebel (dBm) to Watts."""
+    return 10 ** (db / 10) 
+
+def calculate_cost231(f: float, h_bs: float, h_ms: float, d: float, environment: str) -> float:
+    """
+    Computes the path loss (L) using the COST231-Hata model.
+
+    Parameters:
+        f (float): Frequency in MHz (should be between 1500 and 2000 MHz).
+        h_bs (float): Base station height in meters.
+        h_ms (float): Mobile station height in meters.
+        d (float): Distance between BS and MS in kilometers.
+        environment (str): 'urban', 'suburban', or 'rural'.
+
+    Returns:
+        float: Path loss (L) in dB.
+    """
+
+    # Correction factor for mobile antenna height a(h_ms)
+    a_hms = (1.1 * math.log10(f) - 0.7) * h_ms - (1.56 * math.log10(f) - 0.8)
+
+    C_values = {"urban": 3, "suburban": 0, "rural": 4.78 * (math.log10(f) ** 2) - 18.33 * math.log10(f) + 40.94}
+    C = C_values.get(environment.lower(), 0)
+    
+    # COST231-Hata path loss formula
+    L = 46.3 + 33.9 * math.log10(f) - 13.82 * math.log10(h_bs) - a_hms + \
+        (44.9 - 6.55 * math.log10(h_bs)) * math.log10(d) + C
+
+    return L
+
+
 # --------------------------
 # Signal Generation Endpoints
 # --------------------------
@@ -307,3 +339,60 @@ def fading_endpoint(
         "signal": sampled_signal_list,
         "parameters": parameters
     }
+
+@app.get("/Cost231/fading")
+def simulate_parameters(
+    f: float = 900,
+    h_bs: float = 30,
+    h_ms: float = 1.5,
+    d: float = 0.001,  # 1 meter distance for visible signal
+    environment: str = "rural",
+    apply_fading: str = "Non",
+    duration: float = 1.0,
+    sampling_rate: int = 1000,
+    showAttenuation:str = "Oui"
+):
+    """
+    Simulate wireless channel with COST231 model and optional fading,
+    using predefined signal generation functions.
+    """
+    # Calculate attenuation
+    attenuation = calculate_cost231(f, h_bs, h_ms, d, environment)
+
+    # Generate time array using predefined function
+    Te = 1/sampling_rate
+    t = generate_time_array(duration, Te)
+
+    # Create carrier signal using predefined sinus generator
+    carrier_freq = 20  # Visualizable frequency
+    tx_power_dbm = 50  # Stronger signal for visibility 
+    power_watts = db_to_watts(tx_power_dbm) / 1000 #it will give 100 Watt (realistic)
+    
+    signal = generate_sinus(
+        t=t,
+        amplitude=power_watts,
+        freq=carrier_freq,
+        phase=np.pi/2  # Phase shift for cosinus if desired
+    )
+
+    # Apply channel effects
+    if(showAttenuation == "Oui"):
+        signal *= db_to_watts(-attenuation)
+    
+    if apply_fading == "Oui":
+        signal *= np.random.rayleigh(scale=1.0, size=len(t))
+
+    return {
+        "time": t.tolist(),
+        "signal": signal.tolist(),
+        "parameters": {
+            "frequency_mhz": f,
+            "distance_km": d,
+            "tx_power_dbm": tx_power_dbm,
+            "attenuation_db": round(attenuation, 2),
+            "fading_enabled": apply_fading,
+            "carrier_freq_hz": carrier_freq,
+            "environment": environment
+        }
+    }
+
