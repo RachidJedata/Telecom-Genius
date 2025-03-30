@@ -38,23 +38,26 @@ export async function getCourses(limit: number, offset: number = 0) {
     return await prisma.courses.findMany({
         take: limit,
         skip: offset,
+        orderBy: { dateAdded: 'desc' }, // Explicit sorting order
     });
-}
-
-export async function fetchCoursesPages() {
-    return await prisma.courses.count();
 }
 
 export async function getCourse(courseId: string) {
     return await prisma.courses.findUnique({
         include: {
-            chapters: true,
+            chapters: { orderBy: { dateAdded: 'asc' } }, // Sorting order explicitly set
         },
         where: {
             courseId: courseId
         }
     });
 }
+
+
+export async function fetchCoursesPages() {
+    return await prisma.courses.count();
+}
+
 
 export async function getSimulation(simulationId: number | null) {
     if (!simulationId) return null;
@@ -64,7 +67,7 @@ export async function getSimulation(simulationId: number | null) {
         }
     });
 }
-export async function getQuiz(chapterId: string) {    
+export async function getQuiz(chapterId: string) {
     return await prisma.quizes.findMany({
         where: {
             chapters: {
