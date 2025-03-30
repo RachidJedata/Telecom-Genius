@@ -29,11 +29,12 @@ model User {
 }
 
 model Courses {
-  courseId     String     @id @default(uuid()) @map("course_id")
-  title        String
-  description  String
-  icon         String
-  chapters     Chapters[]
+  courseId    String     @id @default(uuid()) @map("course_id")
+  title       String
+  description String
+  icon        String
+  chapters    Chapters[]
+  dateAdded   DateTime   @default(now())
 }
 
 model Quizes {
@@ -41,7 +42,7 @@ model Quizes {
   question           String
   options            String[]
   correctAnswerIndex Int        @map("correct_answer_index")
-  explaination       String  
+  explaination       String
   chapters           Chapters[] @relation("QuizChapters")
 }
 
@@ -55,8 +56,8 @@ model Chapters {
   quizes       Quizes[]    @relation("QuizChapters")
   course       Courses?    @relation(fields: [courseId], references: [courseId])
   simulation   Simulation? @relation(fields: [simulationId], references: [simulationId])
+  dateAdded    DateTime    @default(now())
 }
-
 
 model Simulation {
   simulationId Int        @id @default(autoincrement()) @map("simulation_id")
