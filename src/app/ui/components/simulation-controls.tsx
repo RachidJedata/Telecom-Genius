@@ -20,30 +20,31 @@ interface SignalData {
 interface Parameters {
   [key: string]: {
     name: string;
-    step: number;
-    min: number;
-    max: number;
-    value: number;
-    unit: string;
+    step?: number;
+    min?: number;
+    max?: number;
+    value: number | string;
+    unit?: string;
     convertedToMili?: boolean
-    dropdown?: number[];
+    options?: string[];
   };
 }
 
 export function SimulationControls({ simulation }: { simulation: Simulation }) {
   const defaultParameters = JSON.parse(simulation.params);
   const [paramValues, setParamValues] = useState<Parameters>(defaultParameters);
-  
+
   const [isRunning, setIsRunning] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [autoRun, setAutoRun] = useState(false);
 
-  const handleParamChange = (param: string, value: number) => {
+  const handleParamChange = (param: string, value: number | string) => {
     setParamValues(prev => ({
       ...prev,
       [param]: {
         ...prev[param],
-        value: Math.max(prev[param].min, value),
+        // value: Math.max(prev[param].min, value),
+        value: value,
       }
     }));
     if (autoRun) runSimulation();
@@ -59,7 +60,7 @@ export function SimulationControls({ simulation }: { simulation: Simulation }) {
     setIsLoading(true);
     try {
       const queryParams = new URLSearchParams(
-        Object.entries(paramValues).map(([k, v]) => [k, v.convertedToMili ? (v.value / 1000).toFixed(4) :
+        Object.entries(paramValues).map(([k, v]) => [k, v.convertedToMili ? (Number(v.value) / 1000).toFixed(4) :
           v.value.toString()
         ]
         ));
@@ -89,33 +90,33 @@ export function SimulationControls({ simulation }: { simulation: Simulation }) {
           return (
             <div key={index} className="space-y-2">
               <Label htmlFor={index.toString()} className="flex justify-between">
-                <span>{param}</span>
+                <span>{value.name}</span>
                 <span className="text-gray-500 dark:text-gray-400">
                   {value.value.toString()}
                   {value.unit && ` ${value.unit}`}
                 </span>
               </Label>
 
-              {!value.dropdown ? (
+              {!value.options ? (
                 <Slider
                   id={value.name}
                   min={value.min}
                   max={value.max}
                   step={1}
-                  value={[parseFloat(value.value.toFixed(4)) as number]}
+                  value={[parseFloat(Number(value.value).toFixed(4)) as number]}
                   onValueChange={([value]) => handleParamChange(param, value)}
                   className="py-2"
                 />
               ) : (
                 <select
                   value={value.value} // Keep as number
-                  onChange={(e) => handleParamChange(param, Number(e.target.value))}
+                  onChange={(e) => handleParamChange(param, e.target.value)}
                   className="p-2 w-full bg-primary text-accent"
                 >
-                  {value.dropdown.map((val, index) => (
+                  {value.options.map((val, index) => (
                     <option
                       key={index}
-                      value={val} // Use numeric value directly
+                      value={val}
                     >
                       {val}
                     </option>
