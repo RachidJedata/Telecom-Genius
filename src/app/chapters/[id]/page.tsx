@@ -2,12 +2,13 @@ import { getCourse, getQuiz, getSimulation } from "@/app/lib/action"
 import { Button } from "@/app/ui/components/button"
 import { ChapterNavigation } from "@/app/ui/components/chapter-navigation"
 import { ChapterQuiz } from "@/app/ui/components/chapter-quiz"
+import MarkdownContent from "@/app/ui/components/markDown"
 import { SimulationControls } from "@/app/ui/components/simulation-controls"
 import { Chapters } from "@prisma/client"
 import { ChevronLeft } from "lucide-react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import ReactMarkdown from "react-markdown"
+
 
 export default async function ChapterPage({
   params,
@@ -59,8 +60,10 @@ export default async function ChapterPage({
           <main className="flex-1">
             {/* Theory Section */}
             <section className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-6 mb-8">
-              <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Theory</h2>
-              <ReactMarkdown>{chapter.body}</ReactMarkdown>
+              {/* <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Theory</h2> */}
+              <MarkdownContent content={chapter.body.trim()} />
+
+
             </section>
 
             {/* Interactive Simulation Section */}
