@@ -61,7 +61,7 @@ export default async function ChapterPage({
             {/* Theory Section */}
             <section className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-6 mb-8">
               {/* <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Theory</h2> */}
-              <MarkdownContent content={chapter.body.trim()} />
+              <MarkdownContent content={chapter.body.trim()} className="bg-white text-black dark:bg-gray-900 dark:text-white/80" />
 
 
             </section>

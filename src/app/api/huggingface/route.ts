@@ -7,12 +7,13 @@ export async function POST(req: NextRequest) {
     const HF_API_KEY = process.env.HUGGINGFACE_API_KEY; // Store in .env.local
     const HF_MODEL = "google/gemma-2b-it";
     // const HF_MODEL = "gpt2";     
-    const message = `<start_of_turn>user
-                    [INST] Answer EXCLUSIVELY in technical bullet points about telecom in french:
-                    ${inputs} 
-                    Do NOT include introductions or conclusions <end_of_turn>
-                    <start_of_turn>model
-                    `;
+    const message =
+        `<start_of_turn>user
+[INST] Answer EXCLUSIVELY in technical bullet points about telecom in french:
+${inputs} 
+Do NOT include introductions or conclusions <end_of_turn>
+<start_of_turn>model
+`;
     try {
         const response = await fetch(`https://api-inference.huggingface.co/models/${HF_MODEL}`, {
             method: "POST",
@@ -23,13 +24,14 @@ export async function POST(req: NextRequest) {
             body: JSON.stringify({
                 inputs: message,
                 parameters: {
-                    max_new_tokens: 200,  // Increased token limit for longer responses
-                    temperature: 1.0,  // Higher value for more creativity
-                    top_k: 50,  // Controls diversity by limiting token choices
-                    top_p: 0.9,  // Nucleus sampling for more natural outputs
-                    repetition_penalty: 1.2,  // Reduces repetition in generated text
+                    max_new_tokens: 200,      // Enough tokens for detailed responses
+                    temperature: 0.6,         // Lower temperature for more focused outputs
+                    top_k: 35,                // Reduce token options for sharper results
+                    top_p: 0.9,               // Nucleus sampling to keep diversity
+                    repetition_penalty: 1.1,  // Slightly relaxed to ease repetition constraints
                 },
             }),
+
         });
 
         if (!response.ok) {
