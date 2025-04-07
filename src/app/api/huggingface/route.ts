@@ -23,9 +23,11 @@ export async function POST(req: NextRequest) {
             body: JSON.stringify({
                 inputs: message,
                 parameters: {
-                    // max_new_tokens: 150,
-                    temperature: 0.7,// Lower value = less creative
-                    top_k: 50
+                    max_new_tokens: 200,  // Increased token limit for longer responses
+                    temperature: 1.0,  // Higher value for more creativity
+                    top_k: 50,  // Controls diversity by limiting token choices
+                    top_p: 0.9,  // Nucleus sampling for more natural outputs
+                    repetition_penalty: 1.2,  // Reduces repetition in generated text
                 },
             }),
         });

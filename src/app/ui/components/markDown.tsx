@@ -6,7 +6,7 @@ import "katex/dist/katex.min.css";
 import 'github-markdown-css';
 
 const MarkdownContent = ({ content }: { content: string }) => (
-    <div className="markdown-body">
+    <div className="markdown-body bg-white text-black dark:bg-gray-900 dark:text-white/80">
         <ReactMarkdown
             remarkPlugins={[remarkMath]}
             rehypePlugins={[rehypeKatex]}

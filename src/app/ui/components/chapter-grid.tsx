@@ -39,7 +39,7 @@ export function ChapterGrid({ courses }: { courses: Courses[] }) {
               <CardTitle className="mt-4">{course.title}</CardTitle>
             </CardHeader>
             <CardContent>
-              <CardDescription>{course.description}</CardDescription>
+              <CardDescription className="line-clamp-2">{course.description}</CardDescription>
             </CardContent>
           </Card>
         )

@@ -18,7 +18,7 @@ export function ChapterNavigation({ chapters, currentChapterId }: { chapters: Ch
             <li key={chapter.chapterId}>
               <Button
                 variant="ghost"
-                className={cn("w-full justify-start gap-2", isActive && "bg-primary/10 text-primary font-medium")}
+                className={cn("w-full dark:hover:bg-gray-700 justify-start gap-2", isActive && "bg-primary/10 text-primary font-medium")}
                 asChild
               >
                 <Link href={`/chapters/${chapter.courseId}?chapterId=${chapter.chapterId}`}>

@@ -15,6 +15,8 @@ interface SignalData {
   time: number[];
   signal: number[];
   frequency?: number[];
+  x_label?: string;
+  y_label?: string;
 }
 
 interface Parameters {
@@ -52,6 +54,7 @@ export function SimulationControls({ simulation }: { simulation: Simulation }) {
 
   useEffect(() => {
     setParamValues(defaultParameters);
+    setIsRunning(false);
     console.log(defaultParameters);
   }, [simulation]);
 
@@ -70,6 +73,7 @@ export function SimulationControls({ simulation }: { simulation: Simulation }) {
       const jsonData: SignalData = await response.json();
       setData(jsonData);
       setIsRunning(true);
+      console.log(`http://127.0.0.1:8000${simulation.endPoint}?${queryParams}`);
     } catch (error) {
       console.error("Error fetching simulation data:", error)
     } finally {
@@ -231,14 +235,14 @@ function SimulationVisualization({ data, params, title }: SignalVisualizationPro
       .attr('transform', `translate(${containerWidth / 2}, ${containerHeight - 10})`)
       .style('text-anchor', 'middle')
       .style('fill', initialTextColor)
-      .text('Temps (s)');
+      .text(data.x_label || 'Temps (s)');
 
     svg.append('text')
       .attr('class', 'chart-label')
       .attr('transform', `rotate(-90) translate(${-containerHeight / 2}, ${margin.left - 40})`)
       .style('text-anchor', 'middle')
       .style('fill', initialTextColor)
-      .text('Amplitude (V)');
+      .text(data.y_label || 'Amplitude (V)');
 
     // Set up a MutationObserver to watch for dark mode changes on <html>
     const observer = new MutationObserver(mutations => {
@@ -311,7 +315,7 @@ function SimulationVisualization({ data, params, title }: SignalVisualizationPro
   return (
     <div className="w-full h-full flex flex-col">
       <p className="text-primary font-medium mb-2 text-lg px-4">
-        {title ? `Signal Visualization for ${title}` : 'Signal Visualization'}
+        {title ? `Signal Visualization de ${title}` : 'Signal Visualization'}
       </p>
       <div ref={d3Container} className="w-full h-full overflow-hidden" />
     </div>
