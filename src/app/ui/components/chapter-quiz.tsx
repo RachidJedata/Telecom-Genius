@@ -80,14 +80,14 @@ export function ChapterQuiz({ quiz }: { quiz: Quizes[] }) {
     <>
       <Button onClick={handleStartQuiz} className="w-full bg-primary hover:bg-primary/90 text-white">
         <BookOpen className="mr-2 h-4 w-4" />
-        Test Your Knowledge
+        Testez vos connaissances
       </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Chapter Quiz</DialogTitle>
-            <DialogDescription>Test your understanding of the concepts in this chapter.</DialogDescription>
+            <DialogTitle>Quiz du chapitre</DialogTitle>
+            <DialogDescription>Testez votre compréhension des concepts de ce chapitre.</DialogDescription>
           </DialogHeader>
 
           {!showResults ? (
@@ -95,12 +95,12 @@ export function ChapterQuiz({ quiz }: { quiz: Quizes[] }) {
               <div className="mb-4">
                 <div className="flex justify-between text-sm text-gray-500 mb-2">
                   <MarkdownContent
-                    style={{ backgroundColor: "inherit" }}
+                    style={{ backgroundColor: "inherit", color: "inherit" }}
                     content={`Question ${currentQuestionIndex + 1} of ${quiz.length}`} />
                   <span>
 
                   </span>
-                  <span>Progress: {Math.round(progress)}%</span>
+                  <span>Progression: {Math.round(progress)}%</span>
                 </div>
                 <Progress value={progress} className="h-2" />
               </div>
@@ -139,9 +139,9 @@ export function ChapterQuiz({ quiz }: { quiz: Quizes[] }) {
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 text-primary mb-4">
                   <Award className="h-8 w-8" />
                 </div>
-                <h3 className="text-xl font-bold">Quiz Results</h3>
+                <h3 className="text-xl font-bold">Résultats du quiz</h3>
                 <p className="text-gray-500 mt-2">
-                  You scored {score} out of {quiz.length} ({Math.round((score / quiz.length) * 100)}%)
+                  Vous avez obtenu {score} sur {quiz.length} ({Math.round((score / quiz.length) * 100)}%)
                 </p>
               </div>
 
@@ -161,31 +161,31 @@ export function ChapterQuiz({ quiz }: { quiz: Quizes[] }) {
                           <XCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
                         )}
                         <div>
-                          <h4 className="font-medium">
+                          <div className="font-medium">
                             <MarkdownContent
                               style={{ backgroundColor: "inherit" }}
                               content={question.question} />
-                          </h4>
+                          </div>
 
                           <div className="mt-2 text-sm">
                             <p className="font-medium">
-                              Your answer:{" "}
+                              Votre réponse:{" "}
                               {selectedAnswers[index] >= 0
                                 ? question.options[selectedAnswers[index]]
                                 : "No answer selected"}
                             </p>
 
                             {!isCorrect && (
-                              <p className="font-medium text-green-600 dark:text-green-400 mt-1">
+                              <div className="font-medium text-green-600 dark:text-green-400 mt-1">
                                 <MarkdownContent
-                                  style={{ backgroundColor: "inherit" }}
-                                  content={`Correct answer: ${question.options[question.correctAnswerIndex]}`} />
-                              </p>
+                                  style={{ backgroundColor: "inherit", color: "inherit" }}
+                                  content={`Réponse correcte: ${question.options[question.correctAnswerIndex]}`} />
+                              </div>
                             )}
 
                             <div className="mt-2 text-gray-600 dark:text-gray-400">
                               <MarkdownContent
-                                style={{ backgroundColor: "inherit" }}
+                                style={{ backgroundColor: "inherit", color: "inherit" }}
                                 content={question.explaination} />
                             </div>
                           </div>
@@ -198,7 +198,7 @@ export function ChapterQuiz({ quiz }: { quiz: Quizes[] }) {
 
               <DialogFooter className="mt-6">
                 <Button variant="outline" onClick={handleRestartQuiz}>
-                  Restart Quiz
+                  Redémarrer le quiz
                 </Button>
                 <Button onClick={handleCloseQuiz}>Close</Button>
               </DialogFooter>

@@ -50,7 +50,7 @@ export default async function ChapterPage({
               {quiz.length > 0 && (
 
                 <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4">
-                  <h2 className="text-lg font-semibold mb-4 px-2 text-gray-800 dark:text-gray-200">Assessment</h2>
+                  <h2 className="text-lg font-semibold mb-4 px-2 text-gray-800 dark:text-gray-200">Évaluation</h2>
                   <ChapterQuiz quiz={quiz} />
                 </div>
               )}
@@ -69,7 +69,7 @@ export default async function ChapterPage({
             {/* Interactive Simulation Section */}
             {simulation && (
               <section className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Interactive Simulation</h2>
+                <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Simulation interactive</h2>
                 <div className="mb-6">
                   <h3 className="text-lg font-medium mb-4">{simulation.name}</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-6">{simulation.description}</p>

@@ -9,7 +9,7 @@ import IconDisplay from "./iconDisplay"
 export function ChapterNavigation({ chapters, currentChapterId }: { chapters: Chapters[], currentChapterId: string }) {
   return (
     <nav className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4">
-      <h2 className="text-lg font-semibold mb-4 px-2 text-gray-800 dark:text-gray-200">Chapters</h2>
+      <h2 className="text-lg font-semibold mb-4 px-2 text-gray-800 dark:text-gray-200">Chapitres</h2>
       <ul className="space-y-1">
         {chapters.map((chapter) => {
           const isActive = chapter.chapterId === currentChapterId

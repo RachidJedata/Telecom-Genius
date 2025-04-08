@@ -83,6 +83,7 @@ export function SimulationControls({ simulation }: { simulation: Simulation }) {
 
   const resetSimulation = () => {
     setParamValues(defaultParameters);
+    setAutoRun(false);
     setIsRunning(false);
   }
 
@@ -91,6 +92,7 @@ export function SimulationControls({ simulation }: { simulation: Simulation }) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {Object.entries(paramValues).map(([param, value], index) => {
           console.log("inside map :" + param);
+          if (value.options && value.options.length <= 0) return null;
           return (
             <div key={index} className="space-y-2">
               <Label htmlFor={index.toString()} className="flex justify-between">
@@ -113,15 +115,12 @@ export function SimulationControls({ simulation }: { simulation: Simulation }) {
                 />
               ) : (
                 <select
-                  value={value.value} // Keep as number
-                  onChange={(e) => handleParamChange(param, e.target.value)}
+                  value={value.value} // Assuming value.value matches option type (string/number)
+                  onChange={(e) => handleParamChange(param, e.target.value)} // e.target.value is string
                   className="p-2 w-full bg-primary text-accent"
                 >
-                  {value.options.map((val, index) => (
-                    <option
-                      key={index}
-                      value={val}
-                    >
+                  {value.options.map((val, idx) => (
+                    <option key={idx} value={val}>
                       {val}
                     </option>
                   ))}
@@ -137,12 +136,12 @@ export function SimulationControls({ simulation }: { simulation: Simulation }) {
           {isLoading && !autoRun ? (
             <>
               <RefreshCw className="h-4 w-4 animate-spin" />
-              Processing...
+              Traitement en cours...
             </>
           ) : (
             <>
               <PlayCircle className="h-4 w-4" />
-              Run Simulation
+              Lancer la simulation
             </>
           )}
         </Button>
@@ -155,7 +154,7 @@ export function SimulationControls({ simulation }: { simulation: Simulation }) {
               type="checkbox"
               className="h-4 w-4 accent-primary"
             />
-            <span>Run Automatically</span>
+            <span>Exécuter automatiquement</span>
           </Label>
         </div>
 
@@ -164,7 +163,7 @@ export function SimulationControls({ simulation }: { simulation: Simulation }) {
           onClick={resetSimulation}
           className="ml-auto"
         >
-          Reset Parameters
+          Réinitialiser les paramètres
         </Button>
       </div>
 
@@ -177,10 +176,10 @@ export function SimulationControls({ simulation }: { simulation: Simulation }) {
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center p-6">
               <p className="text-gray-500 dark:text-gray-400 mb-2 text-lg">
-                Simulation visualization will appear here
+                La visualisation de la simulation apparaîtra ici.
               </p>
               <p className="text-sm text-gray-400 dark:text-gray-500">
-                Set parameters and click "Run Simulation" to start
+                Définissez les paramètres et cliquez sur « Lancer la simulation » pour commencer.
               </p>
             </div>
           )}
@@ -315,7 +314,7 @@ function SimulationVisualization({ data, params, title }: SignalVisualizationPro
   return (
     <div className="w-full h-full flex flex-col">
       <p className="text-primary font-medium mb-2 text-lg px-4">
-        {title ? `Signal Visualization de ${title}` : 'Signal Visualization'}
+        {title ? `Visualisation du ${title}` : 'Visualisation du signal'}
       </p>
       <div ref={d3Container} className="w-full h-full overflow-hidden" />
     </div>

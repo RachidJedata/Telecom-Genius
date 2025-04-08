@@ -202,14 +202,40 @@ Le modèle de Rayleigh est largement utilisé pour :
         });
 
 
-        const simulationRician = await prisma.simulation.create({
+        const simulationRicianConvolv = await prisma.simulation.create({
+            data: {
+                name: "Simulation du Canal Rician Convolution",
+                description: "Simule les caractéristiques du canal Rician avec une composante LOS et des multipaths.",
+                params: JSON.stringify({
+                    k_db: { name: "Facteur K", value: 10, unit: "dB", step: 1, min: -10, max: 20 },
+                    signal_power: { name: "Puissance du Signal", value: 1, unit: "W", step: 0.1, min: 0.1, max: 10 },
+                    show_signal_type: { name: "Afficher l'Amplitude", value: "convol_sign", options: [] }
+                }),
+                endPoint: "/rician"
+            }
+        });
+
+        const simulationRicianChannel = await prisma.simulation.create({
             data: {
                 name: "Simulation du Canal Rician",
                 description: "Simule les caractéristiques du canal Rician avec une composante LOS et des multipaths.",
                 params: JSON.stringify({
                     k_db: { name: "Facteur K", value: 10, unit: "dB", step: 1, min: -10, max: 20 },
                     signal_power: { name: "Puissance du Signal", value: 1, unit: "W", step: 0.1, min: 0.1, max: 10 },
-                    show_amplitude: { name: "Afficher l'Amplitude", value: "Oui", options: ["Oui", "Non"] }
+                    show_signal_type: { name: "Afficher l'Amplitude", value: "rician_channel", options: [] }
+                }),
+                endPoint: "/rician"
+            }
+        });
+
+        const simulationRicianChannelDB = await prisma.simulation.create({
+            data: {
+                name: "Simulation du Canal Rician en db",
+                description: "Simule les caractéristiques du canal Rician avec une composante LOS et des multipaths.",
+                params: JSON.stringify({
+                    k_db: { name: "Facteur K", value: 10, unit: "dB", step: 1, min: -10, max: 20 },
+                    signal_power: { name: "Puissance du Signal", value: 1, unit: "W", step: 0.1, min: 0.1, max: 10 },
+                    show_signal_type: { name: "Afficher l'Amplitude", value: "ricianchannel_db", options: [] }
                 }),
                 endPoint: "/rician"
             }
@@ -400,7 +426,8 @@ Où :
                                         explaination: "L’amplitude |h| suit une distribution de Rice, caractéristique du canal Rician."
                                     }
                                 ]
-                            }
+                            },
+                            simulationId: simulationRicianChannel.simulationId
                         },
                         {
                             name: "Conversion en dB",
@@ -438,7 +465,8 @@ Cela permet de comparer les niveaux de signal dans des unités logarithmiques.
                                         explaination: "La puissance en dB est calculée par  P_{dB} = 10 \\cdot \\log_{10}(P) ."
                                     }
                                 ]
-                            }
+                            },
+                            simulationId: simulationRicianChannelDB.simulationId
                         },
                         {
                             name: "Convolution avec le Signal",
@@ -469,7 +497,7 @@ Où $$ * $$ désigne la convolution. Cette opération combine l’effet du canal
                                     }
                                 ]
                             },
-                            simulationId: simulationRician.simulationId
+                            simulationId: simulationRicianConvolv.simulationId
                         }
                     ]
                 }
@@ -484,12 +512,11 @@ Où $$ * $$ désigne la convolution. Cette opération combine l’effet du canal
                 description: "Simule les variations d'amplitude du signal dans un canal sans fil en utilisant le modèle de fading Nakagami.",
                 params: JSON.stringify({
                     frequency_hz: { name: "Fréquence du signal", value: 1000.0, unit: "Hz", step: 10, min: 20, max: 10000 },
-                    signal_power: { name: "Puissance du signal", value: 1.0, unit: "W", step: 0.1, min: 0.1, max: 10 },
+                    signal_power: { name: "Puissance du signal", value: 3.0, unit: "W", step: 0.1, min: 0.1, max: 10 },
                     m: { name: "Paramètre de forme m", value: 1.0, unit: "", step: 0.1, min: 0.5, max: 10 },
                     omega: { name: "Paramètre d'étalement Ω", value: 1.0, unit: "", step: 0.1, min: 0.1, max: 10 },
                     duration: { name: "Durée", value: 1.0, unit: "s", step: 0.1, min: 0.1, max: 10 },
-                    sampling_interval: { name: "Intervalle d'échantillonnage", value: 0.001, unit: "s", step: 0.0001, min: 0.0001, max: 0.01 },
-                    show_amplitude: { name: "Afficher l'amplitude", value: "Oui", options: ["Oui", "Non"] }
+                    sampling_interval: { name: "Intervalle d'échantillonnage", value: 1, unit: "ms", step: 1, min: 1, max: 100, convertedToMili: true },                    
                 }),
                 endPoint: "/nakagami-fading-signal"
             }
@@ -1489,7 +1516,7 @@ L'atténuation $$ L_v $$ (en dB) est calculée en fonction de la fréquence $$ f
 $$
 L_v = 
 \\begin{cases} 
-0.45 f^{0.284} d_v & \\text{si } 0 < d_v \\leq 14 \\
+0.45 f^{0.284} d_v & \\text{si } 0 < d_v \\leq 14 \\\\
 1.33 f^{0.284} d_v^{0.588} & \\text{si } 14 < d_v \\leq 400 
 \\end{cases}
 $$
@@ -1894,7 +1921,7 @@ La robustesse et l'efficacité de l'OFDM en font une pierre angulaire des systè
                     f: { name: "Fréquence", value: 900, unit: "MHz", step: 100, min: 800, max: 2000 },
                     h_bs: { name: "Hauteur de la Station de Base", value: 30, unit: "m", step: 5, min: 10, max: 100 },
                     h_ms: { name: "Hauteur du Récepteur Mobile", value: 1.5, unit: "m", step: 0.5, min: 1, max: 3 },
-                    d: { name: "Distance", value: 0.001, unit: "km", step: 0.001, min: 0.001, max: 20 },
+                    d: { name: "Distance", value: 1, unit: "m", step: 1, min: 1, max: 20, convertedToMili: true },
                     environment: { name: "Environnement", value: "rural", options: ["urban", "suburban", "rural"] },
                     apply_fading: { name: "Appliquer l'Évanouissement", value: "Non", options: ["Oui", "Non"] },
                     duration: { name: "Durée du Signal", value: 1.0, unit: "s", step: 0.1, min: 0.1, max: 10 },

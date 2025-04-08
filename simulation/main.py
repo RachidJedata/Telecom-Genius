@@ -456,55 +456,57 @@ def simulate_coverage(data: SimulationRequest):
     }
 
 
-# FSPL function
+
 def fspl(distance_m, frequency_hz):
-    """
-    Calculate Free Space Path Loss in dB.
-    
-    Parameters:
-        distance_m (float or np.ndarray): Distance in meters
-        frequency_hz (float): Frequency in Hz
-    
-    Returns:
-        float or np.ndarray: FSPL in dB
-    """
-    c = 3e8  # Speed of light in m/s
+    """Calculate Free Space Path Loss in dB."""
+    # Speed of light (m/s)
+    c = 3e8
     return 20 * np.log10(distance_m) + 20 * np.log10(frequency_hz) + 20 * np.log10(4 * np.pi / c)
 
-
-@app.get("/fspl")
+@app.get('/fspl')
 def get_fspl(
     frequency: float = 2400,          # MHz
     d_min: float = 1,                 # in km
-    d_max: float = 1000,              # in m
+    d_max: float = 10000,             # in m (adjusted default to 10 km)
     num_points: int = 500,
-    showLoss: str = "Oui"             # "Oui" or "Non"
+    showLoss: str = "Oui"
 ):
-    # Convert frequency to Hz
-    frequency_hz = frequency * 1e6
+    # Convert units
+    frequency_hz = frequency * 1e6       # Convert MHz to Hz
+    d_min_m = d_min * 1000                   # Convert km to m
+    d_max_m = d_max * 1000                   # Convert km to m
 
-    # Convert d_min from km to m if needed (assuming UI sends it in km)
-    d_min_m = d_min * 1000
+    # Generate distance array (in meters)
+    distances = np.linspace(d_min_m, d_max_m, num_points)
 
-    # Generate distances in meters
-    distances = np.linspace(d_min_m, d_max, num_points)
+    # Define duration as time for 10 cycles of the signal
+    duration = 10 / frequency_hz             # Time for 10 periods (seconds)
+    t = np.linspace(0, duration, num_points) # Time array
 
-    # Compute FSPL values only if showLoss is "Oui"
-    compute_loss = showLoss.lower() == "oui"
-    fspl_values = fspl(distances, frequency_hz) if compute_loss else []
+    # Generate base signal (sine wave)
+    signal = np.sin(2 * np.pi * frequency_hz * t)
 
+    # Apply FSPL if requested
+    if showLoss == "Oui":
+        fspl_db = fspl(distances, frequency_hz)       # FSPL in dB
+        attenuation = 10 ** (-fspl_db / 20)           # Amplitude attenuation factor
+        signal = signal * attenuation                 # Apply attenuation element-wise
+    
+    # Parameters dictionary
     parameters = {
         "frequency_MHz": frequency,
         "distance_range_m": [d_min_m, d_max],
         "num_points": num_points,
         "showLoss": showLoss
     }
-
+    
     return {
-        "time": distances.tolist(),
-        "signal": fspl_values.tolist(),
+        "time": t.tolist(),
+        "signal": signal.tolist(),
         "parameters": parameters
     }
+
+
 
 
 
@@ -622,7 +624,7 @@ def run_itu_r_p1411_simulation(
 
 
 
-def hata_loss(f, h_b, h_m, d, environment='urban', city_size='Grande'):  # 🔧 Added missing city_size parameter
+def hata_loss(f, h_b, h_m, d, environment='urban', city_size='Grande'):
     """
     Calcule l'atténuation de propagation selon le modèle Okumura-Hata.
     
@@ -638,7 +640,7 @@ def hata_loss(f, h_b, h_m, d, environment='urban', city_size='Grande'):  # 🔧 
         raise ValueError("Les paramètres sont hors des plages valides.")
     
     # Correction selon la hauteur de l'antenne mobile et la taille de la ville
-    if city_size == 'Grande':  # 🔧 Added city_size check
+    if city_size == 'Grande':  
         if f >= 400:
             a_hm = 3.2 * (np.log10(11.75 * h_m))**2 - 4.97
         else:
@@ -734,7 +736,7 @@ def two_ray_ground_loss(d, ht, hr, frequency_MHz):
 
     return L
 
-@app.get("/two-ray")
+@app.get("/two-ray-ground")
 def run_two_ray_simulation(
     frequency_MHz: float = 900, 
     ht: float = 30, 
@@ -765,32 +767,36 @@ def run_two_ray_simulation(
 
 
 @app.get("/two-ray-ground-with-signal")
-def run_two_ray_simualtion_with_sinus(
+def run_two_ray_simulation_with_sinus(
     frequency_MHz: float = 900, 
     ht: float = 30, 
     hr: float = 1.5, 
     d_min: float = 1, 
     d_max: float = 1000):
     carrier_freq = frequency_MHz * 1e6
-    t, _ = generate_propagated_signal_with_delay(distance_km=d, attenuation_factor=att, frequency_hz=carrier_freq)
-    distances_km = np.linspace(d_min, d_max, len(t))
+    # Generate time array once with dummy parameters
+    t, _ = generate_propagated_signal_with_delay(distance_km=0, attenuation_factor=1, frequency_hz=carrier_freq)
+    distances_km = np.linspace(d_min, d_max, 500)  # distances in kilometers
     losses = two_ray_ground_loss(distances_km, ht, hr, frequency_MHz)
-    attenuation_factors = 10 ** (-losses / 20)    
+    attenuation_factors = 10 ** (-losses / 20)
     composite_signal = np.zeros_like(t)
-    for i, (d, att) in enumerate(zip(distances_km, attenuation_factors)):
-        composite_signal += generate_propagated_signal_with_delay(d, att, t, carrier_freq)
-    composite_signal /= np.max(np.abs(composite_signal)) if np.max(np.abs(composite_signal)) > 0 else 1
+    for d_km, att in zip(distances_km, attenuation_factors):
+        # Unpack to get only the signal, using correct arguments
+        _, signal = generate_propagated_signal_with_delay(d_km, att, carrier_freq)
+        composite_signal += signal
+    # Normalize signal, avoiding division by zero
+    max_amplitude = np.max(np.abs(composite_signal))
+    if max_amplitude > 0:
+        composite_signal /= max_amplitude
     parameters = {
         "frequency_MHz": frequency_MHz,
         "transmitter_height": ht,
         "receiver_height": hr,
-        "distance_range_km": [float(d_min), float(d_max)],        
+        "distance_range_km": [float(d_min), float(d_max)],
         "carrier_frequency_hz": carrier_freq,
         "signal_type": "two_ray_attenuated"
     }
     return {"time": t.tolist(), "signal": composite_signal.tolist(), "parameters": parameters}
-
-
 
 
 
@@ -1109,13 +1115,11 @@ async def ofdm_on_sine(
 async def run_rician_model(
     k_db: int = 10,
     signal_power: int = 1,
-    show_amplitude: str = "Oui"  # "Oui" or "Non"
+    show_signal_type:str = "rician_channel",    
 ):
     # Generate sinusoidal waveform
     t = np.linspace(1, 100, 750)
-    x_volts = 20 * np.sin(t / (2 * np.pi))
-    x_watts = x_volts ** 2
-    x_db = 10 * np.log10(x_watts)
+    x_volts = 20 * np.sin(t / (2 * np.pi))    
 
     # Generate Rician channel coefficients
     N = 1000  # Number of samples
@@ -1124,22 +1128,24 @@ async def run_rician_model(
     sigma = math.sqrt(1 / (2 * (K + 1)))  # Standard deviation
 
     h = (sigma * np.random.randn(N) + mu) + 1j * (sigma * np.random.randn(N) + mu)
-    h_mag = np.abs(h)
-    h_mag_dB = 10 * np.log10(h_mag)  # Channel response in dB
+    h_mag = np.abs(h)        
 
-    # Convolve the Rician channel response with the sinusoidal waveform
-    Y4 = np.convolve(h, x_volts)
 
-    # Prepare data for JSON
-    if show_amplitude == "Oui":
-        signal = Y4.tolist()  # Convolved signal
+    signal_type = ["rician_channel","ricianchannel_db","convol_sign"]
+    if show_signal_type == signal_type[0]:        
+        signal = h_mag
+    elif show_signal_type == signal_type[1]:
+        h_mag_dB = 10 * np.log10(h_mag)  # Channel response in dB
+        signal = h_mag_dB
     else:
-        signal = x_db.tolist()  # Original signal in dB
+        # Convolve the Rician channel response with the sinusoidal waveform
+        Y4 = np.convolve(h, x_volts)
+        signal = np.abs(Y4)
+        
 
     parameters = {
         "k_db": k_db,
-        "signal_power": signal_power,
-        "show_amplitude": show_amplitude,
+        "signal_power": signal_power,        
         "N": N,
         "K": K,
         "mu": mu,
@@ -1149,7 +1155,7 @@ async def run_rician_model(
     # Return JSON object
     return {
         "time": t.tolist(),
-        "signal": signal,
+        "signal": signal.tolist(),
         "parameters": parameters
     }
 
@@ -1158,12 +1164,11 @@ async def run_rician_model(
 @app.get("/nakagami-fading-signal")
 def simulate_nakagami_fading_signal(
     frequency_hz: float = 1000.0,      # Frequency of the sine wave in Hz
-    signal_power: float = 1.0,         # Power of the input sine wave
+    signal_power: float = 3.0,         # Power of the input sine wave
     m: float = 1.0,                    # Nakagami m parameter
     omega: float = 1.0,                # Nakagami omega parameter (average fading power)
     duration: float = 1.0,             # Duration in seconds    
-    sampling_interval: float = 0.001,  # Sampling interval in seconds
-    show_amplitude: str = "Oui"        # Flag to return amplitude Oui ou Non
+    sampling_interval: float = 0.001,  # Sampling interval in seconds    
 ):
     """
     Simulate a sinusoidal signal with Nakagami fading applied, returning time, signal, and parameters.
@@ -1174,8 +1179,7 @@ def simulate_nakagami_fading_signal(
         m (float): Nakagami shape parameter (m > 0).
         omega (float): Nakagami spread parameter (average power of fading, omega > 0).
         duration (float): Duration of the simulation in seconds.
-        sampling_interval (float): Time step between samples in seconds.
-        show_amplitude (bool): If True, signal is the faded amplitude; if False, faded power.
+        sampling_interval (float): Time step between samples in seconds.        
 
     Returns:
         dict: JSON containing 'time', 'signal', and 'parameters'.
@@ -1195,13 +1199,8 @@ def simulate_nakagami_fading_signal(
     h = np.sqrt(Y)
     
     # Apply fading to the signal
-    faded_amplitude = h * s
-    
-    # Determine signal output based on show_amplitude
-    if show_amplitude == "Oui":
-        signal = faded_amplitude
-    else:
-        signal = faded_amplitude ** 2  # Power = amplitude squared
+    signal = h * s
+
     
     # Package parameters for response
     parameters = {
@@ -1211,8 +1210,7 @@ def simulate_nakagami_fading_signal(
         "m": m,
         "omega": omega,
         "duration": duration,
-        "sampling_interval": sampling_interval,
-        "show_amplitude": show_amplitude
+        "sampling_interval": sampling_interval,        
     }
     
     # Return JSON response

@@ -20,7 +20,7 @@ export default async function Home(props: {
       <div className="container mx-auto px-4 py-8">
         <main>
           <section className="mb-12">
-            <h2 className="text-2xl font-semibold mb-6 text-gray-800 dark:text-gray-200">Explore Chapters</h2>
+            <h2 className="text-2xl font-semibold mb-6 text-gray-800 dark:text-gray-200">Explorer les chapitres</h2>
             <ChapterGrid courses={courses} />
           </section>
           {totalPages > 1 && (

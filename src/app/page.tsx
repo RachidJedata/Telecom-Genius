@@ -9,7 +9,7 @@ export default async function Home() {
       {/* Hero Section */}
       <section className="py-20 px-4">
         <div className="max-w-6xl mx-auto text-center space-y-8 fade-in">
-          <h1 className="hero-text">
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#3e96be] to-primary">
             Master en Télécommunications
             <br />
             avec Guidance d'Expert

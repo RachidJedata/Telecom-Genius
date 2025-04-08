@@ -41,13 +41,6 @@
   }
 }
 
-.hero-text {
-  @apply text-4xl md:text-6xl font-bold tracking-tight;
-  background: linear-gradient(to right, #9b87f5, #7E69AB);
-  -webkit-background-clip: text;
-  color: transparent;
-}
-
 .glass-card {
   @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-lg;
 }
