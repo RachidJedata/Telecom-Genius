@@ -16,6 +16,7 @@ import { Button } from "./button"
 import { Label } from "./label"
 import { Card } from "./card"
 import { Quizes } from "@prisma/client"
+import MarkdownContent from "./markDown"
 
 export function ChapterQuiz({ quiz }: { quiz: Quizes[] }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -93,8 +94,11 @@ export function ChapterQuiz({ quiz }: { quiz: Quizes[] }) {
             <>
               <div className="mb-4">
                 <div className="flex justify-between text-sm text-gray-500 mb-2">
+                  <MarkdownContent
+                    style={{ backgroundColor: "inherit" }}
+                    content={`Question ${currentQuestionIndex + 1} of ${quiz.length}`} />
                   <span>
-                    Question {currentQuestionIndex + 1} of {quiz.length}
+
                   </span>
                   <span>Progress: {Math.round(progress)}%</span>
                 </div>
@@ -157,7 +161,11 @@ export function ChapterQuiz({ quiz }: { quiz: Quizes[] }) {
                           <XCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
                         )}
                         <div>
-                          <h4 className="font-medium">{question.question}</h4>
+                          <h4 className="font-medium">
+                            <MarkdownContent
+                              style={{ backgroundColor: "inherit" }}
+                              content={question.question} />
+                          </h4>
 
                           <div className="mt-2 text-sm">
                             <p className="font-medium">
@@ -169,11 +177,17 @@ export function ChapterQuiz({ quiz }: { quiz: Quizes[] }) {
 
                             {!isCorrect && (
                               <p className="font-medium text-green-600 dark:text-green-400 mt-1">
-                                Correct answer: {question.options[question.correctAnswerIndex]}
+                                <MarkdownContent
+                                  style={{ backgroundColor: "inherit" }}
+                                  content={`Correct answer: ${question.options[question.correctAnswerIndex]}`} />
                               </p>
                             )}
 
-                            <p className="mt-2 text-gray-600 dark:text-gray-400">{question.explaination}</p>
+                            <div className="mt-2 text-gray-600 dark:text-gray-400">
+                              <MarkdownContent
+                                style={{ backgroundColor: "inherit" }}
+                                content={question.explaination} />
+                            </div>
                           </div>
                         </div>
                       </div>

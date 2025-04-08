@@ -3,184 +3,661 @@ import prisma from "../lib/prisma";
 
 export async function GET(req: NextRequest) {
     try {
-        // Create the course with nested chapters and nested quizzes.
-        const simulationCost = await prisma.simulation.create({
+
+        const simulationRayleigh = await prisma.simulation.create({
             data: {
-                name: "Paramètres du Modèle",
-                description: "Simule l'équation du modèle COST 231 pour l'atténuation du signal.",
+                name: 'Signal avec évanouissement',
+                description: 'Génère un signal sinusoïdal avec application d\'évanouissement multitrajets.',
                 params: JSON.stringify({
-                    f: { name: "Fréquence", value: 900, unit: "MHz", step: 100, min: 800, max: 2000 },
-                    h_bs: { name: "Hauteur de la Station de Base", value: 30, unit: "m", step: 5, min: 10, max: 100 },
-                    h_ms: { name: "Hauteur du Récepteur Mobile", value: 1.5, unit: "m", step: 0.5, min: 1, max: 3 },
-                    d: { name: "Distance", value: 0.001, unit: "km", step: 0.001, min: 0.001, max: 20 },
-                    environment: { name: "Environnement", value: "rural", options: ["urban", "suburban", "rural"] },
-                    apply_fading: { name: "Appliquer l'Évanouissement", value: "Non", options: ["Oui", "Non"] },
-                    duration: { name: "Durée du Signal", value: 1.0, unit: "s", step: 0.1, min: 0.1, max: 10 },
-                    sampling_rate: { name: "Taux d'Échantillonnage", value: 1000, unit: "Hz", step: 100, min: 100, max: 5000 },
-                    showAttenuation: { name: "Afficher l'Atténuation", value: "Oui", options: ["Oui", "Non"] }
+                    duration: { name: 'Durée', value: 1.0, unit: 's', step: 0.1, min: 0.1, max: 10 },
+                    Te: { name: 'Pas de temps', value: 1, unit: 'ms', step: 0.1, min: 0.1, max: 10, convertedToMili: true },
+                    amplitude: { name: 'Amplitude', value: 1.0, unit: 'V', step: 0.1, min: 0.1, max: 10 },
+                    freq: { name: 'Fréquence', value: 5.0, unit: 'Hz', step: 0.5, min: 0.1, max: 100 },
+                    phase: { name: 'Phase', value: 0.0, unit: 'rad', step: 0.1, min: -Math.PI, max: Math.PI },
+                    fading_model: { name: 'Modèle d\'évanouissement', value: 2, unit: '', step: 1, min: 0, max: 22, dropdown: [0, 1, 11, 2, 22] },
+                    num_paths: { name: 'Nombre de trajets', value: 500, unit: '', step: 10, min: 10, max: 1000 }
                 }),
-                endPoint: "/Cost231/fading"
+                endPoint: '/fading'
             }
         });
 
+
         await prisma.courses.create({
             data: {
-                title: "Modèle COST 231",
-                description: "Découvrez le modèle de propagation COST 231 utilisé pour la prédiction du signal en environnements urbain, suburbain et rural.",
-                icon: "RadioTower",
+                title: "Canal de Fading Rayleigh",
+                description: "Explorez le modèle du canal de fading Rayleigh, utilisé pour les environnements sans ligne de vue directe.",
+                icon: "Signal",
                 chapters: {
                     create: [
                         {
-                            name: "Introduction COST 231",
+                            name: "Définition du Canal Rayleigh",
                             icon: "BookOpen",
                             body: `
-## Introduction au Modèle COST 231
+## Définition du Canal Rayleigh
 
-Le modèle COST 231, également connu sous le nom d'extension Hata pour PCS, est un modèle de propagation radio conçu pour prédire l'atténuation des signaux dans les bandes de fréquences de 800 MHz à 2000 MHz. Développé comme une amélioration du modèle Hata, il est particulièrement adapté aux réseaux cellulaires 2G, 3G et 4G, couvrant les environnements urbains, suburbains et ruraux.
+Le canal de fading Rayleigh est un modèle de propagation utilisé lorsque le signal reçu est composé uniquement de **composantes diffusées** (multipaths), sans composante en ligne de vue (LOS). Ce modèle est typique des environnements urbains denses où les obstacles bloquent le trajet direct entre l’émetteur et le récepteur.
 
-### Historique et Contexte
-Issu du projet européen COST 231 (1986-1996), ce modèle a été créé pour répondre aux besoins croissants de précision dans la planification des réseaux mobiles, notamment dans les zones urbaines avec des bâtiments élevés. Il s'appuie sur les travaux d'Okumura et Hata, adaptés pour les fréquences plus élevées utilisées dans les systèmes cellulaires modernes de l'époque.
-
-### Applications en Télécommunications
-Le modèle COST 231 est largement utilisé pour :
-- **Estimer la couverture réseau** : Prédire la portée des signaux pour une planification efficace.
-- **Optimiser le placement des antennes** : Assurer une couverture maximale avec un minimum d'interférences.
-- **Améliorer la qualité du service** : Ajuster les paramètres pour répondre aux besoins des utilisateurs dans divers environnements.
-                    `,
+### Contexte
+Dans ce modèle, les multiples trajets réfléchis arrivent avec des amplitudes et des phases aléatoires, créant des variations rapides de l’amplitude du signal reçu, connues sous le nom de **fading**.
+                            `,
                             quizes: {
                                 create: [
                                     {
-                                        question: "Quel est le principal objectif du modèle COST 231 ?",
+                                        question: "Quand utilise-t-on le modèle de Rayleigh ?",
                                         options: [
-                                            "Prédire l'atténuation du signal en environnements variés",
-                                            "Augmenter la vitesse des réseaux 5G",
-                                            "Optimiser la consommation d'énergie des antennes",
-                                            "Améliorer la sécurité des communications mobiles"
+                                            "Lorsqu’il y a une composante LOS forte",
+                                            "Lorsqu’il n’y a pas de composante LOS",
+                                            "Pour les environnements avec peu d’obstacles",
+                                            "Pour les communications satellites"
                                         ],
-                                        correctAnswerIndex: 0,
-                                        explaination: "Le modèle COST 231 est conçu pour prédire l'atténuation du signal dans des environnements urbains, suburbains et ruraux afin d'améliorer la planification des réseaux cellulaires."
+                                        correctAnswerIndex: 1,
+                                        explaination: "Le canal Rayleigh est utilisé lorsque le signal reçu est uniquement composé de multipaths, sans composante LOS."
                                     }
                                 ]
                             }
                         },
                         {
-                            name: "Paramètres du Modèle",
-                            icon: "Sliders",
+                            name: "Distribution de Rayleigh",
+                            icon: "ChartLine",
                             body: `
-## Paramètres du Modèle
+## Distribution de Rayleigh
 
-Le modèle COST 231 repose sur une équation empirique qui calcule l'atténuation des ondes radio en fonction de plusieurs paramètres clés, adaptée aux environnements urbains, suburbains et ruraux.
+Dans le canal Rayleigh, l’amplitude du signal reçu $$ |h| $$ suit une **distribution de Rayleigh**. Si le canal est modélisé comme un nombre complexe $$ h = X + jY $$, où $$ X $$ et $$ Y $$ sont des variables gaussiennes centrées :
 
-### Formule Générale (Urbain)
-L'atténuation \( L \) en décibels (dB) pour les zones urbaines est donnée par :
+$$
+X \\sim N(0, \\sigma^2), \\quad Y \\sim N(0, \\sigma^2)
+$$
 
-\`\`\`
-L = 46.3 + 33.9 log₁₀(f) - 13.82 log₁₀(h_BS) - a(h_MS) + [44.9 - 6.55 log₁₀(h_BS)] log₁₀(d) + C_m
-\`\`\`
+Alors, l’amplitude $$ |h| = \\sqrt{X^2 + Y^2} $$ suit :
 
-où :
-- \`\`\` f \`\`\` : fréquence (MHz, entre 800 et 2000)
-- \`\`\` h_BS \`\`\` : hauteur de l’antenne de la station de base (m)
-- \`\`\` h_MS \`\`\` : hauteur du récepteur mobile (m)
-- \`\`\` d \`\`\` : distance entre l'émetteur et le récepteur (km)
-- \`\`\` a(h_MS) \`\`\` : facteur de correction pour la hauteur du mobile
-- \`\`\` C_m \`\`\` : correction environnementale (0 dB pour villes moyennes/suburbain, 3 dB pour métropoles)
+$$
+f_{|h|}(r) = \\frac{r}{\\sigma^2} \\exp\\left(-\\frac{r^2}{2\\sigma^2}\\right), \\quad r \\geq 0
+$$
 
-#### Correction \( a(h_MS) \) pour Urbain
-Pour \( f > 200 \) MHz :
-\`\`\`
-a(h_MS) = 3.2 [log₁₀(11.75 h_MS)]² - 4.97
-\`\`\`
-
-#### Ajustements pour Suburban et Rural
-- **Suburbain** : \( L_{suburban} = L_{urban} - 2 [log₁₀(f/28)]² - 5.4 \)
-- **Rural** : \( L_{rural} = L_{urban} - 4.78 [log₁₀(f)]² + 18.33 log₁₀(f) - 40.94 \)
-
-### Facteurs d’Influence
-- **Urbain** : Forte atténuation due à la densité des bâtiments et aux réflexions multiples.
-- **Suburbain** : Atténuation modérée avec moins d’obstacles, mais toujours influencée par des structures.
-- **Rural** : Atténuation minimale grâce à des espaces ouverts et peu d’obstacles élevés.
-                    `,
+### Interprétation
+La distribution de Rayleigh décrit les variations d’amplitude dues aux interférences constructives et destructives des multipaths.
+                            `,
                             quizes: {
                                 create: [
                                     {
-                                        question: "Dans quelle plage de fréquences le modèle COST 231 est-il applicable ?",
+                                        question: "Quelle distribution suit l’amplitude $$ |h| $$ dans un canal Rayleigh ?",
                                         options: [
-                                            "300 MHz - 800 MHz",
-                                            "800 MHz - 2000 MHz",
-                                            "2 GHz - 6 GHz",
-                                            "Au-delà de 6 GHz"
+                                            "Normale",
+                                            "Rayleigh",
+                                            "Rician",
+                                            "Uniforme"
                                         ],
                                         correctAnswerIndex: 1,
-                                        explaination: "Le modèle COST 231 est conçu pour fonctionner dans la plage de fréquences de 800 MHz à 2000 MHz, ce qui couvre les technologies mobiles comme la 2G, 3G et début 4G."
+                                        explaination: "L’amplitude suit une distribution de Rayleigh, caractéristique des canaux sans composante LOS."
                                     }
                                 ]
                             }
                         },
                         {
-                            name: "Applications Pratiques",
-                            icon: "BarChart",
+                            name: "Effet du Fading sur le Signal",
+                            icon: "Waveform",
                             body: `
-## Applications Pratiques
+## Effet du Fading sur le Signal
 
-Le modèle COST 231 joue un rôle clé dans la conception et l’optimisation des réseaux mobiles, offrant des outils pour améliorer la couverture et la performance.
+Le fading Rayleigh provoque des **fluctuations rapides** de l’amplitude et de la phase du signal reçu, ce qui peut entraîner :
 
-### Optimisation des Réseaux
-- **Placement des Antennes** : Détermine les emplacements optimaux pour maximiser la couverture et réduire les zones mortes.
-- **Réglage de la Puissance** : Ajuste la puissance des stations de base pour minimiser les interférences tout en maintenant la qualité du signal.
+- **Pertes de signal** : Des baisses soudaines de la puissance reçue.
+- **Erreurs de transmission** : Augmentation du taux d’erreur binaire (BER).
 
-### Simulation de Couverture
-Les ingénieurs utilisent des logiciels intégrant le modèle COST 231 pour simuler la propagation des ondes radio, visualisant ainsi la couverture réseau avant le déploiement physique des infrastructures.
-
-### Pertinence pour les Réseaux Modernes
-Bien que conçu pour les réseaux 2G et 3G, le modèle reste pertinent pour :
-- **4G** : Utilisé dans les bandes basses fréquences (ex. 800 MHz, 1800 MHz).
-- **5G Sub-6 GHz** : Applicable après calibration pour les fréquences inférieures à 6 GHz.
-- **Limites** : Moins adapté aux ondes millimétriques (mmWave) de la 5G, où d'autres modèles sont préférés en raison des caractéristiques de propagation différentes.
-                    `,
+### Conséquences
+Ces variations nécessitent des techniques de mitigation comme la diversité (fréquence, temps, espace) ou le codage correcteur d’erreurs pour maintenir la fiabilité des communications.
+                            `,
                             quizes: {
                                 create: [
                                     {
-                                        question: "Quel paramètre influence le plus la propagation des ondes dans un environnement urbain ?",
+                                        question: "Quel est un effet clé du fading Rayleigh sur le signal ?",
                                         options: [
-                                            "La hauteur des antennes",
-                                            "La densité des bâtiments",
-                                            "La température de l'air",
-                                            "L'humidité de l'atmosphère"
+                                            "Augmentation constante de la puissance",
+                                            "Fluctuations rapides de l’amplitude",
+                                            "Réduction du bruit",
+                                            "Stabilité de la phase"
                                         ],
                                         correctAnswerIndex: 1,
-                                        explaination: "Dans un environnement urbain, la densité et la hauteur des bâtiments influencent fortement la propagation des ondes radio en créant des réflexions et des atténuations."
-                                    },
+                                        explaination: "Le fading Rayleigh cause des fluctuations rapides de l’amplitude dues aux interférences des multipaths."
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            name: "Modélisation Mathématique",
+                            icon: "Calculator",
+                            body: `
+## Modélisation Mathématique
+
+Le canal Rayleigh est modélisé par :
+
+$$
+h = \\sigma \\cdot (N(0,1) + j N(0,1))
+$$
+
+Où :
+- $$ \\sigma^2 $$ : Variance des composantes gaussiennes, représentant la puissance moyenne des multipaths.
+
+### Puissance Moyenne
+La puissance moyenne du canal est :
+
+$$
+E[|h|^2] = 2\\sigma^2
+$$
+
+Pour normaliser à 1, on choisit $$ \\sigma = \\sqrt{\\frac{1}{2}} $$.
+                            `,
+                            quizes: {
+                                create: [
                                     {
-                                        question: "Quelle est l’unité de la distance \\( d \\) dans l’équation de COST 231 ?",
+                                        question: "Quelle est la puissance moyenne $$ E[|h|^2] $$ dans un canal Rayleigh normalisé ?",
                                         options: [
-                                            "Kilomètres (km)",
-                                            "Mètres (m)",
-                                            "Décibels (dB)",
-                                            "Gigahertz (GHz)"
+                                            "1",
+                                            "2\\sigma^2",
+                                            "\\sigma^2",
+                                            "0"
                                         ],
                                         correctAnswerIndex: 0,
-                                        explaination: "Dans l'équation de COST 231, la distance \\( d \\) entre l'émetteur et le récepteur est exprimée en kilomètres (km)."
-                                    },
+                                        explaination: "Pour un canal normalisé, $$ E[|h|^2] = 1 $$, avec $$ \\sigma = \\sqrt{\\frac{1}{2}} $$."
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            name: "Applications",
+                            icon: "Applications",
+                            body: `
+## Applications
+
+Le modèle de Rayleigh est largement utilisé pour :
+
+- **Communications mobiles** : Dans les zones urbaines denses où la LOS est souvent bloquée.
+- **Réseaux sans fil** : Pour modéliser les canaux WiFi ou Bluetooth en intérieur.
+- **Études de performance** : Évaluer l’efficacité des techniques de mitigation du fading.
+
+### Exemples
+- **4G/5G** : Prédiction de la qualité du signal dans les cellules urbaines.
+- **WiFi** : Estimation des variations de signal dans les bâtiments.
+                            `,
+                            quizes: {
+                                create: [
                                     {
-                                        question: "Pourquoi le modèle COST 231 est-il encore pertinent aujourd’hui ?",
+                                        question: "Dans quel scénario le canal Rayleigh est-il le plus approprié ?",
                                         options: [
-                                            "Il est utilisé pour les prévisions de signal dans les réseaux 5G millimétriques",
-                                            "Il est encore appliqué dans certaines bandes de fréquences pour la 4G et l’optimisation des réseaux",
-                                            "Il est utilisé uniquement pour les réseaux 2G",
-                                            "Il a été remplacé par des modèles plus modernes et n'est plus utilisé"
+                                            "Communications satellites",
+                                            "Environnements urbains denses",
+                                            "Liaisons en espace libre",
+                                            "Canaux avec forte LOS"
                                         ],
                                         correctAnswerIndex: 1,
-                                        explaination: "Bien que le modèle COST 231 ait été conçu pour les réseaux mobiles 2G et 3G, il est encore utilisé dans certaines bandes de fréquences pour la 4G et pour l’optimisation des réseaux."
+                                        explaination: "Le canal Rayleigh est idéal pour les environnements urbains denses où la LOS est souvent absente."
                                     }
                                 ]
                             },
-                            simulationId: simulationCost.simulationId
+                            simulationId: simulationRayleigh.simulationId
                         }
                     ]
                 }
             }
         });
+
+
+        const simulationRician = await prisma.simulation.create({
+            data: {
+                name: "Simulation du Canal Rician",
+                description: "Simule les caractéristiques du canal Rician avec une composante LOS et des multipaths.",
+                params: JSON.stringify({
+                    k_db: { name: "Facteur K", value: 10, unit: "dB", step: 1, min: -10, max: 20 },
+                    signal_power: { name: "Puissance du Signal", value: 1, unit: "W", step: 0.1, min: 0.1, max: 10 },
+                    show_amplitude: { name: "Afficher l'Amplitude", value: "Oui", options: ["Oui", "Non"] }
+                }),
+                endPoint: "/rician"
+            }
+        });
+        await prisma.courses.create({
+            data: {
+                title: "Canal Rician",
+                description: "Explorez le modèle du canal Rician, un modèle de propagation avec une composante en ligne de vue et des multipaths.",
+                icon: "Signal",
+                chapters: {
+                    create: [
+                        {
+                            name: "Définition du Canal Rician",
+                            icon: "BookOpen",
+                            body: `
+## Définition du Canal Rician
+
+Le canal Rician est un modèle de propagation utilisé en télécommunications pour décrire la réception d’un signal composé de deux éléments principaux :
+- Une **composante en ligne de vue (LOS)** : un trajet direct entre l’émetteur et le récepteur.
+- Des **composantes diffusées (multipaths)** : plusieurs trajets réfléchis ou dispersés, modélisés comme des variables aléatoires gaussiennes.
+
+Ce modèle est particulièrement pertinent dans des environnements où une trajectoire dominante existe (par exemple, en milieu urbain avec une vue partielle ou en communications satellites).
+                            `,
+                            quizes: {
+                                create: [
+                                    {
+                                        question: "Que contient le signal reçu dans un canal Rician ?",
+                                        options: [
+                                            "Uniquement une composante LOS",
+                                            "Une composante LOS et des multipaths",
+                                            "Seulement des multipaths",
+                                            "Un signal constant"
+                                        ],
+                                        correctAnswerIndex: 1,
+                                        explaination: "Le canal Rician inclut une composante en ligne de vue (LOS) et des multipaths modélisés comme des gaussiennes."
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            name: "Facteur K (K-Factor)",
+                            icon: "Sliders",
+                            body: `
+## Facteur K (K-Factor)
+
+Le facteur K mesure le rapport entre la puissance de la composante en ligne de vue (LOS) et celle des composantes diffusées :
+
+$$
+K = \\frac{P_{LOS}}{P_{diffusée}}
+$$
+
+### En Décibels
+$$
+K_{dB} = 10 \\cdot \\log_{10}(K)
+$$
+
+### Conversion Inverse
+$$
+K = 10^{\\frac{K_{dB}}{10}}
+$$
+
+Un $$ K $$ élevé indique une dominance de la composante LOS, tandis qu’un $$ K $$ faible se rapproche d’un canal Rayleigh (pas de LOS).
+                            `,
+                            quizes: {
+                                create: [
+                                    {
+                                        question: "Que représente un facteur K élevé ?",
+                                        options: [
+                                            "Une forte dominance des multipaths",
+                                            "Une forte dominance de la composante LOS",
+                                            "Un signal constant",
+                                            "Une absence de LOS"
+                                        ],
+                                        correctAnswerIndex: 1,
+                                        explaination: "Un facteur K élevé signifie que la composante LOS domine sur les multipaths."
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            name: "Distribution du Canal Rician",
+                            icon: "ChartLine",
+                            body: `
+## Distribution du Canal Rician (Modèle Complexe)
+
+Le canal Rician est représenté par un nombre complexe :
+
+$$
+h = X + jY
+$$
+
+Où :
+- $$ X \\sim N(\\mu, \\sigma^2) $$ : Partie réelle, suivant une distribution normale.
+- $$ Y \\sim N(\\mu, \\sigma^2) $$ : Partie imaginaire, suivant une distribution normale.
+
+Cela peut être écrit comme :
+$$
+h = (\\sigma \\cdot N(0,1) + \\mu) + j(\\sigma \\cdot N(0,1) + \\mu)
+$$
+
+Ici, $$ \\mu $$ représente l’amplitude de la composante LOS, et $$ \\sigma^2 $$ la variance des multipaths.
+                            `,
+                            quizes: {
+                                create: [
+                                    {
+                                        question: "Quelle distribution suit la partie réelle X dans un canal Rician ?",
+                                        options: [
+                                            "Uniforme",
+                                            "Normale",
+                                            "Exponentielle",
+                                            "Binomiale"
+                                        ],
+                                        correctAnswerIndex: 1,
+                                        explaination: "La partie réelle  X suit une distribution normale  N(\\mu, \\sigma^2) dans le modèle Rician."
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            name: "Paramètres Statistiques",
+                            icon: "Stats",
+                            body: `
+## Paramètres Statistiques
+
+Les paramètres du canal Rician sont dérivés du facteur $$ K $$ pour normaliser la puissance moyenne de $$ h $$ à 1 :
+
+### Moyenne $$ \\mu $$
+$$
+\\mu = \\sqrt{\\frac{K}{2(K + 1)}}
+$$
+
+### Écart-type $$ \\sigma $$
+$$
+\\sigma = \\sqrt{\\frac{1}{2(K + 1)}}
+$$
+
+Ces valeurs équilibrent la contribution de la composante LOS et des multipaths dans la puissance totale.
+                            `,
+                            quizes: {
+                                create: [
+                                    {
+                                        question: "Que représente \\sigma dans le canal Rician ?",
+                                        options: [
+                                            "La moyenne de la LOS",
+                                            "L’écart-type des multipaths",
+                                            "La puissance totale",
+                                            "Le facteur K"
+                                        ],
+                                        correctAnswerIndex: 1,
+                                        explaination: "L’écart-type \\sigma = \\sqrt{\\frac{1}{2(K + 1)}} mesure la dispersion des multipaths."
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            name: "Amplitude du Canal Rician",
+                            icon: "Waveform",
+                            body: `
+## Amplitude du Canal Rician
+
+L’amplitude du canal $$ |h| $$ est calculée comme :
+
+$$
+|h| = \\sqrt{X^2 + Y^2}
+$$
+
+Cette amplitude suit une **loi de Rice** (Rician distribution) :
+
+$$
+f_{|h|}(r) = \\frac{r}{\\sigma^2} \\exp\\left(-\\frac{r^2 + A^2}{2\\sigma^2}\\right) I_0\\left(\\frac{rA}{\\sigma^2}\\right), \\quad r \\geq 0
+$$
+
+Où :
+- $$ A = \\sqrt{2} \\cdot \\mu $$ : Amplitude de la composante LOS.
+- $$ I_0 $$ : Fonction de Bessel modifiée du premier type, ordre 0.
+                            `,
+                            quizes: {
+                                create: [
+                                    {
+                                        question: "Quelle loi suit l’amplitude |h| dans un canal Rician ?",
+                                        options: [
+                                            "Normale",
+                                            "Rayleigh",
+                                            "Rice",
+                                            "Uniforme"
+                                        ],
+                                        correctAnswerIndex: 2,
+                                        explaination: "L’amplitude |h| suit une distribution de Rice, caractéristique du canal Rician."
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            name: "Conversion en dB",
+                            icon: "Calculator",
+                            body: `
+## Conversion en dB
+
+Pour analyser les puissances ou amplitudes en décibels :
+
+### Puissance
+$$
+P_{dB} = 10 \\cdot \\log_{10}(P)
+$$
+
+### Amplitude
+Dans les simulations, on utilise souvent :
+$$
+|h|_{dB} = 10 \\cdot \\log_{10}(|h|)
+$$
+(Note : Pour une amplitude pure, $$ 20 \\cdot \\log_{10}(|h|) $$ serait plus rigoureux, mais $$ 10 \\cdot \\log_{10}(|h|) $$ est commun en analyse de canaux.)
+
+Cela permet de comparer les niveaux de signal dans des unités logarithmiques.
+                            `,
+                            quizes: {
+                                create: [
+                                    {
+                                        question: "Comment convertit-on la puissance en dB ?",
+                                        options: [
+                                            "10 \\cdot \\log_{10}(P)",
+                                            "20 \\cdot \\log_{10}(P)",
+                                            "\\log_{10}(P)",
+                                            "P \\cdot 10"
+                                        ],
+                                        correctAnswerIndex: 0,
+                                        explaination: "La puissance en dB est calculée par  P_{dB} = 10 \\cdot \\log_{10}(P) ."
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            name: "Convolution avec le Signal",
+                            icon: "Signal",
+                            body: `
+## Convolution avec le Signal
+
+Lorsqu’un signal transmis $$ x(t) $$ traverse un canal Rician $$ h(t) $$, le signal reçu est :
+
+$$
+y(t) = h(t) * x(t)
+$$
+
+Où $$ * $$ désigne la convolution. Cette opération combine l’effet du canal (LOS et multipaths) avec le signal d’entrée, modifiant son amplitude et sa phase selon les caractéristiques du canal Rician.
+                            `,
+                            quizes: {
+                                create: [
+                                    {
+                                        question: "Que représente y(t) = h(t) * x(t) dans un canal Rician ?",
+                                        options: [
+                                            "La puissance du signal",
+                                            "Le signal reçu après convolution",
+                                            "La composante LOS seule",
+                                            "Le bruit ajouté"
+                                        ],
+                                        correctAnswerIndex: 1,
+                                        explaination: "Cela représente le signal reçu, résultat de la convolution entre le canal h(t) et le signal transmis x(t) "
+                                    }
+                                ]
+                            },
+                            simulationId: simulationRician.simulationId
+                        }
+                    ]
+                }
+            }
+        });
+
+
+        // Création de la simulation pour le modèle de Nakagami Fading
+        const simulationNakagami = await prisma.simulation.create({
+            data: {
+                name: "Simulation du Canal de Fading Nakagami",
+                description: "Simule les variations d'amplitude du signal dans un canal sans fil en utilisant le modèle de fading Nakagami.",
+                params: JSON.stringify({
+                    frequency_hz: { name: "Fréquence du signal", value: 1000.0, unit: "Hz", step: 10, min: 20, max: 10000 },
+                    signal_power: { name: "Puissance du signal", value: 1.0, unit: "W", step: 0.1, min: 0.1, max: 10 },
+                    m: { name: "Paramètre de forme m", value: 1.0, unit: "", step: 0.1, min: 0.5, max: 10 },
+                    omega: { name: "Paramètre d'étalement Ω", value: 1.0, unit: "", step: 0.1, min: 0.1, max: 10 },
+                    duration: { name: "Durée", value: 1.0, unit: "s", step: 0.1, min: 0.1, max: 10 },
+                    sampling_interval: { name: "Intervalle d'échantillonnage", value: 0.001, unit: "s", step: 0.0001, min: 0.0001, max: 0.01 },
+                    show_amplitude: { name: "Afficher l'amplitude", value: "Oui", options: ["Oui", "Non"] }
+                }),
+                endPoint: "/nakagami-fading-signal"
+            }
+        });
+
+        // Création du cours avec ses chapitres
+        await prisma.courses.create({
+            data: {
+                title: "Canal de Fading Nakagami",
+                description: "Découvrez le modèle de fading Nakagami, un modèle statistique flexible pour les variations d'amplitude du signal dans les canaux sans fil.",
+                icon: "RadioTower",
+                chapters: {
+                    create: [
+                        {
+                            name: "Introduction au Fading Nakagami",
+                            icon: "BookOpen",
+                            body: `
+## Introduction au Fading Nakagami
+
+Le modèle de fading Nakagami est un modèle statistique utilisé pour décrire les variations d'amplitude des signaux dans les canaux de communication sans fil. Il est particulièrement flexible, permettant de représenter différentes conditions de fading, contrairement au modèle de Rayleigh (sans trajet dominant) ou au modèle de Rician (avec un composant en ligne de mire). Ses deux paramètres principaux, le paramètre de forme $$ m $$ et le paramètre d'étalement $$ \\Omega $$, en font un outil puissant pour modéliser le fading dans divers scénarios de propagation multipath.
+
+Ce modèle joue un rôle clé dans les communications sans fil en offrant une approche adaptable aux environnements réels.
+                    `,
+                            quizes: {
+                                create: [
+                                    {
+                                        question: "Que décrit principalement le modèle de fading Nakagami ?",
+                                        options: [
+                                            "La puissance du signal",
+                                            "Les variations d'amplitude du signal",
+                                            "La phase du signal",
+                                            "La fréquence du signal"
+                                        ],
+                                        correctAnswerIndex: 1,
+                                        explaination: "Le modèle de fading Nakagami se concentre sur les variations d'amplitude du signal dans les canaux sans fil, offrant une flexibilité pour diverses conditions de fading."
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            name: "Modèle Mathématique",
+                            icon: "Calculator",
+                            body: `
+## Modèle Mathématique
+
+La fonction de densité de probabilité (PDF) du modèle de Nakagami pour l'amplitude du signal $$ r $$ est donnée par :
+
+$$ f(r) = \\frac{2 m^m}{\\Gamma(m) \\Omega^m} r^{2m - 1} \\exp\\left(-\\frac{m}{\\Omega} r^2\\right) $$
+
+### Paramètres :
+- $$ m $$ : Paramètre de forme ($$ m \\geq 0.5 $$), qui contrôle la sévérité du fading.
+- $$ \\Omega $$ : Paramètre d'étalement, qui représente la puissance moyenne du signal.
+- $$ \\Gamma(m) $$ : Fonction gamma, assurant la normalisation de la distribution.
+
+Cette équation permet de modéliser les variations d'amplitude en ajustant $$ m $$ et $$ \\Omega $$ selon les conditions du canal.
+                    `,
+                            quizes: {
+                                create: [
+                                    {
+                                        question: "Quel est le rôle du paramètre $$ m $$ dans le modèle de Nakagami ?",
+                                        options: [
+                                            "Il représente la puissance moyenne",
+                                            "Il affecte la sévérité du fading",
+                                            "Il détermine la fréquence du signal",
+                                            "Il contrôle la phase du signal"
+                                        ],
+                                        correctAnswerIndex: 1,
+                                        explaination: "Le paramètre $$ m $$ détermine la sévérité du fading : un $$ m $$ faible indique un fading sévère, tandis qu'un $$ m $$ élevé indique un fading plus léger."
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            name: "Interprétation des Paramètres",
+                            icon: "Info",
+                            body: `
+## Interprétation des Paramètres
+
+### Paramètre de forme $$ m $$ :
+- Lorsque $$ m = 1 $$, le modèle correspond au fading de Rayleigh (fading sévère sans trajet dominant).
+- Pour $$ m > 1 $$, le fading devient moins sévère, et à mesure que $$ m $$ augmente, il tend vers un canal sans fading.
+- Pour $$ 0.5 \\leq m < 1 $$, le fading est plus sévère que celui de Rayleigh.
+
+### Paramètre d'étalement $$ \\Omega $$ :
+- $$ \\Omega $$ représente la puissance moyenne et ajuste l'échelle des variations d'amplitude.
+
+Cette flexibilité permet au modèle de Nakagami de s'adapter à une large gamme de conditions de fading, le rendant plus polyvalent que les modèles Rayleigh ou Rician dans certains cas.
+                    `,
+                            quizes: {
+                                create: [
+                                    {
+                                        question: "Que se passe-t-il lorsque $$ m = 1 $$ dans le modèle de Nakagami ?",
+                                        options: [
+                                            "Le modèle devient un canal sans fading",
+                                            "Le modèle se réduit au fading de Rayleigh",
+                                            "Le fading devient plus sévère",
+                                            "La puissance moyenne augmente"
+                                        ],
+                                        correctAnswerIndex: 1,
+                                        explaination: "À $$ m = 1 $$, le modèle de Nakagami équivaut au modèle de Rayleigh, représentant un fading sévère sans trajet dominant."
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            name: "Effets sur la Transmission du Signal",
+                            icon: "Waveform",
+                            body: `
+## Effets sur la Transmission du Signal
+
+Le paramètre $$ m $$ a un impact direct sur la transmission du signal :
+- **Faible $$ m $$ (proche de 0.5)** : Le fading est sévère, provoquant des baisses fréquentes et profondes de l'amplitude, ce qui augmente les erreurs (par exemple, le taux d'erreur binaire, BER).
+- **$$ m = 1 $$** : Équivaut au fading de Rayleigh, avec des variations modérées.
+- **$$ m > 1 $$** : Le fading devient plus léger, stabilisant l'amplitude et réduisant les erreurs.
+
+Ces effets sont essentiels pour concevoir des systèmes de communication capables de s'adapter aux conditions de fading variables.
+                    `,
+                            quizes: {
+                                create: [
+                                    {
+                                        question: "Quel est l'effet d'un faible $$ m $$ sur la transmission du signal ?",
+                                        options: [
+                                            "Stabilisation de l'amplitude",
+                                            "Augmentation des erreurs",
+                                            "Réduction du taux d'erreur",
+                                            "Aucune influence"
+                                        ],
+                                        correctAnswerIndex: 1,
+                                        explaination: "Un faible $$ m $$ entraîne un fading sévère, augmentant les baisses d'amplitude et donc les erreurs de transmission."
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            name: "Applications",
+                            icon: "Applications",
+                            body: `
+## Applications
+
+Le modèle de Nakagami est utilisé dans plusieurs domaines des télécommunications :
+- **Modélisation du fading à petite échelle** : Pour simuler les variations rapides du signal dans divers environnements.
+- **Analyse des performances** : Pour évaluer l'impact du fading sur la modulation, le codage et les techniques de diversité.
+- **Simulation de canaux** : Pour tester et optimiser les systèmes sans fil, comme les réseaux 4G/5G ou WiFi.
+
+Sa capacité à modéliser diverses conditions de fading en fait un outil précieux pour la recherche et le développement.
+                    `,
+                            quizes: {
+                                create: [
+                                    {
+                                        question: "Quelle est l'application principale du modèle de Nakagami ?",
+                                        options: [
+                                            "Modélisation du fading à grande échelle",
+                                            "Modélisation du fading à petite échelle",
+                                            "Estimation de la puissance du signal",
+                                            "Détermination de la phase du signal"
+                                        ],
+                                        correctAnswerIndex: 1,
+                                        explaination: "Le modèle de Nakagami est principalement utilisé pour modéliser le fading à petite échelle, simulant les variations rapides du signal."
+                                    }
+                                ]
+                            },
+                            simulationId: simulationNakagami.simulationId
+                        }
+                    ]
+                }
+            }
+        });
+
 
         const simulationFSPL = await prisma.simulation.create({
             data: {
@@ -274,37 +751,37 @@ La perte de propagation en espace libre (FSPL) est calculée à l’aide d’une
 ### Formule Générale
 En décibels (dB) :
 
-\`\`\`
+$$
 FSPL (dB) = 20 log₁₀(d) + 20 log₁₀(f) + 20 log₁₀(4π/c)
-\`\`\`
+$$
 
 ou, simplifiée :
 
-\`\`\`
+$$
 FSPL (dB) = 20 log₁₀(d) + 20 log₁₀(f) - 147.55
-\`\`\`
+$$
 
 où :
-- \`\`\` d \`\`\` : distance entre l’émetteur et le récepteur (en mètres)
-- \`\`\` f \`\`\` : fréquence du signal (en Hz)
-- \`\`\` c \`\`\` : vitesse de la lumière ≈ \( 3 × 10^8 \) m/s
+- $$ d $$ : distance entre l’émetteur et le récepteur (en mètres)
+- $$ f $$ : fréquence du signal (en Hz)
+- $$ c $$ : vitesse de la lumière ≈ $$ 3 × 10^8 $$ m/s
 
 ### Version Pratique (km et MHz)
 Pour des unités courantes en télécommunications :
 
-\`\`\`
+$$
 FSPL (dB) = 32.45 + 20 log₁₀(d_km) + 20 log₁₀(f_MHz)
-\`\`\`
+$$
 
 où :
-- \`\`\` d_km \`\`\` : distance en kilomètres
-- \`\`\` f_MHz \`\`\` : fréquence en mégahertz
+- $$ d_km $$ : distance en kilomètres
+- $$ f_MHz $$ : fréquence en mégahertz
 
 ### Exemple
-Pour \( d = 1 \) km et \( f = 2400 \) MHz :
-\`\`\`
+Pour $$ d = 1 $$ km et $$ f = 2400 $$ MHz :
+$$
 FSPL = 32.45 + 20 log₁₀(1) + 20 log₁₀(2400) = 32.45 + 0 + 67.6 = 100.05 dB
-\`\`\``,
+$$`,
                             quizes: {
                                 create: [
                                     {
@@ -341,7 +818,7 @@ FSPL = 32.45 + 20 log₁₀(1) + 20 log₁₀(2400) = 32.45 + 0 + 67.6 = 100.05 
 Le modèle FSPL met en évidence l’impact de la distance et de la fréquence sur la puissance reçue.
 
 ### Description de l’Effet
-- **Distance** : La puissance diminue avec le carré de la distance \`\`\` 1/d^2 \`\`\`, ce qui se traduit par une augmentation logarithmique de la perte (20 log₁₀(d)) en dB.
+- **Distance** : La puissance diminue avec le carré de la distance $$ 1/d^2 $$, ce qui se traduit par une augmentation logarithmique de la perte (20 log₁₀(d)) en dB.
 - **Fréquence** : Une fréquence plus élevée accroît la perte, car les ondes à haute fréquence se dispersent davantage, suivant également une relation logarithmique (20 log₁₀(f)).
 
 ### Conséquence
@@ -428,7 +905,7 @@ Le FSPL est idéal et ne reflète pas les conditions réelles (obstacles, réfle
 
         await prisma.courses.create({
             data: {
-                title: "Canal en Milieu Urbain (ITU-R P.1411)",
+                title: "ITU-R P.1411",
                 description: "Découvrez la propagation en milieu urbain avec le modèle ITU-R P.1411, adapté aux environnements bâtis et aux technologies modernes comme la 5G.",
                 icon: "City",
                 chapters: {
@@ -551,36 +1028,36 @@ Le modèle ITU-R P.1411 propose des formules pour estimer la perte de propagatio
 ### Cas LOS (Ligne de Vue)
 La perte en décibels (dB) est donnée par la formule de l’espace libre :
 
-\`\`\`
+$$
 L = 20 log₁₀(f) + 20 log₁₀(d) + 32.45
-\`\`\`
+$$
 
 où :
-- \`\`\` f \`\`\` : fréquence en MHz
-- \`\`\` d \`\`\` : distance en km
+- $$ f $$ : fréquence en MHz
+- $$ d $$ : distance en km
 
 #### Exemple
-Pour \( f = 2400 \) MHz (WiFi) et \( d = 0.1 \) km (100 m) :
-\`\`\`
+Pour $$ f = 2400 $$ MHz (WiFi) et $$ d = 0.1 $$ km (100 m) :
+$$
 L = 20 log₁₀(2400) + 20 log₁₀(0.1) + 32.45 = 67.6 - 20 + 32.45 = 80.05 dB
-\`\`\`
+$$
 
 ### Cas NLOS (Sans Ligne de Vue)
 La perte est calculée comme :
 
-\`\`\`
+$$
 L = L_LOS + ∆L_NLOS
-\`\`\`
+$$
 
 où :
-- \`\`\` L_LOS \`\`\` : perte en ligne de vue (calculée ci-dessus)
-- \`\`\` ∆L_NLOS \`\`\` : perte supplémentaire due aux obstacles, qui dépend de :
+- $$ L_LOS $$ : perte en ligne de vue (calculée ci-dessus)
+- $$ ∆L_NLOS $$ : perte supplémentaire due aux obstacles, qui dépend de :
 - **Type d’environnement** : dense (urbain), modéré (suburbain), ou ouvert.
 - **Réflexions et diffractions** : Impact des bâtiments et structures.
 - **Obstructions** : Hauteur et densité des obstacles.
 
 #### Note
-\( ∆L_NLOS \) varie selon les conditions spécifiques et peut être déterminé par des mesures empiriques ou des tables fournies par ITU-R P.1411.
+$$ ∆L_NLOS $$ varie selon les conditions spécifiques et peut être déterminé par des mesures empiriques ou des tables fournies par ITU-R P.1411.
 
 ### Différence Clé
 En LOS, la perte est similaire à celle de l’espace libre, tandis qu’en NLOS, des facteurs environnementaux augmentent significativement l’atténuation.
@@ -677,40 +1154,40 @@ Ce modèle repose sur des mesures expérimentales réalisées par Okumura, simpl
                             body: `
 ## Formules du Modèle Hata
 
-Le modèle fournit des formules spécifiques selon l’environnement pour calculer la perte de propagation \( L \) en décibels (dB).
+Le modèle fournit des formules spécifiques selon l’environnement pour calculer la perte de propagation $$ L $$ en décibels (dB).
 
 ### 1. Environnement Urbain
-\`\`\`
+$$
 L = 69.55 + 26.16 log₁₀(f) - 13.82 log₁₀(h_b) - a(h_m) + [44.9 - 6.55 log₁₀(h_b)] log₁₀(d)
-\`\`\`
+$$
 
 **Paramètres :**
-- \`\`\` L \`\`\`: perte de propagation (dB)
-- \`\`\` f \`\`\`: fréquence (MHz, 150 ≤ f ≤ 1500)
-- \`\`\` h_b \`\`\`: hauteur de la station de base (m, 30 ≤ h_b ≤ 200)
-- \`\`\` h_m \`\`\`: hauteur de l’antenne mobile (m, 1 ≤ h_m ≤ 10)
-- \`\`\` d \`\`\`: distance (km, 1 ≤ d ≤ 20)
-- \`\`\` a(h_m) \`\`\`: facteur de correction pour la hauteur mobile
+- $$ L $$: perte de propagation (dB)
+- $$ f $$: fréquence (MHz, 150 ≤ f ≤ 1500)
+- $$ h_b $$: hauteur de la station de base (m, 30 ≤ h_b ≤ 200)
+- $$ h_m $$: hauteur de l’antenne mobile (m, 1 ≤ h_m ≤ 10)
+- $$ d $$: distance (km, 1 ≤ d ≤ 20)
+- $$ a(h_m) $$: facteur de correction pour la hauteur mobile
 
-#### Correction \( a(h_m) \)
+#### Correction $$ a(h_m) $$
 - **Ville de grande taille** :
-\`\`\`
+$$
 a(h_m) = 3.2 [log₁₀(11.75 h_m)]² - 4.97
-\`\`\`
+$$
 - **Ville moyenne ou petite** :
-\`\`\`
+$$
 a(h_m) = [1.1 log₁₀(f) - 0.7] h_m - [1.56 log₁₀(f) - 0.8]
-\`\`\`
+$$
 
 ### 2. Environnement Suburbain
-\`\`\`
+$$
 L_sub = L_urb - 2 [log₁₀(f / 28)]² - 5.4
-\`\`\`
+$$
 
 ### 3. Environnement Rural
-\`\`\`
+$$
 L_rur = L_urb - 4.78 [log₁₀(f)]² + 18.33 log₁₀(f) - 40.94
-\`\`\`
+$$
 `,
                             quizes: {
                                 create: [
@@ -849,42 +1326,42 @@ Ce modèle est utilisé pour :
                             body: `
 ## Formules du Modèle Two-Ray Ground
 
-La formule de la perte de propagation \`\`\` L(d) \`\`\` en décibels (dB) est donnée par :
+La formule de la perte de propagation $$ L(d) $$ en décibels (dB) est donnée par :
 
-\[ L(d) = 40 \log_{10}(d) - 20 \log_{10}(h_t h_r) \]
+$$ L(d) = 40 \\log_{10}(d) - 20 \\log_{10}(h_t h_r) $$
 
 ### Paramètres :
-- \`\`\` L(d) \`\`\` : Perte de propagation en dB
-- \`\`\` d \`\`\` : Distance entre l'émetteur (TX) et le récepteur (RX) en mètres
-- \`\`\` h_t \`\`\` : Hauteur de l’antenne émettrice (station de base) en mètres
-- \`\`\` h_r \`\`\` : Hauteur de l’antenne réceptrice (mobile) en mètres
+- $$ L(d) $$ : Perte de propagation en dB
+- $$ d $$ : Distance entre l'émetteur (TX) et le récepteur (RX) en mètres
+- $$ h_t $$ : Hauteur de l’antenne émettrice (station de base) en mètres
+- $$ h_r $$ : Hauteur de l’antenne réceptrice (mobile) en mètres
 
 ### Distance Critique
-Le modèle est valable uniquement pour des distances supérieures à la distance critique \`\`\` d_c \), calculée comme suit :
+Le modèle est valable uniquement pour des distances supérieures à la distance critique $$ d_c $$, calculée comme suit :
 
-\[ d_c = \frac{4 h_t h_r}{\lambda} \]
+$$ d_c = \\frac{4 h_t h_r}{\\lambda} $$
 
 Avec :
-- \`\`\` \lambda = \frac{c}{f} \`\`\` : Longueur d’onde en mètres
-- \`\`\` c = 3 \times 10^8 \`\`\` : Vitesse de la lumière en m/s
-- \`\`\` f \`\`\` : Fréquence en Hz
+- $$ \\lambda = \\frac{c}{f} $$ : Longueur d’onde en mètres
+- $$ c = 3 \\times 10^8 $$ : Vitesse de la lumière en m/s
+- $$ f $$ : Fréquence en Hz
 
 ### Particularités :
-- Pour \`\`\` d < d_c \`\`\`, le modèle peut être imprécis.
-- À grande distance, la perte augmente proportionnellement à \`\`\` d^4 \`\`\`, contrairement à \`\`\` d^2 \`\`\` dans le cas de la perte en espace libre.
+- Pour $$ d < d_c $$, le modèle peut être imprécis.
+- À grande distance, la perte augmente proportionnellement à $$ d^4 $$, contrairement à $$ d^2 $$ dans le cas de la perte en espace libre.
                     `,
                             quizes: {
                                 create: [
                                     {
                                         question: "Quelle est la formule de la perte de propagation dans le modèle Two-Ray Ground ?",
                                         options: [
-                                            "L(d) = 20 \log_{10}(d) + 20 \log_{10}(f) + 32.44",
-                                            "L(d) = 40 \log_{10}(d) - 20 \log_{10}(h_t h_r)",
-                                            "L(d) = 69.55 + 26.16 \log_{10}(f) - 13.82 \log_{10}(h_b)",
-                                            "L(d) = 10 n \log_{10}(d) + C"
+                                            "L(d) = 20 \\log_{10}(d) + 20 \\log_{10}(f) + 32.44",
+                                            "L(d) = 40 \\log_{10}(d) - 20 \\log_{10}(h_t h_r)",
+                                            "L(d) = 69.55 + 26.16 \\log_{10}(f) - 13.82 \\log_{10}(h_b)",
+                                            "L(d) = 10 n \\log_{10}(d) + C"
                                         ],
                                         correctAnswerIndex: 1,
-                                        explaination: "La formule correcte est L(d) = 40 \log_{10}(d) - 20 \log_{10}(h_t h_r) ."
+                                        explaination: "La formule correcte est L(d) = 40 \\log_{10}(d) - 20 \\log_{10}(h_t h_r) ."
                                     },
                                     {
                                         question: "Que se passe-t-il pour les distances inférieures à la distance critique d_c ?",
@@ -982,8 +1459,8 @@ Il est surtout efficace lorsque la longueur d’onde est comparable aux hauteurs
 Le modèle Weissberger est un modèle empirique utilisé pour estimer l'atténuation des signaux radio causée par la végétation, comme les arbres ou les buissons. Il est particulièrement utile dans les scénarios où la végétation obstrue le trajet direct entre un émetteur et un récepteur, comme dans les zones forestières ou rurales.
 
 ### Conditions de validité :
-- **Fréquence \`\`\` f \`\`\`** : 230 MHz à 950 MHz
-- **Épaisseur de végétation \`\`\` d_v \`\`\`** : 0 m à 400 m
+- **Fréquence $$ f $$** : 230 MHz à 950 MHz
+- **Épaisseur de végétation $$ d_v $$** : 0 m à 400 m
                     `,
                             quizes: {
                                 create: [
@@ -1007,29 +1484,29 @@ Le modèle Weissberger est un modèle empirique utilisé pour estimer l'atténua
                             body: `
 ## Formules du modèle Weissberger
 
-L'atténuation \( L_v \) (en dB) est calculée en fonction de la fréquence \( f \) (en MHz) et de l'épaisseur de végétation \( d_v \) (en mètres). L'équation varie selon \( d_v \`\`\` :
+L'atténuation $$ L_v $$ (en dB) est calculée en fonction de la fréquence $$ f $$ (en MHz) et de l'épaisseur de végétation $$ d_v $$ (en mètres). L'équation varie selon $$ d_v $$ :
 
-\[
+$$
 L_v = 
-\begin{cases} 
-0.45 f^{0.284} d_v & \text{si } 0 < d_v \leq 14 \\
-1.33 f^{0.284} d_v^{0.588} & \text{si } 14 < d_v \leq 400 
-\end{cases}
-\]
+\\begin{cases} 
+0.45 f^{0.284} d_v & \\text{si } 0 < d_v \\leq 14 \\
+1.33 f^{0.284} d_v^{0.588} & \\text{si } 14 < d_v \\leq 400 
+\\end{cases}
+$$
 
 ### Paramètres :
-- \`\`\` L_v \`\`\` : Atténuation due à la végétation (dB)
-- \`\`\` f \`\`\` : Fréquence (MHz), où 230 ≤ \( f \) ≤ 950
-- \`\`\` d_v \`\`\` : Épaisseur de végétation (m), où 0 < \( d_v \) ≤ 400
+- $$ L_v $$ : Atténuation due à la végétation (dB)
+- $$ f $$ : Fréquence (MHz), où 230 ≤ $$ f $$ ≤ 950
+- $$ d_v $$ : Épaisseur de végétation (m), où 0 < $$ d_v $$ ≤ 400
 
 ### Notes :
-- Pour \( d_v \) jusqu'à 14 mètres, l'atténuation croît linéairement avec \( d_v \).
-- Au-delà de 14 mètres, l'atténuation augmente avec une puissance de 0.588 sur \( d_v \), reflétant les effets d'une végétation plus dense.
+- Pour $$ d_v $$ jusqu'à 14 mètres, l'atténuation croît linéairement avec $$ d_v $$.
+- Au-delà de 14 mètres, l'atténuation augmente avec une puissance de 0.588 sur $$ d_v $$, reflétant les effets d'une végétation plus dense.
                     `,
                             quizes: {
                                 create: [
                                     {
-                                        question: "Quelle est la formule pour \( L_v \) quand \( d_v \) vaut 10 mètres ?",
+                                        question: "Quelle est la formule pour $$ L_v $$ quand $$ d_v $$ vaut 10 mètres ?",
                                         options: [
                                             "1.33 f^{0.284} d_v^{0.588}",
                                             "0.45 f^{0.284} d_v",
@@ -1037,7 +1514,7 @@ L_v =
                                             "0.45 f^{0.588} d_v"
                                         ],
                                         correctAnswerIndex: 1,
-                                        explaination: "Pour \( 0 < d_v \leq 14 \) m, la formule est \( L_v = 0.45 f^{0.284} d_v \)."
+                                        explaination: "Pour $$ 0 < d_v \\leq 14 $$ m, la formule est $$ L_v = 0.45 f^{0.284} d_v $$."
                                     }
                                 ]
                             },
@@ -1169,10 +1646,10 @@ Le modèle prend en compte des paramètres tels que la hauteur des antennes, la 
 
 Le modèle Longley-Rice ne se résume pas à une simple formule, mais à un ensemble de calculs complexes qui intègrent plusieurs paramètres :
 
-- **Fréquence \`\`\` f \`\`\`**: en MHz
-- **Hauteur de l'antenne émettrice \`\`\` h_t \`\`\`**: en mètres
-- **Hauteur de l'antenne réceptrice \`\`\` h_r \`\`\`**: en mètres
-- **Distance \`\`\` d \`\`\`**: en km
+- **Fréquence $$ f $$**: en MHz
+- **Hauteur de l'antenne émettrice $$ h_t $$**: en mètres
+- **Hauteur de l'antenne réceptrice $$ h_r $$**: en mètres
+- **Distance $$ d $$**: en km
 - **Type de terrain**: plat, vallonné, montagneux
 - **Variabilité temporelle et spatiale**
 
@@ -1238,7 +1715,354 @@ Il est particulièrement utile dans les environnements où la topographie joue u
             }
         });
 
+        const simulationOFDM = await prisma.simulation.create({
+            data: {
+                name: "Simulation du modèle OFDM",
+                description: "Simule le modèle OFDM pour la transmission de données à haute vitesse sur des canaux bruités.",
+                params: JSON.stringify({
+                    fftlen: { name: "Taille FFT", value: 64, unit: "", step: 16, min: 16, max: 1024 },
+                    gilen: { name: "Longueur du préfixe cyclique", value: 16, unit: "", step: 1, min: 0, max: 256 },
+                    data_sc: { name: "Sous-porteuses de données", value: 48, unit: "", step: 1, min: 1, max: 1024 },
+                    esn0: { name: "Es/N0", value: 10, unit: "dB", step: 1, min: -10, max: 30 },
+                    showAtten: { name: "Afficher l'atténuation", value: "Oui", options: ["Oui", "Non"] }
+                }),
+                endPoint: "/ofdm"
+            }
+        });
 
+        await prisma.courses.create({
+            data: {
+                title: "Modèle OFDM",
+                description: "Apprenez le modèle OFDM, une technique clé pour la transmission de données à haute vitesse sur des canaux dégradés.",
+                icon: "Waveform",
+                chapters: {
+                    create: [
+                        {
+                            name: "Introduction à l'OFDM",
+                            icon: "Info",
+                            body: `
+## Introduction à l'OFDM
+
+**Le multiplexage par répartition orthogonale de la fréquence (OFDM)** est une technique de modulation multi-porteuses conçue pour transmettre des données à haute vitesse sur des canaux affectés par du bruit, des évanouissements ou des interférences entre symboles (ISI). Il répartit les données sur plusieurs sous-porteuses orthogonales, ajoute un préfixe cyclique pour lutter contre l'ISI et utilise la IFFT/FFT pour la modulation et la démodulation. Les performances sont mesurées à l'aide de métriques comme le taux d'erreur binaire (BER) et le taux d'erreur de paquets (PER).
+
+### Objectifs de l'OFDM
+- Permettre une transmission à haute vitesse dans des environnements difficiles.
+- Minimiser les interférences grâce à des sous-porteuses orthogonales.
+- Évaluer les performances avec les métriques BER et PER.
+                            `,
+                            quizes: {
+                                create: [
+                                    {
+                                        question: "Quel est l'objectif principal de l'OFDM ?",
+                                        options: [
+                                            "Réduire la taille de l'antenne",
+                                            "Transmettre des données à haute vitesse sur des canaux dégradés",
+                                            "Augmenter la puissance du signal",
+                                            "Simplifier le matériel"
+                                        ],
+                                        correctAnswerIndex: 1,
+                                        explaination: "L'OFDM est conçu pour gérer les canaux dégradés en répartissant les données sur des sous-porteuses orthogonales."
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            name: "Concepts clés de l'OFDM",
+                            icon: "Key",
+                            body: `
+## Concepts clés de l'OFDM
+
+L'OFDM repose sur plusieurs principes fondamentaux pour une transmission efficace :
+
+### Modulation multi-porteuses
+Les données sont divisées et envoyées sur plusieurs sous-porteuses à différentes fréquences. Chaque sous-porteuse est modulée indépendamment, améliorant la résilience aux perturbations du canal.
+
+### Orthogonalité
+Les sous-porteuses sont orthogonales, ce qui signifie qu'elles n'interfèrent pas entre elles. Cela maximise l'efficacité spectrale en évitant le chevauchement des fréquences.
+
+### Préfixe cyclique
+Un préfixe cyclique est ajouté à chaque symbole OFDM pour éviter les **interférences entre symboles (ISI)**. Il agit comme un intervalle de garde contre la dispersion temporelle du canal.
+
+### IFFT et FFT
+- **IFFT (Transformée de Fourier Inverse Rapide)** : Utilisée à l'émetteur pour moduler les données sur les sous-porteuses.
+- **FFT (Transformée de Fourier Rapide)** : Utilisée au récepteur pour démoduler les données.
+                            `,
+                            quizes: {
+                                create: [
+                                    {
+                                        question: "Que permet d'éviter le préfixe cyclique ?",
+                                        options: [
+                                            "L'amplification du signal",
+                                            "Les interférences entre symboles (ISI)",
+                                            "La dérive en fréquence",
+                                            "L'augmentation du bruit"
+                                        ],
+                                        correctAnswerIndex: 1,
+                                        explaination: "Le préfixe cyclique atténue l'ISI en protégeant contre les retards de propagation."
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            name: "Atténuation du bruit en OFDM",
+                            icon: "Calculator",
+                            body: `
+## Atténuation du bruit en OFDM
+
+Comprendre le bruit est essentiel pour évaluer les performances de l'OFDM. L'atténuation due au bruit peut être modélisée avec la formule suivante, adaptée pour une interprétation physique :
+
+$$
+\\mathrm{Atténuation} = \\sqrt{0.5 \\cdot \\mathrm{moyenne}\\left(|\\mathrm{canal}|^2\\right) \\cdot \\frac{\\mathrm{LongueurFFT}}{\\mathrm{DonneesSC}} \\cdot \\frac{\\mathrm{LongueurFFT}}{\\mathrm{LongueurFFT} + \\mathrm{LongueurGI}} \\cdot 10^{-\\frac{\\mathrm{EsN0}}{10}}}
+$$
+
+
+### Détail de la formule
+- **$$ \\text{moyenne}(|\\text{canal}|^2) $$** : Puissance moyenne du signal OFDM, dérivée de la réponse du canal.
+- **LongueurFFT** : Taille FFT, représentant le nombre total de sous-porteuses.
+- **DonneesSC** : Nombre de sous-porteuses transportant des données (hors pilotes ou bandes de garde).
+- **LongueurGI** : Longueur du préfixe cyclique ajouté à chaque symbole.
+- **EsN0** : Rapport signal-sur-bruit par symbole (Es/N0) en décibels.
+- **0.5** : Facteur d'échelle pour un bruit complexe avec des composantes réelles et imaginaires.
+- **$$ 10^{-\\frac{\\text{esn0}}{10}} $$** : Convertit Es/N0 de dB à une échelle linéaire pour ajuster l'amplitude du bruit.
+
+Cette formule calcule l'atténuation induite par le bruit en tenant compte de la puissance du signal, de l'allocation des sous-porteuses, de la surcharge du préfixe cyclique et du rapport signal-sur-bruit.
+                            `,
+                            quizes: {
+                                create: [
+                                    {
+                                        question: "Que représente $$mean(|chh|²)$$ dans la formule du bruit ?",
+                                        options: [
+                                            "La taille FFT",
+                                            "La puissance moyenne du signal",
+                                            "L'amplitude du bruit",
+                                            "La longueur du préfixe cyclique"
+                                        ],
+                                        correctAnswerIndex: 1,
+                                        explaination: "Elle représente la puissance moyenne du signal OFDM basée sur la réponse du canal."
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            name: "Applications de l'OFDM",
+                            icon: "Applications",
+                            body: `
+## Applications de l'OFDM
+
+La robustesse et l'efficacité de l'OFDM en font une pierre angulaire des systèmes de communication modernes.
+
+### Exemples
+- **4G LTE et 5G** : Transmission de données mobiles à haute vitesse.
+- **WiFi (802.11a/g/n/ac/ax)** : Connectivité sans fil rapide.
+- **DVB-T** : Diffusion télévisuelle numérique terrestre.
+- **ADSL/VDSL** : Haut débit sur lignes téléphoniques.
+
+### Avantages
+- Résilience aux évanouissements sélectifs grâce aux sous-porteuses.
+- Haute efficacité spectrale.
+- Implémentation simplifiée avec FFT/IFFT.
+                            `,
+                            quizes: {
+                                create: [
+                                    {
+                                        question: "Quelle technologie utilise l'OFDM pour les données mobiles ?",
+                                        options: [
+                                            "Bluetooth",
+                                            "4G LTE",
+                                            "Radio FM",
+                                            "USB"
+                                        ],
+                                        correctAnswerIndex: 1,
+                                        explaination: "L'OFDM est fondamental pour les réseaux mobiles 4G LTE et 5G."
+                                    }
+                                ]
+                            },
+                            simulationId: simulationOFDM.simulationId
+                        }
+                    ]
+                }
+            }
+        });
+
+
+        // Create the course with nested chapters and nested quizzes.
+        const simulationCost = await prisma.simulation.create({
+            data: {
+                name: "Paramètres du Modèle",
+                description: "Simule l'équation du modèle COST 231 pour l'atténuation du signal.",
+                params: JSON.stringify({
+                    f: { name: "Fréquence", value: 900, unit: "MHz", step: 100, min: 800, max: 2000 },
+                    h_bs: { name: "Hauteur de la Station de Base", value: 30, unit: "m", step: 5, min: 10, max: 100 },
+                    h_ms: { name: "Hauteur du Récepteur Mobile", value: 1.5, unit: "m", step: 0.5, min: 1, max: 3 },
+                    d: { name: "Distance", value: 0.001, unit: "km", step: 0.001, min: 0.001, max: 20 },
+                    environment: { name: "Environnement", value: "rural", options: ["urban", "suburban", "rural"] },
+                    apply_fading: { name: "Appliquer l'Évanouissement", value: "Non", options: ["Oui", "Non"] },
+                    duration: { name: "Durée du Signal", value: 1.0, unit: "s", step: 0.1, min: 0.1, max: 10 },
+                    sampling_rate: { name: "Taux d'Échantillonnage", value: 1000, unit: "Hz", step: 100, min: 100, max: 5000 },
+                    showAttenuation: { name: "Afficher l'Atténuation", value: "Oui", options: ["Oui", "Non"] }
+                }),
+                endPoint: "/Cost231/fading"
+            }
+        });
+
+        await prisma.courses.create({
+            data: {
+                title: "Modèle COST 231",
+                description: "Découvrez le modèle de propagation COST 231 utilisé pour la prédiction du signal en environnements urbain, suburbain et rural.",
+                icon: "RadioTower",
+                chapters: {
+                    create: [
+                        {
+                            name: "Introduction COST 231",
+                            icon: "BookOpen",
+                            body: `
+## Introduction au Modèle COST 231
+
+Le modèle COST 231, également connu sous le nom d'extension Hata pour PCS, est un modèle de propagation radio conçu pour prédire l'atténuation des signaux dans les bandes de fréquences de 800 MHz à 2000 MHz. Développé comme une amélioration du modèle Hata, il est particulièrement adapté aux réseaux cellulaires 2G, 3G et 4G, couvrant les environnements urbains, suburbains et ruraux.
+
+### Historique et Contexte
+Issu du projet européen COST 231 (1986-1996), ce modèle a été créé pour répondre aux besoins croissants de précision dans la planification des réseaux mobiles, notamment dans les zones urbaines avec des bâtiments élevés. Il s'appuie sur les travaux d'Okumura et Hata, adaptés pour les fréquences plus élevées utilisées dans les systèmes cellulaires modernes de l'époque.
+
+### Applications en Télécommunications
+Le modèle COST 231 est largement utilisé pour :
+- **Estimer la couverture réseau** : Prédire la portée des signaux pour une planification efficace.
+- **Optimiser le placement des antennes** : Assurer une couverture maximale avec un minimum d'interférences.
+- **Améliorer la qualité du service** : Ajuster les paramètres pour répondre aux besoins des utilisateurs dans divers environnements.
+                    `,
+                            quizes: {
+                                create: [
+                                    {
+                                        question: "Quel est le principal objectif du modèle COST 231 ?",
+                                        options: [
+                                            "Prédire l'atténuation du signal en environnements variés",
+                                            "Augmenter la vitesse des réseaux 5G",
+                                            "Optimiser la consommation d'énergie des antennes",
+                                            "Améliorer la sécurité des communications mobiles"
+                                        ],
+                                        correctAnswerIndex: 0,
+                                        explaination: "Le modèle COST 231 est conçu pour prédire l'atténuation du signal dans des environnements urbains, suburbains et ruraux afin d'améliorer la planification des réseaux cellulaires."
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            name: "Paramètres du Modèle",
+                            icon: "Sliders",
+                            body: `
+## Paramètres du Modèle
+
+Le modèle COST 231 repose sur une équation empirique qui calcule l'atténuation des ondes radio en fonction de plusieurs paramètres clés, adaptée aux environnements urbains, suburbains et ruraux.
+
+### Formule Générale (Urbain)
+L'atténuation $$ L $$ en décibels (dB) pour les zones urbaines est donnée par :
+
+$$
+L = 46.3 + 33.9 log₁₀(f) - 13.82 log₁₀(h_BS) - a(h_MS) + [44.9 - 6.55 log₁₀(h_BS)] log₁₀(d) + C_m
+$$
+
+où :
+- $$ f $$ : fréquence (MHz, entre 800 et 2000)
+- $$ h_BS $$ : hauteur de l’antenne de la station de base (m)
+- $$ h_MS $$ : hauteur du récepteur mobile (m)
+- $$ d $$ : distance entre l'émetteur et le récepteur (km)
+- $$ a(h_MS) $$ : facteur de correction pour la hauteur du mobile
+- $$ C_m $$ : correction environnementale (0 dB pour villes moyennes/suburbain, 3 dB pour métropoles)
+
+#### Correction $$ a(h_MS) $$ pour Urbain
+Pour $$ f > 200 $$ MHz :
+$$
+a(h_MS) = 3.2 [log₁₀(11.75 h_MS)]² - 4.97
+$$
+
+#### Ajustements pour Suburban et Rural
+- **Suburbain** : $$ L_{suburban} = L_{urban} - 2 [log₁₀(f/28)]² - 5.4 $$
+- **Rural** : $$ L_{rural} = L_{urban} - 4.78 [log₁₀(f)]² + 18.33 log₁₀(f) - 40.94 $$
+
+### Facteurs d’Influence
+- **Urbain** : Forte atténuation due à la densité des bâtiments et aux réflexions multiples.
+- **Suburbain** : Atténuation modérée avec moins d’obstacles, mais toujours influencée par des structures.
+- **Rural** : Atténuation minimale grâce à des espaces ouverts et peu d’obstacles élevés.
+                    `,
+                            quizes: {
+                                create: [
+                                    {
+                                        question: "Dans quelle plage de fréquences le modèle COST 231 est-il applicable ?",
+                                        options: [
+                                            "300 MHz - 800 MHz",
+                                            "800 MHz - 2000 MHz",
+                                            "2 GHz - 6 GHz",
+                                            "Au-delà de 6 GHz"
+                                        ],
+                                        correctAnswerIndex: 1,
+                                        explaination: "Le modèle COST 231 est conçu pour fonctionner dans la plage de fréquences de 800 MHz à 2000 MHz, ce qui couvre les technologies mobiles comme la 2G, 3G et début 4G."
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            name: "Applications Pratiques",
+                            icon: "BarChart",
+                            body: `
+## Applications Pratiques
+
+Le modèle COST 231 joue un rôle clé dans la conception et l’optimisation des réseaux mobiles, offrant des outils pour améliorer la couverture et la performance.
+
+### Optimisation des Réseaux
+- **Placement des Antennes** : Détermine les emplacements optimaux pour maximiser la couverture et réduire les zones mortes.
+- **Réglage de la Puissance** : Ajuste la puissance des stations de base pour minimiser les interférences tout en maintenant la qualité du signal.
+
+### Simulation de Couverture
+Les ingénieurs utilisent des logiciels intégrant le modèle COST 231 pour simuler la propagation des ondes radio, visualisant ainsi la couverture réseau avant le déploiement physique des infrastructures.
+
+### Pertinence pour les Réseaux Modernes
+Bien que conçu pour les réseaux 2G et 3G, le modèle reste pertinent pour :
+- **4G** : Utilisé dans les bandes basses fréquences (ex. 800 MHz, 1800 MHz).
+- **5G Sub-6 GHz** : Applicable après calibration pour les fréquences inférieures à 6 GHz.
+- **Limites** : Moins adapté aux ondes millimétriques (mmWave) de la 5G, où d'autres modèles sont préférés en raison des caractéristiques de propagation différentes.
+                    `,
+                            quizes: {
+                                create: [
+                                    {
+                                        question: "Quel paramètre influence le plus la propagation des ondes dans un environnement urbain ?",
+                                        options: [
+                                            "La hauteur des antennes",
+                                            "La densité des bâtiments",
+                                            "La température de l'air",
+                                            "L'humidité de l'atmosphère"
+                                        ],
+                                        correctAnswerIndex: 1,
+                                        explaination: "Dans un environnement urbain, la densité et la hauteur des bâtiments influencent fortement la propagation des ondes radio en créant des réflexions et des atténuations."
+                                    },
+                                    {
+                                        question: "Quelle est l’unité de la distance \\$$ d \\$$ dans l’équation de COST 231 ?",
+                                        options: [
+                                            "Kilomètres (km)",
+                                            "Mètres (m)",
+                                            "Décibels (dB)",
+                                            "Gigahertz (GHz)"
+                                        ],
+                                        correctAnswerIndex: 0,
+                                        explaination: "Dans l'équation de COST 231, la distance \\$$ d \\$$ entre l'émetteur et le récepteur est exprimée en kilomètres (km)."
+                                    },
+                                    {
+                                        question: "Pourquoi le modèle COST 231 est-il encore pertinent aujourd’hui ?",
+                                        options: [
+                                            "Il est utilisé pour les prévisions de signal dans les réseaux 5G millimétriques",
+                                            "Il est encore appliqué dans certaines bandes de fréquences pour la 4G et l’optimisation des réseaux",
+                                            "Il est utilisé uniquement pour les réseaux 2G",
+                                            "Il a été remplacé par des modèles plus modernes et n'est plus utilisé"
+                                        ],
+                                        correctAnswerIndex: 1,
+                                        explaination: "Bien que le modèle COST 231 ait été conçu pour les réseaux mobiles 2G et 3G, il est encore utilisé dans certaines bandes de fréquences pour la 4G et pour l’optimisation des réseaux."
+                                    }
+                                ]
+                            },
+                            simulationId: simulationCost.simulationId
+                        }
+                    ]
+                }
+            }
+        });
 
 
         return NextResponse.json({

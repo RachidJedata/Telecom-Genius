@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Query,HTTPException # type: ignore
 from fastapi.middleware.cors import CORSMiddleware  # type: ignore # <-- Add this import
 import numpy as np # type: ignore
+from scipy.stats import gamma
 import math
 
 
@@ -1030,6 +1031,194 @@ def run_longley_rice_loss_simulation(
         "signal": losses,
         "x_label":'Distance en km',
         "y_label":'Perte en db',
+        "parameters": parameters
+    }
+
+
+@app.get("/ofdm")
+async def ofdm_on_sine(
+    fftlen: int = 64,
+    gilen: int = 16,
+    data_sc: int = 48,
+    esn0: int = 1,
+    showAtten: str = "Non",  # "Oui" or "Non"
+):
+    br: int = 80000000
+    ns: int = 4
+    fs = br  # Sampling rate = bandwidth
+    duration = ns * fftlen / fs
+    t = generate_time_array(duration=duration, Te=1/fs)
+
+    # Generate sinusoid
+    freq = 1e6
+    sine_wave = np.sin(2 * np.pi * freq * t)
+
+    # Prepare OFDM symbols
+    num_symbols = int(np.floor(len(t) / fftlen))
+    sine_wave = sine_wave[:num_symbols * fftlen]
+    reshaped = sine_wave.reshape((num_symbols, fftlen)).T
+
+    # Generate complex OFDM signal
+    ofdm_time = np.fft.ifft(reshaped, axis=0)
+    with_cp = np.vstack([ofdm_time[-gilen:, :], ofdm_time])
+    complex_signal = with_cp.flatten()
+
+    # Apply fading if enabled
+    if showAtten.lower() == "oui":
+        num_paths = 3  # Example value, adjust as needed
+        faded_complex, gain = apply_fading(complex_signal, fading_model=1, num_paths=num_paths)
+        mean_chh_sq = np.mean(np.abs(gain)**2)
+    else:
+        faded_complex = complex_signal
+        mean_chh_sq = 1.0  # No fading → unity gain
+
+    # Calculate noise standard deviation using data_sc and esn0
+    noise_std = np.sqrt(
+        0.5 * mean_chh_sq * 
+        (fftlen / data_sc) * 
+        (fftlen / (fftlen + gilen)) * 
+        10 ** (-esn0 / 10)
+    )
+
+    # Add noise to real part
+    real_signal = np.real(faded_complex)
+    noise = np.random.normal(0, noise_std, len(real_signal))
+    final_signal = real_signal + noise
+
+    # Prepare output
+    total_samples = len(final_signal)
+    final_time = np.arange(total_samples) / fs
+
+    return {
+        "time": final_time.tolist(),
+        "signal": final_signal.tolist(),
+        "parameters": {
+            "sample_rate": fs,
+            "fft_length": fftlen,
+            "guard_interval": gilen,
+            "num_symbols": ns,
+            "data_subcarriers": data_sc,
+            "esn0_dB": esn0,
+            "noise_std": noise_std,
+            "show_attenuation": showAtten
+        }
+    }
+
+
+@app.get("/rician")
+async def run_rician_model(
+    k_db: int = 10,
+    signal_power: int = 1,
+    show_amplitude: str = "Oui"  # "Oui" or "Non"
+):
+    # Generate sinusoidal waveform
+    t = np.linspace(1, 100, 750)
+    x_volts = 20 * np.sin(t / (2 * np.pi))
+    x_watts = x_volts ** 2
+    x_db = 10 * np.log10(x_watts)
+
+    # Generate Rician channel coefficients
+    N = 1000  # Number of samples
+    K = 10 ** (k_db / 10)  # K factor in linear scale
+    mu = math.sqrt(K / (2 * (K + 1)))  # Mean
+    sigma = math.sqrt(1 / (2 * (K + 1)))  # Standard deviation
+
+    h = (sigma * np.random.randn(N) + mu) + 1j * (sigma * np.random.randn(N) + mu)
+    h_mag = np.abs(h)
+    h_mag_dB = 10 * np.log10(h_mag)  # Channel response in dB
+
+    # Convolve the Rician channel response with the sinusoidal waveform
+    Y4 = np.convolve(h, x_volts)
+
+    # Prepare data for JSON
+    if show_amplitude == "Oui":
+        signal = Y4.tolist()  # Convolved signal
+    else:
+        signal = x_db.tolist()  # Original signal in dB
+
+    parameters = {
+        "k_db": k_db,
+        "signal_power": signal_power,
+        "show_amplitude": show_amplitude,
+        "N": N,
+        "K": K,
+        "mu": mu,
+        "sigma": sigma
+    }
+
+    # Return JSON object
+    return {
+        "time": t.tolist(),
+        "signal": signal,
+        "parameters": parameters
+    }
+
+
+
+@app.get("/nakagami-fading-signal")
+def simulate_nakagami_fading_signal(
+    frequency_hz: float = 1000.0,      # Frequency of the sine wave in Hz
+    signal_power: float = 1.0,         # Power of the input sine wave
+    m: float = 1.0,                    # Nakagami m parameter
+    omega: float = 1.0,                # Nakagami omega parameter (average fading power)
+    duration: float = 1.0,             # Duration in seconds    
+    sampling_interval: float = 0.001,  # Sampling interval in seconds
+    show_amplitude: str = "Oui"        # Flag to return amplitude Oui ou Non
+):
+    """
+    Simulate a sinusoidal signal with Nakagami fading applied, returning time, signal, and parameters.
+
+    Args:
+        frequency_hz (float): Frequency of the sine wave in Hz.
+        signal_power (float): Average power of the input sine wave.
+        m (float): Nakagami shape parameter (m > 0).
+        omega (float): Nakagami spread parameter (average power of fading, omega > 0).
+        duration (float): Duration of the simulation in seconds.
+        sampling_interval (float): Time step between samples in seconds.
+        show_amplitude (bool): If True, signal is the faded amplitude; if False, faded power.
+
+    Returns:
+        dict: JSON containing 'time', 'signal', and 'parameters'.
+    """
+    # Generate time array    
+    t = generate_time_array(duration=duration,Te=sampling_interval)
+    
+    # Calculate amplitude from signal power (for sine wave, power = A^2 / 2)
+    amplitude = np.sqrt(2 * signal_power)
+    
+    # Generate sinusoidal signal
+    s = amplitude * np.sin(2 * np.pi * frequency_hz * t)
+    
+    # Generate Nakagami fading envelope
+    # h^2 follows Gamma(m, omega/m), so h = sqrt(Gamma(m, omega/m))
+    Y = gamma.rvs(a=m, scale=omega / m, size=len(t))
+    h = np.sqrt(Y)
+    
+    # Apply fading to the signal
+    faded_amplitude = h * s
+    
+    # Determine signal output based on show_amplitude
+    if show_amplitude == "Oui":
+        signal = faded_amplitude
+    else:
+        signal = faded_amplitude ** 2  # Power = amplitude squared
+    
+    # Package parameters for response
+    parameters = {
+        "frequency_hz": frequency_hz,
+        "signal_power": signal_power,
+        "amplitude": float(amplitude),
+        "m": m,
+        "omega": omega,
+        "duration": duration,
+        "sampling_interval": sampling_interval,
+        "show_amplitude": show_amplitude
+    }
+    
+    # Return JSON response
+    return {
+        "time": t.tolist(),
+        "signal": signal.tolist(),
         "parameters": parameters
     }
 
