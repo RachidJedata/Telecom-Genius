@@ -2,11 +2,11 @@
 import { ThemeToggle } from "./theme-toggle"
 import { Mail, Wifi } from "lucide-react"
 import Link from "next/link"
-import { Button } from "./button"
-import { Input } from "./input"
+import { Button } from "./UI/button"
+import { Input } from "./UI/input"
 import { Separator } from "./separator"
 import Image from "next/image"
-import IconDisplay from "./iconDisplay"
+import IconDisplay from "./UI/iconDisplay"
 
 export function Footer() {
     const currentYear = new Date().getFullYear()

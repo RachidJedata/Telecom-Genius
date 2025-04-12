@@ -1,9 +1,9 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../UI/card"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import IconDisplay from "./iconDisplay"
+import IconDisplay from "../UI/iconDisplay"
 import { Courses } from "@prisma/client"
 
 export function ChapterGrid({ courses }: { courses: Courses[] }) {

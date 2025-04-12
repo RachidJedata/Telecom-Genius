@@ -5,10 +5,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "./api/auth/[...nextauth]/route";
-import SignOutButton from "./ui/components/signOut";
-import { ThemeProvider } from "./ui/components/theme-provider";
-import Footer from "./ui/components/footer";
-import { AiChatButton } from "./ui/components/ai-chat-button";
+import SignOutButton from "./components/signOut";
+import { ThemeProvider } from "./components/theme-provider";
+import Footer from "./components/footer";
+import { AiChatButton } from "./components/ai-chat-button";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

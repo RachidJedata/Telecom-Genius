@@ -2,13 +2,13 @@
 
 import { useEffect, useRef, useState } from "react"
 import { PlayCircle, RefreshCw } from "lucide-react"
-import { Label } from "./label"
-import { Slider } from "./slider"
-import { Button } from "./button"
-import { Card } from "./card"
+import { Label } from "./UI/label"
+import { Slider } from "./UI/slider"
+import { Button } from "./UI/button"
+import { Card } from "./UI/card"
 import * as d3 from 'd3';
 import { Simulation } from "@prisma/client"
-import { Input } from "./input"
+import { Input } from "./UI/input"
 
 interface SignalData {
   parameters: Parameters;

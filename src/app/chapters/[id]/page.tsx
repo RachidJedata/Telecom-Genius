@@ -1,13 +1,13 @@
 import { getCourse, getQuiz, getSimulation } from "@/app/lib/action"
-import { Button } from "@/app/ui/components/button"
-import { ChapterNavigation } from "@/app/ui/components/chapter-navigation"
-import { ChapterQuiz } from "@/app/ui/components/chapter-quiz"
-import MarkdownContent from "@/app/ui/components/markDown"
-import { SimulationControls } from "@/app/ui/components/simulation-controls"
+import { Button } from "@/app/components/UI/button"
+import { ChapterNavigation } from "@/app/components/chapters/chapter-navigation"
+import MarkdownContent from "@/app/components/markDown"
+import { SimulationControls } from "@/app/components/simulation-controls"
 import { Chapters } from "@prisma/client"
 import { ChevronLeft } from "lucide-react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import { ChapterQuiz } from "@/app/components/chapters/chapter-quiz"
 
 
 export default async function ChapterPage({

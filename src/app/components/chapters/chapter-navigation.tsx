@@ -1,10 +1,10 @@
 "use client"
 
 import Link from "next/link"
-import { Button } from "./button"
+import { Button } from "../UI/button"
 import { cn } from "@/app/lib/utils"
 import { Chapters } from "@prisma/client"
-import IconDisplay from "./iconDisplay"
+import IconDisplay from "../UI/iconDisplay"
 
 export function ChapterNavigation({ chapters, currentChapterId }: { chapters: Chapters[], currentChapterId: string }) {
   return (

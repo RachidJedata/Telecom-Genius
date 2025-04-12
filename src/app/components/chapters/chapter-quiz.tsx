@@ -1,22 +1,16 @@
 "use client"
 
 import { useState } from "react"
-import { RadioGroup, RadioGroupItem } from "./radio-group"
+import { RadioGroup, RadioGroupItem } from "@/app/components/UI/radio-group"
 import { CheckCircle2, XCircle, Award, BookOpen } from "lucide-react"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "./dialog"
-import { Progress } from "./progress"
-import { Button } from "./button"
-import { Label } from "./label"
-import { Card } from "./card"
+import { Progress } from "@/app/components/UI/progress"
 import { Quizes } from "@prisma/client"
-import MarkdownContent from "./markDown"
+import { Button } from "../UI/button"
+import MarkdownContent from "../markDown"
+import { Label } from "../UI/label"
+import { Card } from "../UI/card"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../UI/dialog"
+
 
 export function ChapterQuiz({ quiz }: { quiz: Quizes[] }) {
   const [isOpen, setIsOpen] = useState(false)

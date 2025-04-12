@@ -516,7 +516,7 @@ Où $$ * $$ désigne la convolution. Cette opération combine l’effet du canal
                     m: { name: "Paramètre de forme m", value: 1.0, unit: "", step: 0.1, min: 0.5, max: 10 },
                     omega: { name: "Paramètre d'étalement Ω", value: 1.0, unit: "", step: 0.1, min: 0.1, max: 10 },
                     duration: { name: "Durée", value: 1.0, unit: "s", step: 0.1, min: 0.1, max: 10 },
-                    sampling_interval: { name: "Intervalle d'échantillonnage", value: 1, unit: "ms", step: 1, min: 1, max: 100, convertedToMili: true },                    
+                    sampling_interval: { name: "Intervalle d'échantillonnage", value: 1, unit: "ms", step: 1, min: 1, max: 100, convertedToMili: true },
                 }),
                 endPoint: "/nakagami-fading-signal"
             }
@@ -691,10 +691,10 @@ Sa capacité à modéliser diverses conditions de fading en fait un outil préci
                 name: "Paramètres du Canal en Espace Libre",
                 description: "Simule la perte de propagation en espace libre (FSPL) pour estimer l'atténuation du signal.",
                 params: JSON.stringify({
-                    d_min: { name: "Distance minimale", value: 1, unit: "m", step: 1, min: 1, max: 1000 },
-                    d_max: { name: "Distance maximale", value: 1000, unit: "m", step: 10, min: 1, max: 10000 },
-                    num_points: { name: "Nombre de points", value: 500, step: 10, min: 10, max: 2000 },
-                    frequency: { name: "Fréquence", value: 2400, unit: "MHz", step: 100, min: 100, max: 6000 },
+                    carrier_frequency_MHz: { name: "Fréquence du canal", value: 2.4, step: 0.5, min: 1, max: 6 },
+                    baseband_frequency_Hz: { name: "Fréquence du signal", value: 1000, unit: "Hz", step: 50, min: 100, max: 100000 },
+                    distance_m: { name: "Distance entre Tx et Rx", value: 1, unit: "Km", step: 50, min: 1, max: 10000 },
+                    amplitudeIfLossAffected: { name: "Amplitude affectée (si atténuation appliquée)", value: 1, unit: "×10⁵ V", step: 1, min: 1, max: 20 },
                     showLoss: { name: "Afficher la Perte", value: "Oui", options: ["Oui", "Non"] }
                 }),
                 endPoint: "/fspl"
@@ -1127,13 +1127,14 @@ En LOS, la perte est similaire à celle de l’espace libre, tandis qu’en NLOS
                 name: "Simulation du Modèle Okumura-Hata",
                 description: "Simule l'atténuation du signal radio selon le modèle Okumura-Hata dans divers environnements.",
                 params: JSON.stringify({
-                    f: { name: "Fréquence", value: 900, unit: "MHz", step: 50, min: 150, max: 1500 },
+                    f: { name: "Fréquence de canal", value: 900, unit: "MHz", step: 50, min: 150, max: 1500 },
+                    signal_frequency: { name: "Fréquence du signal", value: 900, unit: "Hz", step: 100, min: 0, max: 5000 },
+                    amplitude: { name: "Amplitude du signal", value: 1, unit: "V", step: 50, min: 1, max: 1000 },
                     h_b: { name: "Hauteur Station de Base", value: 30, unit: "m", step: 5, min: 30, max: 200 },
                     h_m: { name: "Hauteur Mobile", value: 1.5, unit: "m", step: 0.5, min: 1, max: 10 },
-                    d_min: { name: "Distance minimale", value: 1, unit: "m", step: 1, min: 1, max: 1000 },
-                    d_max: { name: "Distance maximale", value: 1000, unit: "m", step: 10, min: 1, max: 10000 },
+                    d: { name: "Distance entre Tx et Rx", value: 1, unit: "km", step: 1, min: 1, max: 20 },
                     environment: { name: "Environnement", value: "urban", options: ["urban", "suburban", "rural"] },
-                    city_size: { name: "Taille de la Ville", value: "Grande", options: ["Grande", "Moyenne/Petite"] }
+                    city_size: { name: "Taille de la Ville", value: "Moyenne et Petite", options: ["Grande", "Moyenne et Petite"] }
                 }),
                 endPoint: "/hata"
             }
@@ -1303,8 +1304,7 @@ Il reste pertinent pour les fréquences basses des réseaux modernes, bien que l
                     frequency_MHz: { name: "Fréquence", value: 900, unit: "MHz", step: 100, min: 100, max: 3000 },
                     ht: { name: "Hauteur Antenne Émettrice", value: 30, unit: "m", step: 5, min: 10, max: 100 },
                     hr: { name: "Hauteur Antenne Réceptrice", value: 1.5, unit: "m", step: 0.5, min: 1, max: 10 },
-                    d_min: { name: "Distance Minimale", value: 1, unit: "m", step: 1, min: 1, max: 10000 },
-                    d_max: { name: "Distance Maximale", value: 1000, unit: "m", step: 10, min: 1, max: 10000 }
+                    d: { name: "Distance", value: 100, unit: "m", step: 1, min: 1, max: 10000 },
                 }),
                 endPoint: "/two-ray-ground-with-signal"
             }

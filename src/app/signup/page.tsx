@@ -1,14 +1,14 @@
 'use client'
 
 import Link from "next/link"
-import { Button } from "../ui/components/button"
-import { Input } from "../ui/components/input"
+import { Button } from "../components/UI/button"
+import { Input } from "../components/UI/input"
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveUser } from "../lib/action";
 import { signIn } from "next-auth/react";
-import GithubButton from "../ui/components/signGithub";
-import GoogleButton from "../ui/components/signGoogle";
+import GithubButton from "../components/signGithub";
+import GoogleButton from "../components/signGoogle";
 
 export default function SignUp() {
   const [email, setEmail] = useState("");
@@ -54,7 +54,7 @@ export default function SignUp() {
   return (
     <div className="min-h-screen flex items-center  dark:bg-gray-500 -mt-7 justify-center bg-accent">
       <div className="w-full max-w-md">
-        <div className="bg-white  rounded-2xl  dark:bg-gray-900  shadow-lg px-8 pt-5 space-y-6">       
+        <div className="bg-white  rounded-2xl  dark:bg-gray-900  shadow-lg px-8 pt-5 space-y-6">
           <div className="space-y-2 text-center">
             <h1 className="text-2xl font-normal text-primary">Sign up</h1>
             <p className="text-base dark:text-primary/80 text-semiGray">to continue to the platform</p>

@@ -2,9 +2,9 @@
 
 import { useState } from "react"
 import { Bot } from "lucide-react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/app/ui/components/dialog"
-import { Input } from "@/app/ui/components/input"
-import { Button } from "./button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/app/components/UI/dialog"
+import { Input } from "@/app/components/UI/input"
+import { Button } from "./UI/button"
 import { cn } from "@/app/lib/utils"
 import MarkdownContent from "./markDown"
 
@@ -90,7 +90,7 @@ export function AiChatButton() {
                     message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted",
                   )}
                 >
-                  <MarkdownContent                    
+                  <MarkdownContent
                     style={{ backgroundColor: "inherit" }}
                     content={message.content.trim()} />
                 </div>

@@ -1,6 +1,6 @@
 import { getCourses } from "./lib/action";
-import { ChapterGrid } from "./ui/components/chapter-grid";
-import HomeLink from "./ui/components/home/link";
+import { ChapterGrid } from "./components/chapters/chapter-grid";
+import HomeLink from "./components/home/link";
 
 export default async function Home() {
   const courses = await getCourses(4);

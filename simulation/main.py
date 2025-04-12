@@ -136,6 +136,11 @@ def db_to_watts(db: float) -> float:
     """Convertir Decebel (dBm) to Watts."""
     return 10 ** (db / 10) 
 
+def db_to_amplitude(db: float) -> float:
+    """Convertir Decebel (dBm) to Amplitude."""
+    return 10 ** (db / 20) 
+
+
 def calculate_cost231(f: float, h_bs: float, h_ms: float, d: float, environment: str) -> float:
     """
     Computes the path loss (L) using the COST231-Hata model.
@@ -457,47 +462,46 @@ def simulate_coverage(data: SimulationRequest):
 
 
 
+
+
 def fspl(distance_m, frequency_hz):
     """Calculate Free Space Path Loss in dB."""
-    # Speed of light (m/s)
-    c = 3e8
+    c = 3e8  # Speed of light (m/s)   
+    distance_m *= 1e3
+    frequency_hz *= 1e9 
     return 20 * np.log10(distance_m) + 20 * np.log10(frequency_hz) + 20 * np.log10(4 * np.pi / c)
+
 
 @app.get('/fspl')
 def get_fspl(
-    frequency: float = 2400,          # MHz
-    d_min: float = 1,                 # in km
-    d_max: float = 10000,             # in m (adjusted default to 10 km)
-    num_points: int = 500,
-    showLoss: str = "Oui"
-):
-    # Convert units
-    frequency_hz = frequency * 1e6       # Convert MHz to Hz
-    d_min_m = d_min * 1000                   # Convert km to m
-    d_max_m = d_max * 1000                   # Convert km to m
-
-    # Generate distance array (in meters)
-    distances = np.linspace(d_min_m, d_max_m, num_points)
-
-    # Define duration as time for 10 cycles of the signal
-    duration = 10 / frequency_hz             # Time for 10 periods (seconds)
-    t = np.linspace(0, duration, num_points) # Time array
-
-    # Generate base signal (sine wave)
-    signal = np.sin(2 * np.pi * frequency_hz * t)
-
-    # Apply FSPL if requested
-    if showLoss == "Oui":
-        fspl_db = fspl(distances, frequency_hz)       # FSPL in dB
-        attenuation = 10 ** (-fspl_db / 20)           # Amplitude attenuation factor
-        signal = signal * attenuation                 # Apply attenuation element-wise
+    carrier_frequency_GHz: float = 2.4,  # Carrier frequency in GHz for FSPL * 10^9
+    baseband_frequency_Hz: float = 1000,  # Baseband signal frequency in Hz
+    distance_m: float = 1,             # Distance in meters (e.g., 1km) en km           
+    amplitudeIfLossAffected:int=1,
+    showLoss:str = "Oui",
+): 
+    # Define duration and sampling period
+    Te = 1 / 250e3  # Sampling period (s), 250 kHz sampling rate
+    duration = 10e-3  # Duration in seconds (10 ms)
+    t = generate_time_array(duration=duration, Te=Te)
     
-    # Parameters dictionary
-    parameters = {
-        "frequency_MHz": frequency,
-        "distance_range_m": [d_min_m, d_max],
-        "num_points": num_points,
-        "showLoss": showLoss
+    # Generate baseband signal (sine wave at baseband frequency)
+    signal = np.sin(2 * np.pi * baseband_frequency_Hz * t)
+    
+    if showLoss == "Oui":
+        # Calculate FSPL for the carrier frequency
+        fspl_db = fspl(distance_m=distance_m, frequency_hz=carrier_frequency_GHz)    
+        # Convert FSPL (loss) to attenuation factor (amplitude ratio)
+        attenuation = db_to_amplitude(-fspl_db)            
+        # Apply attenuation to the signal
+        signal *= attenuation * 1e5 * amplitudeIfLossAffected
+    
+    # Parameters dictionary for output
+    parameters = {        
+        "baseband_frequency_Hz": baseband_frequency_Hz,
+        "distance_m": distance_m,       
+        "sampling_rate_Hz": 1 / Te,
+        "duration_s": duration
     }
     
     return {
@@ -505,7 +509,6 @@ def get_fspl(
         "signal": signal.tolist(),
         "parameters": parameters
     }
-
 
 
 
@@ -623,6 +626,22 @@ def run_itu_r_p1411_simulation(
     return response
 
 
+def generate_propagated_signal_with_delay(distance_km, attenuation_factor, frequency_hz=1000):
+    """
+    Génère un signal sinusoïdal propagé avec atténuation et délai.
+    """
+    # Use generate_time_array instead of linspace
+    duration = .0  # 1 second
+    Te = 0.001  # 1 ms sampling
+    t = generate_time_array(duration, Te)
+    
+    # Fixed propagation delay calculation (convert km to meters)
+    time_delay = (distance_km * 1000) / 299792458  # Convert km to meters for correct SI units
+    
+    signal = np.sin(2 * np.pi * frequency_hz * (t - time_delay)) * attenuation_factor
+    return t, signal
+
+
 
 def hata_loss(f, h_b, h_m, d, environment='urban', city_size='Grande'):
     """
@@ -633,15 +652,17 @@ def hata_loss(f, h_b, h_m, d, environment='urban', city_size='Grande'):
     :param h_m: Hauteur de l'antenne mobile en mètres (1 ≤ h_m ≤ 10)
     :param d: Distance entre la station de base et le mobile en km (1 ≤ d ≤ 20)
     :param environment: Type d'environnement ('urban', 'suburban', 'rural')
-    :param city_size: Taille de la ville ('Grande', 'Moyenne/Petite')  # 🔧 Restored parameter
+    :param city_size: Taille de la ville ('Grande', 'Moyenne/Petite')
     :return: Atténuation en dB
     """
     if not (150 <= f <= 1500 and 30 <= h_b <= 200 and 1 <= h_m <= 10 and 1 <= d <= 20):
         raise ValueError("Les paramètres sont hors des plages valides.")
-    
+
+    f *= 10e6       
+    d *= 1000 
     # Correction selon la hauteur de l'antenne mobile et la taille de la ville
     if city_size == 'Grande':  
-        if f >= 400:
+        if f >= 400*10e6:
             a_hm = 3.2 * (np.log10(11.75 * h_m))**2 - 4.97
         else:
             a_hm = (1.1 * np.log10(f) - 0.7) * h_m - (1.56 * np.log10(f) - 0.8)
@@ -658,67 +679,41 @@ def hata_loss(f, h_b, h_m, d, environment='urban', city_size='Grande'):
     
     return L
 
-def generate_propagated_signal_with_delay(distance_km, attenuation_factor, frequency_hz=1000):
-    """
-    Génère un signal sinusoïdal propagé avec atténuation et délai.
-    """
-    # Use generate_time_array instead of linspace
-    duration = 1.0  # 1 second
-    Te = 0.001  # 1 ms sampling
-    t = generate_time_array(duration, Te)
-    
-    # Fixed propagation delay calculation (convert km to meters)
-    time_delay = (distance_km * 1000) / 299792458  # Convert km to meters for correct SI units
-    
-    signal = np.sin(2 * np.pi * frequency_hz * (t - time_delay)) * attenuation_factor
-    return t, signal
 
-@app.get("/hata")
-def hata_simulation(
+@app.get('/hata')
+def generate_hata_signal(
     f: float = 900,
+    signal_frequency: float = 900.0,
     h_b: float = 50,
     h_m: float = 1.5,
-    d_min: float = 1, 
-    d_max: float = 20, 
-    city_size: str = "Grande",
-    environment: str = "urban"
+    d: float = 1,
+    environment: str = 'urban',
+    city_size: str = 'petite/meduim',
+    duration:float = 10e-3,
+    amplitude:float=1,
+    Te: float = 0.00001
 ):
-    # Generate distances array
-    distances = np.linspace(d_min, d_max, 100)
-    
-    # Calculate losses and attenuation factors
-    losses = np.array([hata_loss(f, h_b, h_m, d, environment, city_size) for d in distances])
-    attenuation_factors = 10 ** (-losses / 20)
-    
-    # Generate composite signal
-    composite_signal = []
-    time_axis = None
-    
-    for d, att in zip(distances, attenuation_factors):
-        t, signal = generate_propagated_signal_with_delay(d, att)
-        if time_axis is None:
-            time_axis = t  # Store first time array
-        composite_signal.extend(signal.tolist())
-        
+    loss = hata_loss(f, h_b, h_m, d, environment, city_size)
+    attenuation_factor = db_to_amplitude(-loss)    
+    t = generate_time_array(duration=duration,Te=Te)
+    signal =10e20*amplitude* attenuation_factor * np.sin(2 * np.pi * signal_frequency * t)              
     parameters = {
         "frequency_MHz": f,
-        "base_height": h_b,
-        "mobile_height": h_m,
-        "distance_range_km": [float(d_min), float(d_max)],
+        "base_height_m": h_b,
+        "mobile_height_m": h_m,
+        "distance_km": d,
         "environment": environment,
         "city_size": city_size,
-        "time_parameters": {
-            "duration": 1.0,
-            "sampling_interval": 0.001
-        }
+        "signal_frequency_Hz": signal_frequency,
+        "duration_s": duration,
+        "sampling_interval_s": Te,
+        
     }
-    
     return {
-        "time": np.tile(time_axis, len(distances)).tolist(),  
-        "signal": composite_signal,
+        "time": t.tolist(),
+        "signal": signal.tolist(),
         "parameters": parameters
     }
-
 
 
 # Modèle Two-Ray Ground
@@ -735,6 +730,44 @@ def two_ray_ground_loss(d, ht, hr, frequency_MHz):
     L = np.where(d <= d_c, fspl, 40 * np.log10(d) - 20 * np.log10(ht * hr))
 
     return L
+
+@app.get("/two-ray-ground-with-signal")
+def run_two_ray_simulation_with_sinus(
+    frequency_MHz: float = 900,       # Carrier frequency for path loss calculation
+    signal_frequency_Hz: float = 1000, # Frequency of generated sine signal
+    ht: float = 30,                    # Transmitter height (m)
+    hr: float = 1.5,                   # Receiver height (m)
+    d: float = 100                     # Distance between antennas (m)
+):
+    # Time and signal generation
+    duration = 1.0      # seconds
+    Te = 0.001          # Sampling period = 1 ms → fs = 1 kHz
+    t = generate_time_array(duration, Te)
+
+    # Generate sine wave signal at baseband frequency
+    signal = np.sin(2 * np.pi * signal_frequency_Hz * t)
+
+    # Calculate attenuation based on two-ray model
+    losses_db = two_ray_ground_loss(d=d, ht=ht, hr=hr, frequency_MHz=frequency_MHz)
+    attenuation = db_to_amplitude(-losses_db)
+    signal *= attenuation*1e20  # Apply attenuation to the signal
+
+    parameters = {
+        "carrier_frequency_MHz": frequency_MHz,
+        "signal_frequency_Hz": signal_frequency_Hz,
+        "transmitter_height_m": ht,
+        "receiver_height_m": hr,
+        "distance_m": d,
+        "attenuation_dB": float(losses_db)
+    }
+
+    return {
+        "time": t.tolist(),
+        "signal": signal.tolist(),
+        "parameters": parameters
+    }
+
+
 
 @app.get("/two-ray-ground")
 def run_two_ray_simulation(
@@ -766,37 +799,6 @@ def run_two_ray_simulation(
     }
 
 
-@app.get("/two-ray-ground-with-signal")
-def run_two_ray_simulation_with_sinus(
-    frequency_MHz: float = 900, 
-    ht: float = 30, 
-    hr: float = 1.5, 
-    d_min: float = 1, 
-    d_max: float = 1000):
-    carrier_freq = frequency_MHz * 1e6
-    # Generate time array once with dummy parameters
-    t, _ = generate_propagated_signal_with_delay(distance_km=0, attenuation_factor=1, frequency_hz=carrier_freq)
-    distances_km = np.linspace(d_min, d_max, 500)  # distances in kilometers
-    losses = two_ray_ground_loss(distances_km, ht, hr, frequency_MHz)
-    attenuation_factors = 10 ** (-losses / 20)
-    composite_signal = np.zeros_like(t)
-    for d_km, att in zip(distances_km, attenuation_factors):
-        # Unpack to get only the signal, using correct arguments
-        _, signal = generate_propagated_signal_with_delay(d_km, att, carrier_freq)
-        composite_signal += signal
-    # Normalize signal, avoiding division by zero
-    max_amplitude = np.max(np.abs(composite_signal))
-    if max_amplitude > 0:
-        composite_signal /= max_amplitude
-    parameters = {
-        "frequency_MHz": frequency_MHz,
-        "transmitter_height": ht,
-        "receiver_height": hr,
-        "distance_range_km": [float(d_min), float(d_max)],
-        "carrier_frequency_hz": carrier_freq,
-        "signal_type": "two_ray_attenuated"
-    }
-    return {"time": t.tolist(), "signal": composite_signal.tolist(), "parameters": parameters}
 
 
 
