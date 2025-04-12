@@ -1,6 +1,6 @@
 # 🚀 telecomGenius: Advanced Telecommunications Simulation Platform
 
-![Project Logo](https://via.placeholder.com/150x50?text=telecomGenius+Logo)  
+![Project Logo](@/app/public/logo.png)  
 *A comprehensive simulation platform for modeling wireless channels and propagation effects.*
 
 ---
