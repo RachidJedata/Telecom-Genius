@@ -474,70 +474,67 @@ export default function Simulation3D() {
             )}
 
             {true && (
-                <Suspense>
+                <Canvas camera={{ position: [0, 50, 200], fov: 45 }} shadows>
+                    <color attach="background" args={[timeOfDay === "night" ? "#0a0f1a" : "#0f172a"]} />
+                    <fog attach="fog" args={[timeOfDay === "night" ? "#0a0f1a" : "#0f172a", 200, 500]} />
 
-                    <Canvas camera={{ position: [0, 50, 200], fov: 45 }} shadows>
-                        <color attach="background" args={[timeOfDay === "night" ? "#0a0f1a" : "#0f172a"]} />
-                        <fog attach="fog" args={[timeOfDay === "night" ? "#0a0f1a" : "#0f172a", 200, 500]} />
+                    {/* Lighting based on time of day and weather */}
+                    {timeOfDay === "day" ? (
+                        <>
+                            <ambientLight intensity={weather === "clear" ? 0.7 : weather === "cloudy" ? 0.5 : 0.3} />
+                            <directionalLight
+                                position={[50, 100, 50]}
+                                intensity={weather === "clear" ? 1.2 : weather === "cloudy" ? 0.7 : 0.4}
+                                castShadow
+                            />
+                        </>
+                    ) : (
+                        <>
+                            <ambientLight intensity={0.2} />
+                            <pointLight position={[0, 100, 0]} intensity={0.5} color="#b4c6ef" />
+                            <spotLight
+                                position={[-50, 50, -30]}
+                                angle={0.3}
+                                penumbra={0.8}
+                                intensity={0.6}
+                                color="#4b6cb7"
+                                castShadow
+                            />
+                        </>
+                    )}
 
-                        {/* Lighting based on time of day and weather */}
-                        {timeOfDay === "day" ? (
-                            <>
-                                <ambientLight intensity={weather === "clear" ? 0.7 : weather === "cloudy" ? 0.5 : 0.3} />
-                                <directionalLight
-                                    position={[50, 100, 50]}
-                                    intensity={weather === "clear" ? 1.2 : weather === "cloudy" ? 0.7 : 0.4}
-                                    castShadow
-                                />
-                            </>
-                        ) : (
-                            <>
-                                <ambientLight intensity={0.2} />
-                                <pointLight position={[0, 100, 0]} intensity={0.5} color="#b4c6ef" />
-                                <spotLight
-                                    position={[-50, 50, -30]}
-                                    angle={0.3}
-                                    penumbra={0.8}
-                                    intensity={0.6}
-                                    color="#4b6cb7"
-                                    castShadow
-                                />
-                            </>
-                        )}
+                    {/* Environment preset based on weather and time */}
+                    <Environment
+                        preset={
+                            timeOfDay === "day" ? (weather === "clear" ? "city" : weather === "cloudy" ? "dawn" : "sunset") : "night"
+                        }
+                    />
 
-                        {/* Environment preset based on weather and time */}
-                        <Environment
-                            preset={
-                                timeOfDay === "day" ? (weather === "clear" ? "city" : weather === "cloudy" ? "dawn" : "sunset") : "night"
-                            }
-                        />
+                    <OrbitControls target={[0, 20, 0]} maxPolarAngle={Math.PI / 2 - 0.1} />
 
-                        <OrbitControls target={[0, 20, 0]} maxPolarAngle={Math.PI / 2 - 0.1} />
-
-                        <PropagationModel
-                            showLabels={showLabels}
-                            showDirectPath={showDirectPath}
-                            showDiffractionPaths={showDiffractionPaths}
-                            showReflectionPaths={showReflectionPaths}
-                            showPathLoss={showPathLoss}
-                            frequency={selectedAntenna.frequency}
-                            baseStationHeight={selectedAntenna.height}
-                            mobileHeight={mobileHeight}
-                            distance={distance * 1000} // Convert km to m
-                            environmentType={environmentType}
-                            pathLoss={pathLoss}
-                            modelType={modelType}
-                            calculateOkumuraHeightGain={calculateOkumuraHeightGainMemoized}
-                            timeOfDay={timeOfDay}
-                            weather={weather}
-                            buildingStyle={buildingStyle}
-                            terrainType={terrainType}
-                            antennas={antennas}
-                            selectedAntennaId={selectedAntennaId}
-                            calculatedDistances={calculatedDistances}
-                        />
-                    </Canvas>
-                </Suspense>
+                    <PropagationModel
+                        showLabels={showLabels}
+                        showDirectPath={showDirectPath}
+                        showDiffractionPaths={showDiffractionPaths}
+                        showReflectionPaths={showReflectionPaths}
+                        showPathLoss={showPathLoss}
+                        frequency={selectedAntenna.frequency}
+                        baseStationHeight={selectedAntenna.height}
+                        mobileHeight={mobileHeight}
+                        distance={distance * 1000} // Convert km to m
+                        environmentType={environmentType}
+                        pathLoss={pathLoss}
+                        modelType={modelType}
+                        calculateOkumuraHeightGain={calculateOkumuraHeightGainMemoized}
+                        timeOfDay={timeOfDay}
+                        weather={weather}
+                        buildingStyle={buildingStyle}
+                        terrainType={terrainType}
+                        antennas={antennas}
+                        selectedAntennaId={selectedAntennaId}
+                        calculatedDistances={calculatedDistances}
+                    />
+                </Canvas>
             )}
         </div>
     )
