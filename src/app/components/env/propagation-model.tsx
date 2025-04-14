@@ -472,30 +472,42 @@ export function PropagationModel({
         const buildingStartX = antennaOffset + (antennaDistance * 1000 - urbanLength) / 2
 
         // At the end of the building creation useEffect
-        const buildingData: Building[] = [];
-        const numberOfColumns = 10; // or any other number based on your layout
+        const buildingData: Building[] = [];        
+
+        // Configuration for grid layout
+        const GRID_CONFIG = {
+            columns: 5, // Number of columns in the grid
+            rowSpacing: 70, // Distance between rows
+            cellVariation: 10, // Max random offset in X/Z per building
+            heightVariation: 0.2 // Percentage variation in building heights
+        };
 
         for (let i = 0; i < numBuildings; i++) {
-            const buildingHeight = buildingHeights[i % buildingHeights.length]
-            const randomZ = Math.random() * 100 - 50; // Random value between -50 and +50            
+            const buildingHeight = buildingHeights[i % buildingHeights.length] *
+                (1 + GRID_CONFIG.heightVariation * (Math.random() - 0.5));
 
-            const gridSpacingX = buildingWidth + buildingSpacing;
-            const gridSpacingZ = 70; // Arbitrary spacing value for rows
-            const col = i % numberOfColumns; // Calculate column index (set numberOfColumns as needed)
-            const row = Math.floor(i / numberOfColumns);
+            // Calculate grid position
+            const col = i % GRID_CONFIG.columns;
+            const row = Math.floor(i / GRID_CONFIG.columns);
 
-            // Add a slight random offset to each grid cell
-            const randomXOffset = Math.random() * 20 - 10;
-            const randomZOffset = Math.random() * 20 - 10;
+            // Calculate base position (centered around 0)
+            const gridWidth = (GRID_CONFIG.columns - 1) * (buildingWidth + buildingSpacing);
+            const baseX = col * (buildingWidth + buildingSpacing) - gridWidth / 2;
+            const baseZ = row * GRID_CONFIG.rowSpacing -
+                (Math.ceil(numBuildings / GRID_CONFIG.columns) * GRID_CONFIG.rowSpacing) / 2;
 
-            const buildingX = buildingStartX + col * gridSpacingX + randomXOffset;
-            const buildingZ = row * gridSpacingZ + randomZOffset;
+            // Add organic variation
+            const randomXOffset = (Math.random() - 0.5) * GRID_CONFIG.cellVariation;
+            const randomZOffset = (Math.random() - 0.5) * GRID_CONFIG.cellVariation;
 
+            // Final position
+            const buildingX = baseX + randomXOffset;
+            const buildingZ = baseZ + randomZOffset;
 
-            // Main building
+            // Create building
             const building = new THREE.Mesh(
                 new THREE.BoxGeometry(buildingWidth, buildingHeight, buildingWidth),
-                buildingMaterial,
+                buildingMaterial
             );
 
             building.position.set(
@@ -503,6 +515,7 @@ export function PropagationModel({
                 buildingHeight / 2,
                 buildingZ
             );
+
 
             building.castShadow = true
             building.receiveShadow = true
