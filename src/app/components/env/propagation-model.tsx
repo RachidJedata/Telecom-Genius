@@ -6,7 +6,7 @@ import { Grid, Html, OrbitControls, Text } from "@react-three/drei";
 
 
 interface Building {
-    id: number,
+    id: string,
     position: [number, number, number],
     height: number,
 }
@@ -472,163 +472,148 @@ export function PropagationModel({
         const buildingStartX = antennaOffset + (antennaDistance * 1000 - urbanLength) / 2
 
         // At the end of the building creation useEffect
-        const buildingData: Building[] = [];        
+        const buildingData: Building[] = [];
 
-        // Configuration for grid layout
-        const GRID_CONFIG = {
-            columns: 5, // Number of columns in the grid
-            rowSpacing: 70, // Distance between rows
-            cellVariation: 10, // Max random offset in X/Z per building
-            heightVariation: 0.2 // Percentage variation in building heights
+        // Configuration for circular block layout
+        const CITY_LAYOUT = {
+            blocks: 9,              // Number of circular blocks
+            buildingsPerBlock: 8,   // Buildings per block
+            blockRadius: 40,        // Base radius of each block
+            cityRadius: 20,        // Radius of the entire city circle
+            heightVariation: 0.3,   // Building height variation (30%)
+            positionJitter: 300      // Position randomness
         };
 
-        for (let i = 0; i < numBuildings; i++) {
-            const buildingHeight = buildingHeights[i % buildingHeights.length] *
-                (1 + GRID_CONFIG.heightVariation * (Math.random() - 0.5));
+        // Create buildings in circular blocks
+        for (let blockIndex = 0; blockIndex < CITY_LAYOUT.blocks; blockIndex++) {
+            // Calculate block position on main circle
+            const angle = (blockIndex / CITY_LAYOUT.blocks) * Math.PI * 2;
+            const blockX = Math.cos(angle) * CITY_LAYOUT.cityRadius;
+            const blockZ = Math.sin(angle) * CITY_LAYOUT.cityRadius;
 
-            // Calculate grid position
-            const col = i % GRID_CONFIG.columns;
-            const row = Math.floor(i / GRID_CONFIG.columns);
+            // Create buildings in this block
+            for (let buildingIndex = 0; buildingIndex < CITY_LAYOUT.buildingsPerBlock; buildingIndex++) {
+                const buildingHeight = buildingHeights[buildingIndex % buildingHeights.length] *
+                    (1 + CITY_LAYOUT.heightVariation * (Math.random() - 0.5));
 
-            // Calculate base position (centered around 0)
-            const gridWidth = (GRID_CONFIG.columns - 1) * (buildingWidth + buildingSpacing);
-            const baseX = col * (buildingWidth + buildingSpacing) - gridWidth / 2;
-            const baseZ = row * GRID_CONFIG.rowSpacing -
-                (Math.ceil(numBuildings / GRID_CONFIG.columns) * GRID_CONFIG.rowSpacing) / 2;
+                // Position within block circle
+                const buildingAngle = (buildingIndex / CITY_LAYOUT.buildingsPerBlock) * Math.PI * 2;
+                const radiusVariation = CITY_LAYOUT.blockRadius * (0.8 + Math.random() * 0.4);
 
-            // Add organic variation
-            const randomXOffset = (Math.random() - 0.5) * GRID_CONFIG.cellVariation;
-            const randomZOffset = (Math.random() - 0.5) * GRID_CONFIG.cellVariation;
+                const baseX = Math.cos(buildingAngle) * radiusVariation;
+                const baseZ = Math.sin(buildingAngle) * radiusVariation;
 
-            // Final position
-            const buildingX = baseX + randomXOffset;
-            const buildingZ = baseZ + randomZOffset;
+                // Add jitter
+                const jitterX = (Math.random() - 0.5) * CITY_LAYOUT.positionJitter;
+                const jitterZ = (Math.random() - 0.5) * CITY_LAYOUT.positionJitter;
 
-            // Create building
-            const building = new THREE.Mesh(
-                new THREE.BoxGeometry(buildingWidth, buildingHeight, buildingWidth),
-                buildingMaterial
-            );
+                // Final position (relative to block center)
+                const buildingX = blockX + baseX + jitterX;
+                const buildingZ = blockZ + baseZ + jitterZ;
 
-            building.position.set(
-                buildingX + buildingWidth / 2,
-                buildingHeight / 2,
-                buildingZ
-            );
+                // Create building material based on style and time of day
+                const buildingMaterial = new THREE.MeshStandardMaterial({
+                    color: buildingStyle === "historic" ?
+                        (timeOfDay === "day" ? "#d2b48c" : "#8b7355") :
+                        buildingStyle === "industrial" ?
+                            (timeOfDay === "day" ? "#a9a9a9" : "#696969") :
+                            (timeOfDay === "day" ? "#64748b" : "#334155"),
+                    roughness: buildingStyle === "historic" ? 0.9 : buildingStyle === "industrial" ? 0.7 : 0.5,
+                    metalness: buildingStyle === "industrial" ? 0.3 : 0.2
+                });
 
+                // Create building mesh
+                const building = new THREE.Mesh(
+                    new THREE.BoxGeometry(buildingWidth, buildingHeight, buildingWidth),
+                    buildingMaterial
+                );
 
-            building.castShadow = true
-            building.receiveShadow = true
-            buildingsRef.current.add(building)
+                building.position.set(
+                    buildingX + buildingWidth / 2,
+                    buildingHeight / 2,
+                    buildingZ
+                );
+                building.castShadow = true;
+                building.receiveShadow = true;
 
-            // Add windows based on building style
-            const windowRows = Math.floor(buildingHeight / (buildingStyle === "historic" ? 4 : 5))
-            const windowsPerRow = buildingStyle === "historic" ? 3 : 5
-            const windowWidth = buildingStyle === "historic" ? buildingWidth * 0.15 : buildingWidth * 0.12
-            const windowHeight = buildingStyle === "historic" ? 3 : 2
-            const windowSpacing = (buildingWidth - windowWidth * windowsPerRow) / (windowsPerRow + 1)
+                // Add windows
+                const windowRows = Math.floor(buildingHeight / (buildingStyle === "historic" ? 4 : 5));
+                const windowsPerRow = buildingStyle === "historic" ? 3 : 5;
+                const windowWidth = buildingStyle === "historic" ? buildingWidth * 0.15 : buildingWidth * 0.12;
+                const windowHeight = buildingStyle === "historic" ? 3 : 2;
+                const windowSpacing = (buildingWidth - windowWidth * windowsPerRow) / (windowsPerRow + 1);
 
-            const windowMaterial = new THREE.MeshStandardMaterial({
-                color: timeOfDay === "day" ? "#a5f3fc" : "#0c4a6e",
-                emissive: timeOfDay === "night" ? "#22d3ee" : "#000000",
-                emissiveIntensity: timeOfDay === "night" ? 0.5 : 0,
-                transparent: true,
-                opacity: 0.9,
-            })
+                const windowMaterial = new THREE.MeshStandardMaterial({
+                    color: timeOfDay === "day" ? "#a5f3fc" : "#0c4a6e",
+                    emissive: timeOfDay === "night" ? "#22d3ee" : "#000000",
+                    emissiveIntensity: timeOfDay === "night" ? 0.5 : 0,
+                    transparent: true,
+                    opacity: 0.9,
+                });
 
-            for (let row = 1; row < windowRows; row++) {
-                const windowMargin = 1.5; // Optional: Add some margin from the very bottom and top
-                const availableHeight = buildingHeight - 2 * windowMargin;
-                // Use (windowRows - 1) as the denominator to space the rows evenly
-                const y = -buildingHeight / 2 + windowMargin + row * (availableHeight / (windowRows - 1));
+                for (let row = 1; row < windowRows; row++) {
+                    const windowMargin = 1.5;
+                    const availableHeight = buildingHeight - 2 * windowMargin;
+                    const y = -buildingHeight / 2 + windowMargin + row * (availableHeight / (windowRows - 1));
 
+                    for (let col = 0; col < windowsPerRow; col++) {
+                        const x = (col + 1) * windowSpacing + col * windowWidth - buildingWidth / 2;
 
-                for (let col = 0; col < windowsPerRow; col++) {
-                    const x = (col + 1) * windowSpacing + col * windowWidth - buildingWidth / 2
+                        // Front windows
+                        const frontWindow = new THREE.Mesh(
+                            new THREE.BoxGeometry(windowWidth, windowHeight, 0.1),
+                            windowMaterial
+                        );
+                        frontWindow.position.set(x, y, buildingWidth / 2 + 0.1);
+                        building.add(frontWindow);
 
-                    // Front windows
-                    const frontWindow = new THREE.Mesh(new THREE.BoxGeometry(windowWidth, windowHeight, 0.1), windowMaterial)
-                    frontWindow.position.set(0, 0, buildingWidth / 2 + 0.1)
-                    frontWindow.position.x = x
-                    frontWindow.position.y = y
-                    building.add(frontWindow)
+                        // Back windows
+                        const backWindow = new THREE.Mesh(
+                            new THREE.BoxGeometry(windowWidth, windowHeight, 0.1),
+                            windowMaterial
+                        );
+                        backWindow.position.set(x, y, -buildingWidth / 2 - 0.9);
+                        building.add(backWindow);
 
-                    // Back windows
-                    const backWindow = new THREE.Mesh(new THREE.BoxGeometry(windowWidth, windowHeight, 0.1), windowMaterial)
-                    backWindow.position.set(0, 0, -buildingWidth / 2 - 0.9)
-                    backWindow.position.x = x
-                    backWindow.position.y = y
-                    building.add(backWindow)
+                        // Side windows
+                        if (col % 2 === 0) {
+                            const leftWindow = new THREE.Mesh(
+                                new THREE.BoxGeometry(0.1, windowHeight, windowWidth),
+                                windowMaterial
+                            );
+                            leftWindow.position.set(-buildingWidth / 2 - 0.1, y, x);
+                            building.add(leftWindow);
 
-                    // Side windows (fewer)
-                    if (col % 2 === 0) {
-                        const leftWindow = new THREE.Mesh(new THREE.BoxGeometry(0.1, windowHeight, windowWidth), windowMaterial)
-                        leftWindow.position.set(-buildingWidth / 2 - 0.1, y, x)
-                        building.add(leftWindow)
-
-                        const rightWindow = new THREE.Mesh(new THREE.BoxGeometry(0.1, windowHeight, windowWidth), windowMaterial)
-                        rightWindow.position.set(buildingWidth / 2 + 0.1, y, -x)
-                        building.add(rightWindow)
+                            const rightWindow = new THREE.Mesh(
+                                new THREE.BoxGeometry(0.1, windowHeight, windowWidth),
+                                windowMaterial
+                            );
+                            rightWindow.position.set(buildingWidth / 2 + 0.1, y, -x);
+                            building.add(rightWindow);
+                        }
                     }
                 }
-            }
 
-            // Add roof details based on style
-            // if (buildingStyle === "modern") {
-            //     // Roof antenna or water tower
-            //     if (i % 3 === 0) {
-            //         const antenna = new THREE.Mesh(
-            //             new THREE.CylinderGeometry(0.5, 0.5, 10, 8),
-            //             new THREE.MeshStandardMaterial({ color: "#888888" }),
-            //         )
-            //         antenna.position.set(0, buildingHeight / 2 + 5, 0)
-            //         building.add(antenna)
-            //     } else if (i % 3 === 1) {
-            //         const waterTank = new THREE.Mesh(
-            //             new THREE.CylinderGeometry(3, 3, 5, 16),
-            //             new THREE.MeshStandardMaterial({ color: "#666666" }),
-            //         )
-            //         waterTank.position.set(0, buildingHeight / 2 + 3, 0)
-            //         building.add(waterTank)
-            //     }
-            // } else
-            if (buildingStyle === "historic") {
-                // Decorative roof
-                if (i % 2 === 0) {
+                // Add roof details for historic style
+                if (buildingStyle === "historic" && buildingIndex % 2 === 0) {
                     const roof = new THREE.Mesh(
                         new THREE.ConeGeometry(buildingWidth / 1.5, 8, 4),
-                        new THREE.MeshStandardMaterial({ color: "#8b4513" }),
-                    )
-                    roof.position.set(0, buildingHeight / 2 + 4, 0)
-                    roof.rotation.y = Math.PI / 4
-                    building.add(roof)
+                        new THREE.MeshStandardMaterial({ color: "#8b4513" })
+                    );
+                    roof.position.set(0, buildingHeight / 2 + 4, 0);
+                    roof.rotation.y = Math.PI / 4;
+                    building.add(roof);
                 }
+
+                buildingsRef.current.add(building);
+                buildingData.push({
+                    id: `${blockIndex}-${buildingIndex}`,
+                    position: [buildingX + buildingWidth / 2, buildingHeight + 5, buildingZ],
+                    height: buildingHeight
+                });
             }
-            // else if (buildingStyle === "industrial") {
-            //     // Smokestacks
-            //     if (i % 4 === 0) {
-            //         const smokestack = new THREE.Mesh(
-            //             new THREE.CylinderGeometry(2, 3, 15, 16),
-            //             new THREE.MeshStandardMaterial({ color: "#8b0000" }),
-            //         )
-            //         smokestack.position.set(-buildingWidth / 4, buildingHeight / 2 + 7.5, 0)
-            //         building.add(smokestack)
-
-            //         const smokestack2 = new THREE.Mesh(
-            //             new THREE.CylinderGeometry(2, 3, 12, 16),
-            //             new THREE.MeshStandardMaterial({ color: "#8b0000" }),
-            //         )
-            //         smokestack2.position.set(buildingWidth / 4, buildingHeight / 2 + 6, 0)
-            //         building.add(smokestack2)
-            //     }
-            // }
-
-            buildingData.push({
-                id: i,
-                position: [buildingX + buildingWidth / 2, buildingHeight + 5, 0],
-                height: buildingHeight,
-            })
         }
+
         setBuildings(buildingData)
 
         return () => {
