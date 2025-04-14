@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three'
 import { Antenna } from './urban-propagation';
 import { useFrame } from '@react-three/fiber';
-import { Grid, Html, Text } from "@react-three/drei";
+import { Grid, Html, OrbitControls, Text } from "@react-three/drei";
 
 
 interface Building {
@@ -428,6 +428,32 @@ export function PropagationModel({
         buildingHeights,
     ])
 
+    // Create building based on style
+    const buildingMaterial = useMemo(() => {
+        switch (buildingStyle) {
+            case "historic":
+                return new THREE.MeshStandardMaterial({
+                    color: timeOfDay === "day" ? "#d2b48c" : "#8b7355", // Tan/brown for historic
+                    roughness: 0.9,
+                })
+            case "industrial":
+                return new THREE.MeshStandardMaterial({
+                    color: timeOfDay === "day" ? "#a9a9a9" : "#696969", // Gray for industrial
+                    roughness: 0.7,
+                    metalness: 0.3,
+                })
+            case "modern":
+            default:
+                return new THREE.MeshStandardMaterial({
+                    color: timeOfDay === "day" ? "#64748b" : "#334155", // Blue-gray for modern
+                    roughness: 0.5,
+                    metalness: 0.2,
+                })
+        }
+    }, [timeOfDay]);
+
+
+
     // Create buildings
     useEffect(() => {
         if (!buildingsRef.current) return
@@ -447,42 +473,37 @@ export function PropagationModel({
 
         // At the end of the building creation useEffect
         const buildingData: Building[] = [];
+        const numberOfColumns = 10; // or any other number based on your layout
+
         for (let i = 0; i < numBuildings; i++) {
-            const buildingX = buildingStartX + i * (buildingWidth + buildingSpacing)
             const buildingHeight = buildingHeights[i % buildingHeights.length]
+            const randomZ = Math.random() * 100 - 50; // Random value between -50 and +50            
 
-            // Create building based on style
-            const buildingMaterial = () => {
-                switch (buildingStyle) {
-                    case "historic":
-                        return new THREE.MeshStandardMaterial({
-                            color: timeOfDay === "day" ? "#d2b48c" : "#8b7355", // Tan/brown for historic
-                            roughness: 0.9,
-                        })
-                    case "industrial":
-                        return new THREE.MeshStandardMaterial({
-                            color: timeOfDay === "day" ? "#a9a9a9" : "#696969", // Gray for industrial
-                            roughness: 0.7,
-                            metalness: 0.3,
-                        })
-                    case "modern":
-                    default:
-                        return new THREE.MeshStandardMaterial({
-                            color: timeOfDay === "day" ? "#64748b" : "#334155", // Blue-gray for modern
-                            roughness: 0.5,
-                            metalness: 0.2,
-                        })
-                }
-            };
+            const gridSpacingX = buildingWidth + buildingSpacing;
+            const gridSpacingZ = 70; // Arbitrary spacing value for rows
+            const col = i % numberOfColumns; // Calculate column index (set numberOfColumns as needed)
+            const row = Math.floor(i / numberOfColumns);
 
+            // Add a slight random offset to each grid cell
+            const randomXOffset = Math.random() * 20 - 10;
+            const randomZOffset = Math.random() * 20 - 10;
+
+            const buildingX = buildingStartX + col * gridSpacingX + randomXOffset;
+            const buildingZ = row * gridSpacingZ + randomZOffset;
 
 
             // Main building
             const building = new THREE.Mesh(
                 new THREE.BoxGeometry(buildingWidth, buildingHeight, buildingWidth),
-                buildingMaterial(),
-            )
-            building.position.set(buildingX + buildingWidth / 2, buildingHeight / 2, 0)
+                buildingMaterial,
+            );
+
+            building.position.set(
+                buildingX + buildingWidth / 2,
+                buildingHeight / 2,
+                buildingZ
+            );
+
             building.castShadow = true
             building.receiveShadow = true
             buildingsRef.current.add(building)
@@ -1042,174 +1063,225 @@ export function PropagationModel({
 
     return (
         <group>
-            {/* Terrain */}
-            <group ref={terrainRef} />
+            <OrbitControls target={[0, 20, 0]} maxPolarAngle={Math.PI / 2 - 0.1} />
+            <group>
+                {/* Terrain */}
+                <group ref={terrainRef} />
 
-            {/* Weather Effects */}
-            <group ref={weatherEffectsRef} />
+                {/* Weather Effects */}
+                <group ref={weatherEffectsRef} />
 
-            {/* Ground */}
-            <Grid
-                args={[500, 500]}
-                cellSize={10}
-                cellThickness={0.6}
-                cellColor={timeOfDay === "day" ? "#6b7280" : "#374151"}
-                sectionSize={50}
-                sectionThickness={1.5}
-                sectionColor={timeOfDay === "day" ? "#4b5563" : "#1f2937"}
-                position={[0, 0, 0]}
-                fadeDistance={400}
-            />
-            {/* Buildings */}
-            <group ref={buildingsRef} />
+                {/* Ground */}
+                <Grid
+                    args={[500, 500]}
+                    cellSize={10}
+                    cellThickness={0.6}
+                    cellColor={timeOfDay === "day" ? "#6b7280" : "#374151"}
+                    sectionSize={50}
+                    sectionThickness={1.5}
+                    sectionColor={timeOfDay === "day" ? "#4b5563" : "#1f2937"}
+                    position={[0, 0, 0]}
+                    fadeDistance={400}
+                />
+                {/* Buildings */}
+                <group ref={buildingsRef} />
 
-            {/* Base Stations */}
-            {antennas.map((antenna) => {
-                // Calculate position for this antenna
-                const antennaDistance = calculatedDistances[antenna.id] || distance / 1000
-                const antennaOffset = -antennaDistance * 500 // Scale to scene units
+                {/* Base Stations */}
+                {antennas.map((antenna) => {
+                    // Calculate position for this antenna
+                    const antennaDistance = calculatedDistances[antenna.id] || distance / 1000
+                    const antennaOffset = -antennaDistance * 500 // Scale to scene units
 
-                return (
-                    <group key={`base-station-${antenna.id}`} position={[antennaOffset, 0, 0]}>
-                        {/* Tower */}
-                        <mesh position={[0, antenna.height / 2, 0]} castShadow>
-                            <boxGeometry args={[4, antenna.height, 4]} />
-                            <meshStandardMaterial color={timeOfDay === "day" ? "#64748b" : "#334155"} />
-                        </mesh>
+                    return (
+                        <group key={`base-station-${antenna.id}`} position={[antennaOffset, 0, 0]}>
+                            {/* Tower */}
+                            <mesh position={[0, antenna.height / 2, 0]} castShadow>
+                                <boxGeometry args={[4, antenna.height, 4]} />
+                                <meshStandardMaterial color={timeOfDay === "day" ? "#64748b" : "#334155"} />
+                            </mesh>
 
-                        {/* Antenna */}
-                        <mesh position={[0, antenna.height + 2, 0]} castShadow>
-                            <cylinderGeometry args={[0.5, 1, 4, 8]} />
-                            <meshStandardMaterial
-                                color={timeOfDay === "day" ? antenna.color : "#334155"}
-                                emissive={antenna.color}
-                                emissiveIntensity={0.3}
-                            />
-                        </mesh>
+                            {/* Antenna */}
+                            <mesh position={[0, antenna.height + 2, 0]} castShadow>
+                                <cylinderGeometry args={[0.5, 1, 4, 8]} />
+                                <meshStandardMaterial
+                                    color={timeOfDay === "day" ? antenna.color : "#334155"}
+                                    emissive={antenna.color}
+                                    emissiveIntensity={0.3}
+                                />
+                            </mesh>
 
-                        {/* Antenna dishes */}
-                        {[0, Math.PI / 2, Math.PI, Math.PI * 1.5].map((angle, i) => (
-                            <group key={`dish-${i}`} position={[0, antenna.height - 5 - i * 5, 0]} rotation={[0, angle, 0]}>
-                                <mesh position={[2, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
-                                    <cylinderGeometry args={[1.5, 1.5, 0.5, 16, 1, false, 0, Math.PI]} />
-                                    <meshStandardMaterial color="#888888" metalness={0.5} />
-                                </mesh>
-                            </group>
-                        ))}
+                            {/* Antenna dishes */}
+                            {[0, Math.PI / 2, Math.PI, Math.PI * 1.5].map((angle, i) => (
+                                <group key={`dish-${i}`} position={[0, antenna.height - 5 - i * 5, 0]} rotation={[0, angle, 0]}>
+                                    <mesh position={[2, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
+                                        <cylinderGeometry args={[1.5, 1.5, 0.5, 16, 1, false, 0, Math.PI]} />
+                                        <meshStandardMaterial color="#888888" metalness={0.5} />
+                                    </mesh>
+                                </group>
+                            ))}
 
-                        <Html position={[0, antenna.height + 10, 0]}>
-                            <div className="bg-black/80 text-white px-2 py-1 rounded text-sm whitespace-nowrap">
-                                {antenna.name}
-                                <br />
-                                Height: {antenna.height}m<br />
-                                Frequency: {antenna.frequency} MHz
-                            </div>
-                        </Html>
+                            <Html position={[0, antenna.height + 10, 0]}>
+                                <div className="bg-black/80 text-white px-2 py-1 rounded text-sm whitespace-nowrap">
+                                    {antenna.name}
+                                    <br />
+                                    Height: {antenna.height}m<br />
+                                    Frequency: {antenna.frequency} MHz
+                                </div>
+                            </Html>
+                        </group>
+                    )
+                })}
+
+                {/* Mobile Station */}
+                <group ref={mobileStationRef} position={[mobileStationOffset, 0, 0]}>
+                    {/* Person */}
+                    <mesh position={[0, mobileHeight - 0.5, 0]} castShadow>
+                        <capsuleGeometry args={[0.5, 1, 4, 8]} />
+                        <meshStandardMaterial color="#60a5fa" />
+                    </mesh>
+
+                    {/* Phone */}
+                    <mesh position={[0.5, mobileHeight, 0]} rotation={[0, 0, Math.PI / 4]} castShadow>
+                        <boxGeometry args={[0.2, 0.4, 0.05]} />
+                        <meshStandardMaterial color="#000000" />
+                    </mesh>
+
+                    <Html position={[0, mobileHeight + 5, 0]}>
+                        <div className="bg-black/80 text-white px-2 py-1 rounded text-sm whitespace-nowrap">
+                            Mobile User (EM)
+                            <br />
+                            Height: {mobileHeight}m<br />
+                            Path Loss: {pathLoss.toFixed(1)} dB
+                        </div>
+                    </Html>
+                </group>
+
+                {/* Paths Group */}
+                <group ref={pathsRef} />
+
+                {/* Measurements Group */}
+                <group ref={measurementsRef} />
+
+                {/* Path Loss Visualization Group */}
+                <group ref={pathLossVisualizationRef} />
+
+                {/* Labels */}
+                {showLabels && (
+                    <>
+                        <Text position={[0, -15, 0]} color="#ffff00" fontSize={5} anchorX="center" anchorY="middle">
+                            d = {(distance / 1000).toFixed(2)} km
+                        </Text>
+
+                        <Text
+                            position={[baseStationOffset + (distance - urbanLength) / 2 + urbanLength / 2, -25, 0]}
+                            color="#ffff00"
+                            fontSize={5}
+                            anchorX="center"
+                            anchorY="middle"
+                        >
+                            l = {(urbanLength / 1000).toFixed(2)} km
+                        </Text>
+
+                        <Text
+                            position={[baseStationOffset + (distance - urbanLength) / 2 + buildingWidth / 2, -35, 0]}
+                            color="#ffff00"
+                            fontSize={5}
+                            anchorX="center"
+                            anchorY="middle"
+                        >
+                            w = {buildingWidth}m
+                        </Text>
+
+                        <Text
+                            position={[baseStationOffset + (distance - urbanLength) / 2 + buildingWidth + buildingSpacing / 2, -35, 0]}
+                            color="#ffff00"
+                            fontSize={5}
+                            anchorX="center"
+                            anchorY="middle"
+                        >
+                            s = {buildingSpacing}m
+                        </Text>
+
+                        <Text
+                            position={[baseStationOffset - 15, baseStationHeight / 2, 0]}
+                            color="#ffff00"
+                            fontSize={5}
+                            anchorX="center"
+                            anchorY="middle"
+                            rotation={[0, 0, -Math.PI / 2]}
+                        >
+                            hb = {baseStationHeight}m
+                        </Text>
+
+                        <Text
+                            position={[mobileStationOffset + 15, mobileHeight / 2, 0]}
+                            color="#ffff00"
+                            fontSize={5}
+                            anchorX="center"
+                            anchorY="middle"
+                            rotation={[0, 0, -Math.PI / 2]}
+                        >
+                            hm = {mobileHeight}m
+                        </Text>
+                    </>
+                )}
+
+                {/* Model Formula */}
+                {showPathLoss && (
+                    <group position={[0, 60, 0]}>
+                        <Text
+                            position={[0, 0, 0]}
+                            color="white"
+                            fontSize={6}
+                            maxWidth={300}
+                            lineHeight={1.5}
+                            textAlign="center"
+                            anchorX="center"
+                            anchorY="middle"
+                            outlineWidth={0.5}
+                            outlineColor="#000000"
+                        >
+                            {modelType === "cost231" ? "COST 231 Hata Model" : "Okumura Model"}
+                        </Text>
+
+                        <Text
+                            position={[0, -10, 0]}
+                            color="#ffff00"
+                            fontSize={5}
+                            maxWidth={300}
+                            lineHeight={1.5}
+                            textAlign="center"
+                            anchorX="center"
+                            anchorY="middle"
+                        >
+                            {modelType === "cost231"
+                                ? `Path Loss: ${pathLoss.toFixed(1)} dB`
+                                : `Height Gain: ${calculateOkumuraHeightGain(baseStationHeight).toFixed(1)} dB`}
+                        </Text>
+
+                        <Text
+                            position={[0, -20, 0]}
+                            color="#a0a0a0"
+                            fontSize={3.5}
+                            maxWidth={300}
+                            lineHeight={1.5}
+                            textAlign="center"
+                            anchorX="center"
+                            anchorY="middle"
+                        >
+                            {modelType === "cost231"
+                                ? `Environment: ${environmentType.charAt(0).toUpperCase() + environmentType.slice(1)}`
+                                : `Base Station Height: ${baseStationHeight}m`}
+                        </Text>
                     </group>
-                )
-            })}
+                )}
 
-            {/* Mobile Station */}
-            <group ref={mobileStationRef} position={[mobileStationOffset, 0, 0]}>
-                {/* Person */}
-                <mesh position={[0, mobileHeight - 0.5, 0]} castShadow>
-                    <capsuleGeometry args={[0.5, 1, 4, 8]} />
-                    <meshStandardMaterial color="#60a5fa" />
-                </mesh>
-
-                {/* Phone */}
-                <mesh position={[0.5, mobileHeight, 0]} rotation={[0, 0, Math.PI / 4]} castShadow>
-                    <boxGeometry args={[0.2, 0.4, 0.05]} />
-                    <meshStandardMaterial color="#000000" />
-                </mesh>
-
-                <Html position={[0, mobileHeight + 5, 0]}>
-                    <div className="bg-black/80 text-white px-2 py-1 rounded text-sm whitespace-nowrap">
-                        Mobile User (EM)
-                        <br />
-                        Height: {mobileHeight}m<br />
-                        Path Loss: {pathLoss.toFixed(1)} dB
-                    </div>
-                </Html>
-            </group>
-
-            {/* Paths Group */}
-            <group ref={pathsRef} />
-
-            {/* Measurements Group */}
-            <group ref={measurementsRef} />
-
-            {/* Path Loss Visualization Group */}
-            <group ref={pathLossVisualizationRef} />
-
-            {/* Labels */}
-            {showLabels && (
-                <>
-                    <Text position={[0, -15, 0]} color="#ffff00" fontSize={5} anchorX="center" anchorY="middle">
-                        d = {(distance / 1000).toFixed(2)} km
-                    </Text>
-
-                    <Text
-                        position={[baseStationOffset + (distance - urbanLength) / 2 + urbanLength / 2, -25, 0]}
-                        color="#ffff00"
-                        fontSize={5}
-                        anchorX="center"
-                        anchorY="middle"
-                    >
-                        l = {(urbanLength / 1000).toFixed(2)} km
-                    </Text>
-
-                    <Text
-                        position={[baseStationOffset + (distance - urbanLength) / 2 + buildingWidth / 2, -35, 0]}
-                        color="#ffff00"
-                        fontSize={5}
-                        anchorX="center"
-                        anchorY="middle"
-                    >
-                        w = {buildingWidth}m
-                    </Text>
-
-                    <Text
-                        position={[baseStationOffset + (distance - urbanLength) / 2 + buildingWidth + buildingSpacing / 2, -35, 0]}
-                        color="#ffff00"
-                        fontSize={5}
-                        anchorX="center"
-                        anchorY="middle"
-                    >
-                        s = {buildingSpacing}m
-                    </Text>
-
-                    <Text
-                        position={[baseStationOffset - 15, baseStationHeight / 2, 0]}
-                        color="#ffff00"
-                        fontSize={5}
-                        anchorX="center"
-                        anchorY="middle"
-                        rotation={[0, 0, -Math.PI / 2]}
-                    >
-                        hb = {baseStationHeight}m
-                    </Text>
-
-                    <Text
-                        position={[mobileStationOffset + 15, mobileHeight / 2, 0]}
-                        color="#ffff00"
-                        fontSize={5}
-                        anchorX="center"
-                        anchorY="middle"
-                        rotation={[0, 0, -Math.PI / 2]}
-                    >
-                        hm = {mobileHeight}m
-                    </Text>
-                </>
-            )}
-
-            {/* Model Formula */}
-            {showPathLoss && (
-                <group position={[0, 60, 0]}>
+                {/* Environment indicators */}
+                <group position={[0, 100, 0]}>
                     <Text
                         position={[0, 0, 0]}
                         color="white"
-                        fontSize={6}
+                        fontSize={8}
                         maxWidth={300}
                         lineHeight={1.5}
                         textAlign="center"
@@ -1218,12 +1290,12 @@ export function PropagationModel({
                         outlineWidth={0.5}
                         outlineColor="#000000"
                     >
-                        {modelType === "cost231" ? "COST 231 Hata Model" : "Okumura Model"}
+                        {timeOfDay === "day" ? "Daytime" : "Nighttime"} - {weather.charAt(0).toUpperCase() + weather.slice(1)}
                     </Text>
 
                     <Text
                         position={[0, -10, 0]}
-                        color="#ffff00"
+                        color="#a0a0a0"
                         fontSize={5}
                         maxWidth={300}
                         lineHeight={1.5}
@@ -1231,61 +1303,12 @@ export function PropagationModel({
                         anchorX="center"
                         anchorY="middle"
                     >
-                        {modelType === "cost231"
-                            ? `Path Loss: ${pathLoss.toFixed(1)} dB`
-                            : `Height Gain: ${calculateOkumuraHeightGain(baseStationHeight).toFixed(1)} dB`}
-                    </Text>
-
-                    <Text
-                        position={[0, -20, 0]}
-                        color="#a0a0a0"
-                        fontSize={3.5}
-                        maxWidth={300}
-                        lineHeight={1.5}
-                        textAlign="center"
-                        anchorX="center"
-                        anchorY="middle"
-                    >
-                        {modelType === "cost231"
-                            ? `Environment: ${environmentType.charAt(0).toUpperCase() + environmentType.slice(1)}`
-                            : `Base Station Height: ${baseStationHeight}m`}
+                        {buildingStyle.charAt(0).toUpperCase() + buildingStyle.slice(1)} Buildings -
+                        {terrainType.charAt(0).toUpperCase() + terrainType.slice(1)} Terrain
                     </Text>
                 </group>
-            )}
 
-            {/* Environment indicators */}
-            <group position={[0, 100, 0]}>
-                <Text
-                    position={[0, 0, 0]}
-                    color="white"
-                    fontSize={8}
-                    maxWidth={300}
-                    lineHeight={1.5}
-                    textAlign="center"
-                    anchorX="center"
-                    anchorY="middle"
-                    outlineWidth={0.5}
-                    outlineColor="#000000"
-                >
-                    {timeOfDay === "day" ? "Daytime" : "Nighttime"} - {weather.charAt(0).toUpperCase() + weather.slice(1)}
-                </Text>
-
-                <Text
-                    position={[0, -10, 0]}
-                    color="#a0a0a0"
-                    fontSize={5}
-                    maxWidth={300}
-                    lineHeight={1.5}
-                    textAlign="center"
-                    anchorX="center"
-                    anchorY="middle"
-                >
-                    {buildingStyle.charAt(0).toUpperCase() + buildingStyle.slice(1)} Buildings -
-                    {terrainType.charAt(0).toUpperCase() + terrainType.slice(1)} Terrain
-                </Text>
-            </group>
-
-            {/* Building height labels */}
+                {/* Building height labels
             {showLabels &&
                 buildings.map((building) => (
                     <Html key={`building-label-${building.id}`} position={building.position}>
@@ -1293,8 +1316,8 @@ export function PropagationModel({
                             h = {building.height}m
                         </div>
                     </Html>
-                ))}
+                ))} */}
 
-        </group>
-    );
+            </group>
+        </group>);
 }

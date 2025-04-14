@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useRef, useState, useMemo, Suspense } from "react"
+import { useEffect, useRef, useState, useMemo } from "react"
 import { Canvas } from "@react-three/fiber"
-import { OrbitControls, Environment } from "@react-three/drei"
+import { Environment } from "@react-three/drei"
 
 
 import { toast } from "@/app/hooks/use-toast"
@@ -44,7 +44,7 @@ export default function Simulation3D() {
     // Environment settings
     const [timeOfDay, setTimeOfDay] = useState("day") // day, night
     const [weather, setWeather] = useState("clear") // clear, cloudy, rainy
-    const [buildingStyle, setBuildingStyle] = useState("industrial") // modern, historic, industrial
+    const [buildingStyle, setBuildingStyle] = useState("historic") // modern, historic, industrial
     const [terrainType, setTerrainType] = useState("flat") // flat, hilly, coastal
 
     // COST 231 Hata model parameters
@@ -419,7 +419,7 @@ export default function Simulation3D() {
     return (
         <div className="w-full h-screen bg-gradient-to-b from-slate-900 to-slate-800 flex">
 
-            {true && (
+            {false && (
                 <PropagationController
                     showLabels={showLabels}
                     showPathLoss={showPathLoss}
@@ -476,7 +476,7 @@ export default function Simulation3D() {
             {true && (
                 <Canvas camera={{ position: [0, 50, 200], fov: 45 }} shadows>
                     <color attach="background" args={[timeOfDay === "night" ? "#0a0f1a" : "#0f172a"]} />
-                    <fog attach="fog" args={[timeOfDay === "night" ? "#0a0f1a" : "#0f172a", 200, 500]} />
+                    {/* <fog attach="fog" args={[timeOfDay === "night" ? "#0a0f1a" : "#0f172a", 200, 500]} /> */}
 
                     {/* Lighting based on time of day and weather */}
                     {timeOfDay === "day" ? (
@@ -509,8 +509,7 @@ export default function Simulation3D() {
                             timeOfDay === "day" ? (weather === "clear" ? "city" : weather === "cloudy" ? "dawn" : "sunset") : "night"
                         }
                     />
-
-                    <OrbitControls target={[0, 20, 0]} maxPolarAngle={Math.PI / 2 - 0.1} />
+                    
 
                     <PropagationModel
                         showLabels={showLabels}
