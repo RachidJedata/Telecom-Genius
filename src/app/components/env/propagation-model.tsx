@@ -2,8 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three'
 import { Antenna } from './urban-propagation';
 import { useFrame } from '@react-three/fiber';
-import { Grid } from '@react-three/drei';
-// import { Grid, Html, Text } from "@react-three/drei";
+import { Grid, Html, Text } from "@react-three/drei";
 
 
 interface Building {
@@ -36,6 +35,24 @@ interface PropagrationModelProps {
     calculatedDistances: { [key: number]: number },
 
 }
+
+// Add disposal utilities
+const disposeMesh = (mesh: THREE.Mesh) => {
+    mesh.geometry.dispose();
+    (mesh.material as THREE.Material).dispose();
+};
+
+const disposeGroup = (group: THREE.Group) => {
+    group.traverse(child => {
+        if (child instanceof THREE.Mesh) disposeMesh(child);
+        if (child instanceof THREE.Line) {
+            child.geometry.dispose();
+            (child.material as THREE.Material).dispose();
+        }
+    });
+    group.clear();
+};
+
 // Update the PropagationModel component to support multiple antennas and environment settings
 export function PropagationModel({
     showLabels,
@@ -60,24 +77,6 @@ export function PropagationModel({
     calculatedDistances,
 }: PropagrationModelProps) {
 
-    // Add disposal utilities
-    const disposeMesh = (mesh: THREE.Mesh) => {
-        mesh.geometry.dispose();
-        (mesh.material as THREE.Material).dispose();
-    };
-
-    const disposeGroup = (group: THREE.Group) => {
-        group.traverse(child => {
-            if (child instanceof THREE.Mesh) disposeMesh(child);
-            if (child instanceof THREE.Line) {
-                child.geometry.dispose();
-                (child.material as THREE.Material).dispose();
-            }
-        });
-        group.clear();
-    };
-
-
     const baseStationRef = useRef<THREE.Group>(null)
     const mobileStationRef = useRef<THREE.Group>(null)
     const pathsRef = useRef<THREE.Group>(null)
@@ -87,9 +86,6 @@ export function PropagationModel({
     const buildingsRef = useRef<THREE.Group>(null)
     const weatherEffectsRef = useRef<THREE.Group>(null)
 
-    // Get the selected antenna
-    const selectedAntenna = antennas.find((ant) => ant.id === selectedAntennaId) || antennas[0]
-
     // Model parameters (matching the diagram)
     const totalDistance = distance // Use the distance from props
     const urbanLength = totalDistance * 0.7 // 70% of total distance is urban
@@ -98,8 +94,8 @@ export function PropagationModel({
     const baseStationOffset = -totalDistance / 2
     const mobileStationOffset = totalDistance / 2
 
-    // Building heights based on style
-    const getBuildingHeights = () => {
+
+    const buildingHeights = useMemo(() => {
         switch (buildingStyle) {
             case "historic":
                 return [15, 18, 20, 22, 25] // Lower buildings for historic style
@@ -109,17 +105,27 @@ export function PropagationModel({
             default:
                 return [30, 40, 50, 60, 70] // Taller buildings for modern style
         }
-    }
-
-    const buildingHeights = getBuildingHeights()
+    }, [buildingStyle]);
 
     // Calculate number of buildings that fit in the urban area
-    const numBuildings = Math.floor(urbanLength / (buildingWidth + buildingSpacing))
+    const numBuildings = useMemo(
+        () => Math.floor(urbanLength / (buildingWidth + buildingSpacing)),
+        [urbanLength, buildingWidth, buildingSpacing]
+    );
+
     // const numBuildings = 5;
+    console.log(numBuildings);
 
     // Add this near the beginning of the PropagationModel component
     const [buildings, setBuildings] = useState<Building[]>([]);
 
+    // Add several hills of different sizes
+    const hillPositions = useMemo(() => [
+        { pos: [-150, -50, -100], scale: [1.5, 0.3, 1.2] },
+        { pos: [120, -60, -80], scale: [1.2, 0.25, 1.0] },
+        { pos: [-80, -40, 80], scale: [1.0, 0.2, 0.8] },
+        { pos: [200, -70, 50], scale: [2.0, 0.4, 1.5] },
+    ], []);
     // Create terrain
     useEffect(() => {
         if (!terrainRef.current) return
@@ -140,13 +146,6 @@ export function PropagationModel({
                 roughness: 0.8,
             })
 
-            // Add several hills of different sizes
-            const hillPositions = [
-                { pos: [-150, -50, -100], scale: [1.5, 0.3, 1.2] },
-                { pos: [120, -60, -80], scale: [1.2, 0.25, 1.0] },
-                { pos: [-80, -40, 80], scale: [1.0, 0.2, 0.8] },
-                { pos: [200, -70, 50], scale: [2.0, 0.4, 1.5] },
-            ]
 
             hillPositions.forEach((hill, i) => {
                 const hillMesh = new THREE.Mesh(hillGeometry, hillMaterial)
@@ -192,6 +191,7 @@ export function PropagationModel({
 
     }, [terrainType, timeOfDay])
 
+
     // Create weather effects
     useEffect(() => {
         if (!weatherEffectsRef.current) return
@@ -219,12 +219,11 @@ export function PropagationModel({
             rainGeometry.setAttribute("position", new THREE.Float32BufferAttribute(rainPositions, 3))
             rainGeometry.setAttribute("velocity", new THREE.Float32BufferAttribute(rainVelocities, 3))
 
-            const rainMaterial = useMemo(() =>
-                new THREE.PointsMaterial({
-                    size: 0.5,
-                    transparent: true,
-                    opacity: 0.6
-                }), []);
+            const rainMaterial = new THREE.PointsMaterial({
+                size: 0.5,
+                transparent: true,
+                opacity: 0.6
+            });
 
             const rain = new THREE.Points(rainGeometry, rainMaterial)
             weatherEffectsRef.current.add(rain)
@@ -453,36 +452,35 @@ export function PropagationModel({
             const buildingHeight = buildingHeights[i % buildingHeights.length]
 
             // Create building based on style
-            let buildingMaterial
+            const buildingMaterial = () => {
+                switch (buildingStyle) {
+                    case "historic":
+                        return new THREE.MeshStandardMaterial({
+                            color: timeOfDay === "day" ? "#d2b48c" : "#8b7355", // Tan/brown for historic
+                            roughness: 0.9,
+                        })
+                    case "industrial":
+                        return new THREE.MeshStandardMaterial({
+                            color: timeOfDay === "day" ? "#a9a9a9" : "#696969", // Gray for industrial
+                            roughness: 0.7,
+                            metalness: 0.3,
+                        })
+                    case "modern":
+                    default:
+                        return new THREE.MeshStandardMaterial({
+                            color: timeOfDay === "day" ? "#64748b" : "#334155", // Blue-gray for modern
+                            roughness: 0.5,
+                            metalness: 0.2,
+                        })
+                }
+            };
 
-            switch (buildingStyle) {
-                case "historic":
-                    buildingMaterial = new THREE.MeshStandardMaterial({
-                        color: timeOfDay === "day" ? "#d2b48c" : "#8b7355", // Tan/brown for historic
-                        roughness: 0.9,
-                    })
-                    break
-                case "industrial":
-                    buildingMaterial = new THREE.MeshStandardMaterial({
-                        color: timeOfDay === "day" ? "#a9a9a9" : "#696969", // Gray for industrial
-                        roughness: 0.7,
-                        metalness: 0.3,
-                    })
-                    break
-                case "modern":
-                default:
-                    buildingMaterial = new THREE.MeshStandardMaterial({
-                        color: timeOfDay === "day" ? "#64748b" : "#334155", // Blue-gray for modern
-                        roughness: 0.5,
-                        metalness: 0.2,
-                    })
-                    break
-            }
+
 
             // Main building
             const building = new THREE.Mesh(
                 new THREE.BoxGeometry(buildingWidth, buildingHeight, buildingWidth),
-                buildingMaterial,
+                buildingMaterial(),
             )
             building.position.set(buildingX + buildingWidth / 2, buildingHeight / 2, 0)
             building.castShadow = true
@@ -504,8 +502,12 @@ export function PropagationModel({
                 opacity: 0.9,
             })
 
-            for (let row = 0; row < windowRows; row++) {
-                const y = (row + 1) * (buildingHeight / (windowRows + 1))
+            for (let row = 1; row < windowRows; row++) {
+                const windowMargin = 1.5; // Optional: Add some margin from the very bottom and top
+                const availableHeight = buildingHeight - 2 * windowMargin;
+                // Use (windowRows - 1) as the denominator to space the rows evenly
+                const y = -buildingHeight / 2 + windowMargin + row * (availableHeight / (windowRows - 1));
+
 
                 for (let col = 0; col < windowsPerRow; col++) {
                     const x = (col + 1) * windowSpacing + col * windowWidth - buildingWidth / 2
@@ -519,7 +521,7 @@ export function PropagationModel({
 
                     // Back windows
                     const backWindow = new THREE.Mesh(new THREE.BoxGeometry(windowWidth, windowHeight, 0.1), windowMaterial)
-                    backWindow.position.set(0, 0, -buildingWidth / 2 - 0.1)
+                    backWindow.position.set(0, 0, -buildingWidth / 2 - 0.9)
                     backWindow.position.x = x
                     backWindow.position.y = y
                     building.add(backWindow)
@@ -538,24 +540,25 @@ export function PropagationModel({
             }
 
             // Add roof details based on style
-            if (buildingStyle === "modern") {
-                // Roof antenna or water tower
-                if (i % 3 === 0) {
-                    const antenna = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.5, 0.5, 10, 8),
-                        new THREE.MeshStandardMaterial({ color: "#888888" }),
-                    )
-                    antenna.position.set(0, buildingHeight / 2 + 5, 0)
-                    building.add(antenna)
-                } else if (i % 3 === 1) {
-                    const waterTank = new THREE.Mesh(
-                        new THREE.CylinderGeometry(3, 3, 5, 16),
-                        new THREE.MeshStandardMaterial({ color: "#666666" }),
-                    )
-                    waterTank.position.set(0, buildingHeight / 2 + 3, 0)
-                    building.add(waterTank)
-                }
-            } else if (buildingStyle === "historic") {
+            // if (buildingStyle === "modern") {
+            //     // Roof antenna or water tower
+            //     if (i % 3 === 0) {
+            //         const antenna = new THREE.Mesh(
+            //             new THREE.CylinderGeometry(0.5, 0.5, 10, 8),
+            //             new THREE.MeshStandardMaterial({ color: "#888888" }),
+            //         )
+            //         antenna.position.set(0, buildingHeight / 2 + 5, 0)
+            //         building.add(antenna)
+            //     } else if (i % 3 === 1) {
+            //         const waterTank = new THREE.Mesh(
+            //             new THREE.CylinderGeometry(3, 3, 5, 16),
+            //             new THREE.MeshStandardMaterial({ color: "#666666" }),
+            //         )
+            //         waterTank.position.set(0, buildingHeight / 2 + 3, 0)
+            //         building.add(waterTank)
+            //     }
+            // } else
+            if (buildingStyle === "historic") {
                 // Decorative roof
                 if (i % 2 === 0) {
                     const roof = new THREE.Mesh(
@@ -566,24 +569,25 @@ export function PropagationModel({
                     roof.rotation.y = Math.PI / 4
                     building.add(roof)
                 }
-            } else if (buildingStyle === "industrial") {
-                // Smokestacks
-                if (i % 4 === 0) {
-                    const smokestack = new THREE.Mesh(
-                        new THREE.CylinderGeometry(2, 3, 15, 16),
-                        new THREE.MeshStandardMaterial({ color: "#8b0000" }),
-                    )
-                    smokestack.position.set(-buildingWidth / 4, buildingHeight / 2 + 7.5, 0)
-                    building.add(smokestack)
-
-                    const smokestack2 = new THREE.Mesh(
-                        new THREE.CylinderGeometry(2, 3, 12, 16),
-                        new THREE.MeshStandardMaterial({ color: "#8b0000" }),
-                    )
-                    smokestack2.position.set(buildingWidth / 4, buildingHeight / 2 + 6, 0)
-                    building.add(smokestack2)
-                }
             }
+            // else if (buildingStyle === "industrial") {
+            //     // Smokestacks
+            //     if (i % 4 === 0) {
+            //         const smokestack = new THREE.Mesh(
+            //             new THREE.CylinderGeometry(2, 3, 15, 16),
+            //             new THREE.MeshStandardMaterial({ color: "#8b0000" }),
+            //         )
+            //         smokestack.position.set(-buildingWidth / 4, buildingHeight / 2 + 7.5, 0)
+            //         building.add(smokestack)
+
+            //         const smokestack2 = new THREE.Mesh(
+            //             new THREE.CylinderGeometry(2, 3, 12, 16),
+            //             new THREE.MeshStandardMaterial({ color: "#8b0000" }),
+            //         )
+            //         smokestack2.position.set(buildingWidth / 4, buildingHeight / 2 + 6, 0)
+            //         building.add(smokestack2)
+            //     }
+            // }
 
             buildingData.push({
                 id: i,
@@ -592,6 +596,12 @@ export function PropagationModel({
             })
         }
         setBuildings(buildingData)
+
+        return () => {
+            if (buildingsRef.current) {
+                disposeGroup(buildingsRef.current);
+            }
+        };
     }, [
         showLabels,
         buildingStyle,
@@ -790,6 +800,16 @@ export function PropagationModel({
         mobileVerticalLine.geometry = computeLineDistances(mobileVerticalLine.geometry);
         measurementsRef.current.add(mobileVerticalLine);
 
+
+        return () => {
+            if (measurementsRef.current) {
+                disposeGroup(measurementsRef.current);
+            }
+            if (mobileStationRef.current) {
+                disposeGroup(mobileStationRef.current);
+            }
+        };
+
     }, [
         showLabels,
         mobileHeight,
@@ -936,6 +956,12 @@ export function PropagationModel({
             highLossLabel.position.set(gradientWidth / 2 + 10, 0, 0)
             gradientGroup.add(highLossLabel)
         }
+
+        return () => {
+            if (pathLossVisualizationRef.current) {
+                disposeGroup(pathLossVisualizationRef.current);
+            }
+        };
     }, [
         showPathLoss,
         pathLoss,
@@ -1035,8 +1061,239 @@ export function PropagationModel({
                 fadeDistance={400}
             />
             {/* Buildings */}
-            {/* <group ref={buildingsRef} /> */}
+            <group ref={buildingsRef} />
 
+            {/* Base Stations */}
+            {antennas.map((antenna) => {
+                // Calculate position for this antenna
+                const antennaDistance = calculatedDistances[antenna.id] || distance / 1000
+                const antennaOffset = -antennaDistance * 500 // Scale to scene units
+
+                return (
+                    <group key={`base-station-${antenna.id}`} position={[antennaOffset, 0, 0]}>
+                        {/* Tower */}
+                        <mesh position={[0, antenna.height / 2, 0]} castShadow>
+                            <boxGeometry args={[4, antenna.height, 4]} />
+                            <meshStandardMaterial color={timeOfDay === "day" ? "#64748b" : "#334155"} />
+                        </mesh>
+
+                        {/* Antenna */}
+                        <mesh position={[0, antenna.height + 2, 0]} castShadow>
+                            <cylinderGeometry args={[0.5, 1, 4, 8]} />
+                            <meshStandardMaterial
+                                color={timeOfDay === "day" ? antenna.color : "#334155"}
+                                emissive={antenna.color}
+                                emissiveIntensity={0.3}
+                            />
+                        </mesh>
+
+                        {/* Antenna dishes */}
+                        {[0, Math.PI / 2, Math.PI, Math.PI * 1.5].map((angle, i) => (
+                            <group key={`dish-${i}`} position={[0, antenna.height - 5 - i * 5, 0]} rotation={[0, angle, 0]}>
+                                <mesh position={[2, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
+                                    <cylinderGeometry args={[1.5, 1.5, 0.5, 16, 1, false, 0, Math.PI]} />
+                                    <meshStandardMaterial color="#888888" metalness={0.5} />
+                                </mesh>
+                            </group>
+                        ))}
+
+                        <Html position={[0, antenna.height + 10, 0]}>
+                            <div className="bg-black/80 text-white px-2 py-1 rounded text-sm whitespace-nowrap">
+                                {antenna.name}
+                                <br />
+                                Height: {antenna.height}m<br />
+                                Frequency: {antenna.frequency} MHz
+                            </div>
+                        </Html>
+                    </group>
+                )
+            })}
+
+            {/* Mobile Station */}
+            <group ref={mobileStationRef} position={[mobileStationOffset, 0, 0]}>
+                {/* Person */}
+                <mesh position={[0, mobileHeight - 0.5, 0]} castShadow>
+                    <capsuleGeometry args={[0.5, 1, 4, 8]} />
+                    <meshStandardMaterial color="#60a5fa" />
+                </mesh>
+
+                {/* Phone */}
+                <mesh position={[0.5, mobileHeight, 0]} rotation={[0, 0, Math.PI / 4]} castShadow>
+                    <boxGeometry args={[0.2, 0.4, 0.05]} />
+                    <meshStandardMaterial color="#000000" />
+                </mesh>
+
+                <Html position={[0, mobileHeight + 5, 0]}>
+                    <div className="bg-black/80 text-white px-2 py-1 rounded text-sm whitespace-nowrap">
+                        Mobile User (EM)
+                        <br />
+                        Height: {mobileHeight}m<br />
+                        Path Loss: {pathLoss.toFixed(1)} dB
+                    </div>
+                </Html>
+            </group>
+
+            {/* Paths Group */}
+            <group ref={pathsRef} />
+
+            {/* Measurements Group */}
+            <group ref={measurementsRef} />
+
+            {/* Path Loss Visualization Group */}
+            <group ref={pathLossVisualizationRef} />
+
+            {/* Labels */}
+            {showLabels && (
+                <>
+                    <Text position={[0, -15, 0]} color="#ffff00" fontSize={5} anchorX="center" anchorY="middle">
+                        d = {(distance / 1000).toFixed(2)} km
+                    </Text>
+
+                    <Text
+                        position={[baseStationOffset + (distance - urbanLength) / 2 + urbanLength / 2, -25, 0]}
+                        color="#ffff00"
+                        fontSize={5}
+                        anchorX="center"
+                        anchorY="middle"
+                    >
+                        l = {(urbanLength / 1000).toFixed(2)} km
+                    </Text>
+
+                    <Text
+                        position={[baseStationOffset + (distance - urbanLength) / 2 + buildingWidth / 2, -35, 0]}
+                        color="#ffff00"
+                        fontSize={5}
+                        anchorX="center"
+                        anchorY="middle"
+                    >
+                        w = {buildingWidth}m
+                    </Text>
+
+                    <Text
+                        position={[baseStationOffset + (distance - urbanLength) / 2 + buildingWidth + buildingSpacing / 2, -35, 0]}
+                        color="#ffff00"
+                        fontSize={5}
+                        anchorX="center"
+                        anchorY="middle"
+                    >
+                        s = {buildingSpacing}m
+                    </Text>
+
+                    <Text
+                        position={[baseStationOffset - 15, baseStationHeight / 2, 0]}
+                        color="#ffff00"
+                        fontSize={5}
+                        anchorX="center"
+                        anchorY="middle"
+                        rotation={[0, 0, -Math.PI / 2]}
+                    >
+                        hb = {baseStationHeight}m
+                    </Text>
+
+                    <Text
+                        position={[mobileStationOffset + 15, mobileHeight / 2, 0]}
+                        color="#ffff00"
+                        fontSize={5}
+                        anchorX="center"
+                        anchorY="middle"
+                        rotation={[0, 0, -Math.PI / 2]}
+                    >
+                        hm = {mobileHeight}m
+                    </Text>
+                </>
+            )}
+
+            {/* Model Formula */}
+            {showPathLoss && (
+                <group position={[0, 60, 0]}>
+                    <Text
+                        position={[0, 0, 0]}
+                        color="white"
+                        fontSize={6}
+                        maxWidth={300}
+                        lineHeight={1.5}
+                        textAlign="center"
+                        anchorX="center"
+                        anchorY="middle"
+                        outlineWidth={0.5}
+                        outlineColor="#000000"
+                    >
+                        {modelType === "cost231" ? "COST 231 Hata Model" : "Okumura Model"}
+                    </Text>
+
+                    <Text
+                        position={[0, -10, 0]}
+                        color="#ffff00"
+                        fontSize={5}
+                        maxWidth={300}
+                        lineHeight={1.5}
+                        textAlign="center"
+                        anchorX="center"
+                        anchorY="middle"
+                    >
+                        {modelType === "cost231"
+                            ? `Path Loss: ${pathLoss.toFixed(1)} dB`
+                            : `Height Gain: ${calculateOkumuraHeightGain(baseStationHeight).toFixed(1)} dB`}
+                    </Text>
+
+                    <Text
+                        position={[0, -20, 0]}
+                        color="#a0a0a0"
+                        fontSize={3.5}
+                        maxWidth={300}
+                        lineHeight={1.5}
+                        textAlign="center"
+                        anchorX="center"
+                        anchorY="middle"
+                    >
+                        {modelType === "cost231"
+                            ? `Environment: ${environmentType.charAt(0).toUpperCase() + environmentType.slice(1)}`
+                            : `Base Station Height: ${baseStationHeight}m`}
+                    </Text>
+                </group>
+            )}
+
+            {/* Environment indicators */}
+            <group position={[0, 100, 0]}>
+                <Text
+                    position={[0, 0, 0]}
+                    color="white"
+                    fontSize={8}
+                    maxWidth={300}
+                    lineHeight={1.5}
+                    textAlign="center"
+                    anchorX="center"
+                    anchorY="middle"
+                    outlineWidth={0.5}
+                    outlineColor="#000000"
+                >
+                    {timeOfDay === "day" ? "Daytime" : "Nighttime"} - {weather.charAt(0).toUpperCase() + weather.slice(1)}
+                </Text>
+
+                <Text
+                    position={[0, -10, 0]}
+                    color="#a0a0a0"
+                    fontSize={5}
+                    maxWidth={300}
+                    lineHeight={1.5}
+                    textAlign="center"
+                    anchorX="center"
+                    anchorY="middle"
+                >
+                    {buildingStyle.charAt(0).toUpperCase() + buildingStyle.slice(1)} Buildings -
+                    {terrainType.charAt(0).toUpperCase() + terrainType.slice(1)} Terrain
+                </Text>
+            </group>
+
+            {/* Building height labels */}
+            {showLabels &&
+                buildings.map((building) => (
+                    <Html key={`building-label-${building.id}`} position={building.position}>
+                        <div className="bg-black/80 text-white px-2 py-1 rounded text-sm whitespace-nowrap">
+                            h = {building.height}m
+                        </div>
+                    </Html>
+                ))}
 
         </group>
     );
