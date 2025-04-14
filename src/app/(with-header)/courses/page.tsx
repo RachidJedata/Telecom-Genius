@@ -1,6 +1,6 @@
-import { fetchCoursesPages, getCourses } from "../lib/action";
-import { ChapterGrid } from "../components/chapters/chapter-grid";
-import Pagination from "../components/pagination";
+import { fetchCoursesPages, getCourses } from "@/app/lib/action";
+import { ChapterGrid } from "@/app/components/chapters/chapter-grid";
+import Pagination from "@/app/components/pagination";
 
 export default async function Home(props: {
   searchParams?: Promise<{
