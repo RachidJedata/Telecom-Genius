@@ -7,13 +7,6 @@ import prisma from "@/app/lib/prisma";
 import { Providers } from "@prisma/client";
 
 
-// Helper function to get the correct redirect URI
-const getRedirectUri = (provider: string) => {
-  const baseUrl = process.env.NEXTAUTH_URL
-    ? `https://${process.env.NEXTAUTH_URL}`
-    : 'http://localhost:3000';
-  return `${baseUrl}/api/auth/callback/${provider}`;
-};
 
 
 
@@ -70,7 +63,7 @@ export const authOptions: NextAuthOptions = {
       authorization: {
         params: {
           scope: "read:user user:email",
-          redirect_uri: getRedirectUri('github') // Explicit redirect
+          redirect_uri: process.env.NEXTAUTH_URL
         }
       },
       async profile(profileData) {
@@ -90,7 +83,7 @@ export const authOptions: NextAuthOptions = {
           prompt: "consent",
           access_type: "offline",
           response_type: "code",
-          redirect_uri: getRedirectUri('google') // Explicit redirect
+          redirect_uri: process.env.NEXTAUTH_URL
         },
       },
       profile(profile) {
