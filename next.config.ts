@@ -12,6 +12,7 @@ const nextConfig: NextConfig = {
   },
   serverComponentsExternalPackages: ['@prisma/client', 'bcrypt'],
   images: {
+    unoptimized: true, // Disable all image optimization
     remotePatterns: [
       {
         protocol: 'https',
