@@ -5,14 +5,13 @@ import prisma from '@/app/lib/prisma';
 import GitHubProvider from 'next-auth/providers/github';
 import GoogleProvider from 'next-auth/providers/google';
 import { Providers } from '@prisma/client';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === 'development',
   session: {
     strategy: 'jwt',
   },
-  // Add secret and basePath instead
   secret: process.env.NEXTAUTH_SECRET,
   providers: [
     CredentialsProvider({
@@ -64,13 +63,11 @@ export const authOptions: NextAuthOptions = {
       authorization: {
         params: {
           scope: 'read:user user:email',
-          // Uncomment and verify in GitHub OAuth settings:
-          // redirect_uri: 'http://localhost:3000'
         },
       },
       async profile(profileData) {
         return {
-          id: String(profileData.id), // Convert to string
+          id: String(profileData.id),
           name: profileData.name || profileData.login,
           email: profileData.email,
           image: profileData.avatar_url,
@@ -99,10 +96,8 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ user, account }) {
-      // Verify we're handling GitHub auth      
       if (account?.provider === 'google' || account?.provider === 'github') {
         try {
-          // Validate required fields
           if (!user.id) {
             throw new Error("Missing required user fields");
           }
@@ -128,27 +123,24 @@ export const authOptions: NextAuthOptions = {
           return false;
         }
       }
-
       return true;
     },
     session: ({ session, token }) => {
-      // console.log('Session Callback', { session, token });
       return {
         ...session,
         user: {
           ...session.user,
           id: token.id,
-          image: token.picture, // Add GitHub avatar
+          image: token.picture,
         },
       };
     },
     jwt: ({ token, user }) => {
-      // console.log('JWT Callback', { token, user });
       if (user) {
         return {
           ...token,
           id: user.id,
-          picture: user.image, // Store GitHub avatar
+          picture: user.image,
         };
       }
       return token;
@@ -159,22 +151,21 @@ export const authOptions: NextAuthOptions = {
   },
 };
 
-
-// Replace the current handler export with:
+// Define the NextAuth handler based on your options.
 const handler = NextAuth(authOptions);
 
-export const GET = async (...args: Parameters<typeof handler>) => {
+export async function GET(req: NextRequest) {
   try {
-    return await handler(...args);
+    return await handler(req);
   } catch (error) {
     return NextResponse.json(error, { status: 500 });
   }
-};
+}
 
-export const POST = async (...args: Parameters<typeof handler>) => {
+export async function POST(req: NextRequest) {
   try {
-    return await handler(...args);
+    return await handler(req);
   } catch (error) {
     return NextResponse.json(error, { status: 500 });
   }
-};
+}
