@@ -39,15 +39,25 @@
 - npm 9+
 
 ### **Next.js Setup**
+**1.install packages**
 ```bash
 npm install
+```
+**2.Start local server**
+```bash
 npm run dev
+```
 
-### Python Simulation
-**Navigate to the simulation folder:**
-   ```bash
+### Python Simulation (open a new terminal)
+**1.Navigate to the simulation folder:**
+```bash
    cd simulation
-   ```
-
-pip install FastAPI, Query ,CORSMiddleware,numpy ,scipy.stats,
-uvicorn uvicorn main:app --reload 
+```
+**2.Install packages**
+```bash
+   pip install -r requirements.txt
+```   
+**3.Start local server**
+```
+uvicorn uvicorn main:app --reload
+``` 

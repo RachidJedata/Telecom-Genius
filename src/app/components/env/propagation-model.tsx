@@ -476,12 +476,12 @@ export function PropagationModel({
 
         // Configuration for circular block layout
         const CITY_LAYOUT = {
-            blocks: 9,              // Number of circular blocks
-            buildingsPerBlock: 8,   // Buildings per block
+            blocks: 1,              // Number of circular blocks
+            buildingsPerBlock: numBuildings,   // Buildings per block
             blockRadius: 40,        // Base radius of each block
             cityRadius: 20,        // Radius of the entire city circle
-            heightVariation: 0.3,   // Building height variation (30%)
-            positionJitter: 300      // Position randomness
+            heightVariation: 1,   // Building height variation (30%)
+            positionJitter: 500      // Position randomness
         };
 
         // Create buildings in circular blocks

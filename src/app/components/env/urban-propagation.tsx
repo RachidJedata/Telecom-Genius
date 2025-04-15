@@ -419,7 +419,7 @@ export default function Simulation3D() {
     return (
         <div className="w-full h-screen bg-gradient-to-b from-slate-900 to-slate-800 flex">
 
-            {false && (
+            {true && (
                 <PropagationController
                     showLabels={showLabels}
                     showPathLoss={showPathLoss}
@@ -504,7 +504,7 @@ export default function Simulation3D() {
                     )}
 
                     {/* Environment preset based on weather and time */}
-                    <Environment
+                    <Environment                    
                         preset={
                             timeOfDay === "day" ? (weather === "clear" ? "city" : weather === "cloudy" ? "dawn" : "sunset") : "night"
                         }
