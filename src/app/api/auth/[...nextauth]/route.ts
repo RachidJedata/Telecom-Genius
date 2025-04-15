@@ -1,28 +1,29 @@
-import NextAuth, { NextAuthOptions } from 'next-auth';
-import CredentialsProvider from 'next-auth/providers/credentials';
-import { compare } from 'bcryptjs';
-import prisma from '@/app/lib/prisma';
-import GitHubProvider from 'next-auth/providers/github';
-import GoogleProvider from 'next-auth/providers/google';
-import { Providers } from '@prisma/client';
-import { NextRequest, NextResponse } from 'next/server';
+import NextAuth from "next-auth/next";
+import type { NextAuthOptions } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import GitHubProvider from "next-auth/providers/github";
+import GoogleProvider from "next-auth/providers/google";
+import { compare } from "bcryptjs";
+import prisma from "@/app/lib/prisma";
+import { Providers } from "@prisma/client";
+import { NextRequest, NextResponse } from "next/server";
 
 export const authOptions: NextAuthOptions = {
-  debug: process.env.NODE_ENV === 'development',
+  debug: process.env.NODE_ENV === "development",
   session: {
-    strategy: 'jwt',
+    strategy: "jwt",
   },
   secret: process.env.NEXTAUTH_SECRET,
   providers: [
     CredentialsProvider({
-      name: 'Sign in',
+      name: "Sign in",
       credentials: {
         email: {
-          label: 'Email',
-          type: 'email',
-          placeholder: 'hello@example.com',
+          label: "Email",
+          type: "email",
+          placeholder: "hello@example.com",
         },
-        password: { label: 'Password', type: 'password' },
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials.password) {
@@ -35,14 +36,11 @@ export const authOptions: NextAuthOptions = {
           },
         });
 
-        if (!user || user.provider != Providers.NONE) {
+        if (!user || user.provider !== Providers.NONE) {
           return null;
         }
 
-        const isPasswordValid = await compare(
-          credentials.password,
-          user.password!
-        );
+        const isPasswordValid = await compare(credentials.password, user.password!);
 
         if (!isPasswordValid) {
           return null;
@@ -60,11 +58,7 @@ export const authOptions: NextAuthOptions = {
     GitHubProvider({
       clientId: process.env.GITHUB_CLIENT_ID!,
       clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-      authorization: {
-        params: {
-          scope: 'read:user user:email',
-        },
-      },
+      authorization: { params: { scope: "read:user user:email" } },
       async profile(profileData) {
         return {
           id: String(profileData.id),
@@ -81,8 +75,8 @@ export const authOptions: NextAuthOptions = {
         params: {
           prompt: "consent",
           access_type: "offline",
-          response_type: "code"
-        }
+          response_type: "code",
+        },
       },
       profile(profile) {
         return {
@@ -91,28 +85,26 @@ export const authOptions: NextAuthOptions = {
           email: profile.email,
           image: profile.picture,
         };
-      }
+      },
     }),
   ],
   callbacks: {
     async signIn({ user, account }) {
-      if (account?.provider === 'google' || account?.provider === 'github') {
+      if (account?.provider === "google" || account?.provider === "github") {
         try {
           if (!user.id) {
             throw new Error("Missing required user fields");
           }
-
           const existingUser = await prisma.user.findUnique({
             where: { userId: user.id },
           });
-
           if (!existingUser) {
             await prisma.user.create({
               data: {
                 userId: user.id,
                 name: user.name,
                 email: user.email,
-                avatar: user.image || '/avatars/default.svg',
+                avatar: user.image || "/avatars/default.svg",
                 provider: account.provider.toUpperCase() as Providers,
               },
             });
@@ -125,47 +117,21 @@ export const authOptions: NextAuthOptions = {
       }
       return true;
     },
-    session: ({ session, token }) => {
-      return {
-        ...session,
-        user: {
-          ...session.user,
-          id: token.id,
-          image: token.picture,
-        },
-      };
-    },
-    jwt: ({ token, user }) => {
-      if (user) {
-        return {
-          ...token,
-          id: user.id,
-          picture: user.image,
-        };
-      }
-      return token;
-    },
+    session: ({ session, token }) => ({
+      ...session,
+      user: {
+        ...session.user,
+        id: token.id,
+        image: token.picture,
+      },
+    }),
+    jwt: ({ token, user }) => (user ? { ...token, id: user.id, picture: user.image } : token),
   },
   pages: {
-    signIn: '/login',
+    signIn: "/login",
   },
 };
 
-// Define the NextAuth handler based on your options.
 const handler = NextAuth(authOptions);
 
-export async function GET(req: NextRequest) {
-  try {
-    return await handler(req);
-  } catch (error) {
-    return NextResponse.json(error, { status: 500 });
-  }
-}
-
-export async function POST(req: NextRequest) {
-  try {
-    return await handler(req);
-  } catch (error) {
-    return NextResponse.json(error, { status: 500 });
-  }
-}
+export { handler as GET, handler as POST };
