@@ -847,7 +847,7 @@ def run_weissberger_simulation_with_sinus(
     
     # Compute Weissberger loss and attenuation
     losses = weissberger_loss(distances_km, foliage_depth_km, frequency_MHz)
-    attenuation_factors = 10 ** (-losses / 20)  # Convert dB loss to linear scale
+    attenuation_factors = db_to_amplitude(-losses)  # Convert dB loss to linear scale
     
     # Compute delays
     time_delays = (distances_km * 1000) / 299792458  # Delay in seconds
@@ -1085,7 +1085,7 @@ async def ofdm_on_sine(
         0.5 * mean_chh_sq * 
         (fftlen / data_sc) * 
         (fftlen / (fftlen + gilen)) * 
-        10 ** (-esn0 / 10)
+        db_to_watts(-esn0)
     )
 
     # Add noise to real part
@@ -1125,7 +1125,7 @@ async def run_rician_model(
 
     # Generate Rician channel coefficients
     N = 1000  # Number of samples
-    K = 10 ** (k_db / 10)  # K factor in linear scale
+    K = db_to_watts(k_db)  # K factor in linear scale
     mu = math.sqrt(K / (2 * (K + 1)))  # Mean
     sigma = math.sqrt(1 / (2 * (K + 1)))  # Standard deviation
 
