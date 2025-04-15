@@ -26,7 +26,7 @@ export default async function RootLayout({
               <Image
                 width={20}
                 height={20}
-                src={"/logo.png"}
+                src={`${process.env.NEXTAUTH_URL || ''}/logo.png`}
                 alt="Global Communications"
                 className="h-8 w-8 text-primary"
               />
@@ -39,7 +39,7 @@ export default async function RootLayout({
                 {/* Image */}
                 <Image
                   alt="user picture"
-                  src={session.user.image!}
+                  src={`${process.env.NEXTAUTH_URL || ''}${session.user.image!}`}
                   width={40}
                   height={40}
                   className="rounded-full bg-accent relative cursor-pointer"
