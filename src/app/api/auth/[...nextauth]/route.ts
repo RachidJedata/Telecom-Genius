@@ -6,9 +6,8 @@ import GoogleProvider from "next-auth/providers/google";
 import { compare } from "bcryptjs";
 import prisma from "@/app/lib/prisma";
 import { Providers } from "@prisma/client";
-import { NextRequest, NextResponse } from "next/server";
 
-export const authOptions: NextAuthOptions = {
+const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === "development",
   session: {
     strategy: "jwt",
