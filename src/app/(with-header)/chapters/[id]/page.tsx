@@ -14,14 +14,14 @@ export default async function ChapterPage({
   params,
   searchParams,
 }: {
-  params: { id: string };
-  searchParams?: { chapterId?: string };
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ chapterId?: string }>;
 }) {
-  const courseId = await params.id;
+  const courseId = (await params).id;
   const course = await getCourse(courseId);
   if (!course) notFound();
   const chapters = course.chapters;
-  const chapterId = await searchParams?.chapterId;
+  const chapterId = (await searchParams)?.chapterId;
   const chapter = (chapters.find(c => c.chapterId === chapterId)
     || chapters[0]) as any as Chapters;
 

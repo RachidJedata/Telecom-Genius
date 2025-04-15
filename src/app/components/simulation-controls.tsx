@@ -68,12 +68,13 @@ export function SimulationControls({ simulation }: { simulation: Simulation }) {
         ]
         ));
 
-      const response = await fetch(`http://127.0.0.1:8000${simulation.endPoint}?${queryParams}`);
+      const response = await fetch(`https://1507dc4e-a34a-4165-9b30-6e721fb834d7-00-rfl0bf4koy8g.janeway.replit.dev${simulation.endPoint}?${queryParams}`);
+      // const response = await fetch(`http://127.0.0.1:8000${simulation.endPoint}?${queryParams}`);
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const jsonData: SignalData = await response.json();
       setData(jsonData);
       setIsRunning(true);
-      console.log(`http://127.0.0.1:8000${simulation.endPoint}?${queryParams}`);
+      // console.log(`http://127.0.0.1:8000${simulation.endPoint}?${queryParams}`);
     } catch (error) {
       console.error("Error fetching simulation data:", error)
     } finally {
