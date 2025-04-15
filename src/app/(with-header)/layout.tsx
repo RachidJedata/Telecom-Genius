@@ -7,8 +7,6 @@ import { AiChatButton } from "@/app/components/ai-chat-button";
 import { authOptions } from "../lib/auth";
 
 
-import logo from '@/public/logo.png';
-
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -28,7 +26,7 @@ export default async function RootLayout({
               <Image
                 width={20}
                 height={20}
-                src={logo}
+                src={"/logo.png"}
                 alt="Global Communications"
                 className="h-8 w-8 text-primary"
               />
