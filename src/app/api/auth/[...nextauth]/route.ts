@@ -5,12 +5,15 @@ import prisma from '@/app/lib/prisma';
 import GitHubProvider from 'next-auth/providers/github';
 import GoogleProvider from 'next-auth/providers/google';
 import { Providers } from '@prisma/client';
+import { NextResponse } from 'next/server';
 
 export const authOptions: NextAuthOptions = {
-  debug: true,
+  debug: process.env.NODE_ENV === 'development',
   session: {
     strategy: 'jwt',
   },
+  // Add secret and basePath instead
+  secret: process.env.NEXTAUTH_SECRET,
   providers: [
     CredentialsProvider({
       name: 'Sign in',
@@ -156,5 +159,22 @@ export const authOptions: NextAuthOptions = {
   },
 };
 
+
+// Replace the current handler export with:
 const handler = NextAuth(authOptions);
-export { handler as GET, handler as POST };
+
+export const GET = async (...args: Parameters<typeof handler>) => {
+  try {
+    return await handler(...args);
+  } catch (error) {
+    return NextResponse.json(error, { status: 500 });
+  }
+};
+
+export const POST = async (...args: Parameters<typeof handler>) => {
+  try {
+    return await handler(...args);
+  } catch (error) {
+    return NextResponse.json(error, { status: 500 });
+  }
+};
