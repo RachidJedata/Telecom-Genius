@@ -63,7 +63,7 @@ export const authOptions: NextAuthOptions = {
       authorization: {
         params: {
           scope: "read:user user:email",
-          redirect_uri: process.env.NEXTAUTH_URL
+          redirect_uri: `${process.env.NEXTAUTH_URL}/api/auth/callback/github`
         }
       },
       async profile(profileData) {
@@ -83,7 +83,7 @@ export const authOptions: NextAuthOptions = {
           prompt: "consent",
           access_type: "offline",
           response_type: "code",
-          redirect_uri: process.env.NEXTAUTH_URL
+          redirect_uri: `${process.env.NEXTAUTH_URL}/api/auth/callback/google`
         },
       },
       profile(profile) {
