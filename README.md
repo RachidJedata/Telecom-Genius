@@ -65,7 +65,7 @@ uvicorn uvicorn main:app --reload
 ## Configs that can be set in .env
 - DATABASE_URL
 - NEXT_PUBLIC_PYTHON_END_POINT
-- NEXTAUTH_SECRE
+- NEXTAUTH_SECRET
 - NEXTAUTH_URL
 - GITHUB_CLIENT_ID
 - GITHUB_CLIENT_SECRET
