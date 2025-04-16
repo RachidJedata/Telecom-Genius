@@ -68,7 +68,8 @@ export function SimulationControls({ simulation }: { simulation: Simulation }) {
         ]
         ));
 
-      const response = await fetch(`${process.env.PYTHON_END_POINT}${simulation.endPoint}?${queryParams}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_PYTHON_END_POINT}${simulation.endPoint}?${queryParams}`);
+      console.log(`${process.env.NEXT_PUBLIC_PYTHON_END_POINT}${simulation.endPoint}?${queryParams}`);
       // const response = await fetch(`http://127.0.0.1:8000${simulation.endPoint}?${queryParams}`);
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const jsonData: SignalData = await response.json();
