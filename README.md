@@ -63,15 +63,15 @@ uvicorn uvicorn main:app --reload
 ``` 
 
 ## Configs that can be set in .env
--DATABASE_URL
--NEXT_PUBLIC_PYTHON_END_POINT
--NEXTAUTH_SECRE
--NEXTAUTH_UR
--GITHUB_CLIENT_I
--GITHUB_CLIENT_SECRE
--GOOGLE_CLIENT_I
--GOOGLE_CLIENT_SECRE
--HUGGINGFACE_API_KE
+- DATABASE_URL
+- NEXT_PUBLIC_PYTHON_END_POINT
+- NEXTAUTH_SECRE
+- NEXTAUTH_UR
+- GITHUB_CLIENT_I
+- GITHUB_CLIENT_SECRE
+- GOOGLE_CLIENT_I
+- GOOGLE_CLIENT_SECRE
+- HUGGINGFACE_API_KE
 
 ## View the website from
 https://telecom-genius-git-master-rachid-jedatas-projects.vercel.app
