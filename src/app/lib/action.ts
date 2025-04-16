@@ -17,13 +17,14 @@ export async function saveUser(data: Prisma.UserCreateInput) {
             return { success: 0, errorMessage: "a user with the same email already exist" };
         }
 
-
+        const defaultPhoto = ((process.env.NEXTAUTH_URL || '') + "/avatars/default.svg");
         const hashedPassword = await bcrypt.hash(data.password!, 10);
         await prisma.user.create({
             data: {
                 name: data.name,
                 email: data.email,
                 password: hashedPassword,
+                avatar: defaultPhoto,
             }
         });
 

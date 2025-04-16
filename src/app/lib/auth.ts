@@ -112,7 +112,7 @@ export const authOptions: NextAuthOptions = {
                 userId: user.id,
                 name: user.name,
                 email: user.email,
-                avatar: user.image || "/avatars/default.svg",
+                avatar: user.image || ((process.env.NEXTAUTH_URL || '') + "/avatars/default.svg"),
                 provider: account.provider.toUpperCase() as Providers,
               },
             });
