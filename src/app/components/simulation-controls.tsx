@@ -11,9 +11,9 @@ import { Simulation } from "@prisma/client"
 import { Input } from "./UI/input"
 
 interface SignalData {
-  parameters: Parameters;
-  time: number[];
-  signal: number[];
+  parameters?: Parameters;
+  x: number[];
+  y: number[];
   frequency?: number[];
   x_label?: string;
   y_label?: string;
@@ -77,7 +77,8 @@ export function SimulationControls({ simulation }: { simulation: Simulation }) {
       setIsRunning(true);
       // console.log(`http://127.0.0.1:8000${simulation.endPoint}?${queryParams}`);
     } catch (error) {
-      console.error("Error fetching simulation data:", error)
+      console.error("Error fetching simulation data:", error);
+      setData(null);
     } finally {
       setIsLoading(false)
     }
@@ -264,24 +265,24 @@ function SimulationVisualization({ data, params, title }: SignalVisualizationPro
 
     const xScale = d3
       .scaleLinear()
-      .domain([d3.min(data.time)!, d3.max(data.time)!])
+      .domain([d3.min(data.x)!, d3.max(data.x)!])
       .range([margin.left, containerWidth - margin.right]);
 
     const yScale = d3
       .scaleLinear()
-      .domain([d3.min(data.signal)! - 0.1, d3.max(data.signal)! + 0.1])
+      .domain([d3.min(data.y)! - 0.1, d3.max(data.y)! + 0.1])
       .range([containerHeight - margin.bottom, margin.top]);
 
-    const isBinary = data.signal.every(v => v === 0 || v === 1);
+    const isBinary = data.y.every(v => v === 0 || v === 1);
     const line = d3
       .line<number>()
-      .x((_, i) => xScale(data.time[i]))
+      .x((_, i) => xScale(data.x[i]))
       .y(d => yScale(d))
       .curve(isBinary ? d3.curveStep : d3.curveMonotoneX);
 
     // Draw the signal line
     svg.append('path')
-      .datum(data.signal)
+      .datum(data.y)
       .attr('fill', 'none')
       .attr('stroke', '#3b82f6')
       .attr('stroke-width', 1.5)

@@ -15,7 +15,10 @@ export async function GET(req: NextRequest) {
                     freq: { name: 'Fréquence', value: 5.0, unit: 'Hz', step: 0.5, min: 0.1, max: 100 },
                     phase: { name: 'Phase', value: 0.0, unit: 'rad', step: 0.1, min: -Math.PI, max: Math.PI },
                     fading_model: { name: 'Modèle d\'évanouissement', value: 2, unit: '', step: 1, min: 0, max: 22, dropdown: [0, 1, 11, 2, 22] },
-                    num_paths: { name: 'Nombre de trajets', value: 500, unit: '', step: 10, min: 10, max: 1000 }
+                    num_paths: { name: 'Nombre de trajets', value: 500, unit: '', step: 10, min: 10, max: 1000 },
+
+                    showLoss: { name: "Afficher l'atténuation", value: "Oui", options: ["Oui", "Non"] },                                    
+                    showDomain: { name: "Domaine de la fichage", value: "domaine fréquentiel", options: ["domaine fréquentiel", "domaine temporel"] },
                 }),
                 endPoint: '/fading'
             }
@@ -209,7 +212,13 @@ Le modèle de Rayleigh est largement utilisé pour :
                 params: JSON.stringify({
                     k_db: { name: "Facteur K", value: 10, unit: "dB", step: 1, min: -10, max: 20 },
                     signal_power: { name: "Puissance du Signal", value: 1, unit: "W", step: 0.1, min: 0.1, max: 10 },
-                    show_signal_type: { name: "Afficher l'Amplitude", value: "convol_sign", options: [] }
+                    show_signal_type: { name: "Rician signal Type", value: "convol_sign", options: [] },
+                    frequency_hz: { name: "Fréquence du signal", value: 1000.0, unit: "Hz", step: 10, min: 20, max: 10000 },
+                    duration: { name: "Durée", value: 1.0, unit: "s", step: 0.1, min: 0.1, max: 10 },
+                    sampling_interval: { name: "Intervalle d'échantillonnage", value: 1, unit: "ms", step: 1, min: 1, max: 100, convertedToMili: true },
+                    showLoss: { name: "Afficher la Perte", value: "Oui", options: ["Oui", "Non"] },
+                    showDomain: { name: "Domaine de la fichage", value: "domaine fréquentiel", options: ["domaine fréquentiel", "domaine temporel"] },
+
                 }),
                 endPoint: "/rician"
             }
@@ -222,7 +231,12 @@ Le modèle de Rayleigh est largement utilisé pour :
                 params: JSON.stringify({
                     k_db: { name: "Facteur K", value: 10, unit: "dB", step: 1, min: -10, max: 20 },
                     signal_power: { name: "Puissance du Signal", value: 1, unit: "W", step: 0.1, min: 0.1, max: 10 },
-                    show_signal_type: { name: "Afficher l'Amplitude", value: "rician_channel", options: [] }
+                    show_signal_type: { name: "Rician signal Type", value: "rician_channel", options: [] },
+                    frequency_hz: { name: "Fréquence du signal", value: 1000.0, unit: "Hz", step: 10, min: 20, max: 10000 },
+                    duration: { name: "Durée", value: 1.0, unit: "s", step: 0.1, min: 0.1, max: 10 },
+                    sampling_interval: { name: "Intervalle d'échantillonnage", value: 1, unit: "ms", step: 1, min: 1, max: 100, convertedToMili: true },
+                    showLoss: { name: "Afficher la Perte", value: "Oui", options: ["Oui", "Non"] },
+                    showDomain: { name: "Domaine de la fichage", value: "domaine fréquentiel", options: ["domaine fréquentiel", "domaine temporel"] },
                 }),
                 endPoint: "/rician"
             }
@@ -235,7 +249,13 @@ Le modèle de Rayleigh est largement utilisé pour :
                 params: JSON.stringify({
                     k_db: { name: "Facteur K", value: 10, unit: "dB", step: 1, min: -10, max: 20 },
                     signal_power: { name: "Puissance du Signal", value: 1, unit: "W", step: 0.1, min: 0.1, max: 10 },
-                    show_signal_type: { name: "Afficher l'Amplitude", value: "ricianchannel_db", options: [] }
+                    show_signal_type: { name: "Rician signal Type", value: "ricianchannel_db", options: [] },
+                    frequency_hz: { name: "Fréquence du signal", value: 1000.0, unit: "Hz", step: 10, min: 20, max: 10000 },
+                    duration: { name: "Durée", value: 1.0, unit: "s", step: 0.1, min: 0.1, max: 10 },
+                    sampling_interval: { name: "Intervalle d'échantillonnage", value: 1, unit: "ms", step: 1, min: 1, max: 100, convertedToMili: true },
+                    showLoss: { name: "Afficher la Perte", value: "Oui", options: ["Oui", "Non"] },
+                    showDomain: { name: "Domaine de la fichage", value: "domaine fréquentiel", options: ["domaine fréquentiel", "domaine temporel"] },
+
                 }),
                 endPoint: "/rician"
             }
@@ -512,11 +532,13 @@ Où $$ * $$ désigne la convolution. Cette opération combine l’effet du canal
                 description: "Simule les variations d'amplitude du signal dans un canal sans fil en utilisant le modèle de fading Nakagami.",
                 params: JSON.stringify({
                     frequency_hz: { name: "Fréquence du signal", value: 1000.0, unit: "Hz", step: 10, min: 20, max: 10000 },
-                    signal_power: { name: "Puissance du signal", value: 3.0, unit: "W", step: 0.1, min: 0.1, max: 10 },
                     m: { name: "Paramètre de forme m", value: 1.0, unit: "", step: 0.1, min: 0.5, max: 10 },
                     omega: { name: "Paramètre d'étalement Ω", value: 1.0, unit: "", step: 0.1, min: 0.1, max: 10 },
+                    signal_power: { name: "Puissance du signal", value: 3.0, unit: "W", step: 0.1, min: 0.1, max: 10 },
                     duration: { name: "Durée", value: 1.0, unit: "s", step: 0.1, min: 0.1, max: 10 },
                     sampling_interval: { name: "Intervalle d'échantillonnage", value: 1, unit: "ms", step: 1, min: 1, max: 100, convertedToMili: true },
+                    showLoss: { name: "Afficher la Perte", value: "Oui", options: ["Oui", "Non"] },
+                    showDomain: { name: "Domaine de la fichage", value: "domaine fréquentiel", options: ["domaine fréquentiel", "domaine temporel"] },
                 }),
                 endPoint: "/nakagami-fading-signal"
             }
@@ -694,8 +716,11 @@ Sa capacité à modéliser diverses conditions de fading en fait un outil préci
                     carrier_frequency_MHz: { name: "Fréquence du canal", value: 2.4, step: 0.5, min: 1, max: 6 },
                     baseband_frequency_Hz: { name: "Fréquence du signal", value: 1000, unit: "Hz", step: 50, min: 100, max: 100000 },
                     distance_m: { name: "Distance entre Tx et Rx", value: 1, unit: "Km", step: 50, min: 1, max: 10000 },
-                    amplitudeIfLossAffected: { name: "Amplitude affectée (si atténuation appliquée)", value: 1, unit: "×10⁵ V", step: 1, min: 1, max: 20 },
-                    showLoss: { name: "Afficher la Perte", value: "Oui", options: ["Oui", "Non"] }
+
+                    showLoss: { name: "Afficher l'atténuation", value: "Oui", options: ["Oui", "Non"] },
+                    duration: { name: "Durée", value: 1.0, unit: "s", step: 0.1, min: 0.1, max: 10 },
+                    sampling_interval: { name: "Intervalle d'échantillonnage", value: 1, unit: "ms", step: 1, min: 1, max: 100, convertedToMili: true },
+                    showDomain: { name: "Domaine de la fichage", value: "domaine fréquentiel", options: ["domaine fréquentiel", "domaine temporel"] },
                 }),
                 endPoint: "/fspl"
             }
@@ -919,12 +944,14 @@ Le FSPL est idéal et ne reflète pas les conditions réelles (obstacles, réfle
                     d_min: { name: "Distance minimale", value: 1, unit: "m", step: 1, min: 1, max: 1000 },
                     d_max: { name: "Distance maximale", value: 1000, unit: "m", step: 10, min: 1, max: 10000 },
                     environment: { name: "Environnement", value: "urban", options: ["urban", "suburban", "open"] },
-                    los: { name: "Ligne de Vue", value: "Oui", options: ["Oui", "Non"] },
-                    A: { name: "Amplitude du signal", value: 10, unit: "dB", step: 1, min: 0, max: 50 },
-                    f_signal: { name: "Fréquence du signal", value: 1, unit: "Hz", step: 0.1, min: 0.1, max: 10 },
-                    t_max: { name: "Temps maximal", value: 10, unit: "s", step: 1, min: 1, max: 100 },
+                    f_signal: { name: "Fréquence du signal", value: 10, unit: "Hz", step: 0.1, min: 0.1, max: 10 },
+                    amplitude: { name: "Amplitude du signal", value: 10, unit: "dB", step: 1, min: 0, max: 50 },
                     P0: { name: "Puissance moyenne", value: 0, unit: "dBm", step: 1, min: -50, max: 50 },
-                    affectLoss: { name: "Appliquer la Perte", value: "Oui", options: ["Oui", "Non"] }
+
+                    duration: { name: "Durée", value: 1.0, unit: "s", step: 0.1, min: 0.1, max: 10 },
+                    sampling_interval: { name: "Intervalle d'échantillonnage", value: 1, unit: "ms", step: 1, min: 1, max: 100, convertedToMili: true },
+                    showDomain: { name: "Domaine de la fichage", value: "domaine fréquentiel", options: ["domaine fréquentiel", "domaine temporel"] },
+                    showLoss: { name: "Afficher l'atténuation", value: "Oui", options: ["Oui", "Non"] },
                 }),
                 endPoint: "/itu-r-p1411"
             }
@@ -1134,7 +1161,12 @@ En LOS, la perte est similaire à celle de l’espace libre, tandis qu’en NLOS
                     h_m: { name: "Hauteur Mobile", value: 1.5, unit: "m", step: 0.5, min: 1, max: 10 },
                     d: { name: "Distance entre Tx et Rx", value: 1, unit: "km", step: 1, min: 1, max: 20 },
                     environment: { name: "Environnement", value: "urban", options: ["urban", "suburban", "rural"] },
-                    city_size: { name: "Taille de la Ville", value: "Moyenne et Petite", options: ["Grande", "Moyenne et Petite"] }
+                    city_size: { name: "Taille de la Ville", value: "Moyenne et Petite", options: ["Grande", "Moyenne et Petite"] },
+
+                    showLoss: { name: "Afficher l'atténuation", value: "Oui", options: ["Oui", "Non"] },
+                    duration: { name: "Durée", value: 1.0, unit: "s", step: 0.1, min: 0.1, max: 10 },
+                    sampling_interval: { name: "Intervalle d'échantillonnage", value: 1, unit: "ms", step: 1, min: 1, max: 100, convertedToMili: true },
+                    showDomain: { name: "Domaine de la fichage", value: "domaine fréquentiel", options: ["domaine fréquentiel", "domaine temporel"] },
                 }),
                 endPoint: "/hata"
             }
@@ -1305,6 +1337,10 @@ Il reste pertinent pour les fréquences basses des réseaux modernes, bien que l
                     ht: { name: "Hauteur Antenne Émettrice", value: 30, unit: "m", step: 5, min: 10, max: 100 },
                     hr: { name: "Hauteur Antenne Réceptrice", value: 1.5, unit: "m", step: 0.5, min: 1, max: 10 },
                     d: { name: "Distance", value: 100, unit: "m", step: 1, min: 1, max: 10000 },
+                    showLoss: { name: "Afficher l'atténuation", value: "Oui", options: ["Oui", "Non"] },
+                    duration: { name: "Durée", value: 1.0, unit: "s", step: 0.1, min: 0.1, max: 10 },
+                    sampling_interval: { name: "Intervalle d'échantillonnage", value: 1, unit: "ms", step: 1, min: 1, max: 100, convertedToMili: true },
+                    showDomain: { name: "Domaine de la fichage", value: "domaine fréquentiel", options: ["domaine fréquentiel", "domaine temporel"] },
                 }),
                 endPoint: "/two-ray-ground-with-signal"
             }
@@ -1463,7 +1499,11 @@ Il est surtout efficace lorsque la longueur d’onde est comparable aux hauteurs
                     frequency_MHz: { name: "Fréquence", value: 900, unit: "MHz", step: 10, min: 230, max: 950 },
                     foliage_depth_km: { name: "Profondeur de Végétation", value: 0.1, unit: "km", step: 0.1, min: 0, max: 0.4 },
                     d_min: { name: "Distance Minimale", value: 1, unit: "km", step: 1, min: 1, max: 1000 },
-                    d_max: { name: "Distance Maximale", value: 1000, unit: "km", step: 10, min: 1, max: 10000 }
+                    d_max: { name: "Distance Maximale", value: 1000, unit: "km", step: 10, min: 1, max: 10000 },
+                    showLoss: { name: "Afficher l'atténuation", value: "Oui", options: ["Oui", "Non"] },
+                    duration: { name: "Durée", value: 1.0, unit: "s", step: 0.1, min: 0.1, max: 10 },
+                    sampling_interval: { name: "Intervalle d'échantillonnage", value: 1, unit: "ms", step: 1, min: 1, max: 100, convertedToMili: true },
+                    showDomain: { name: "Domaine de la fichage", value: "domaine fréquentiel", options: ["domaine fréquentiel", "domaine temporel"] },
                 }),
                 endPoint: "/weissberger-signal-simulation"
             }
@@ -1620,7 +1660,11 @@ Ce modèle est particulièrement pertinent pour les fréquences UHF (230-950 MHz
                         name: "Climat",
                         value: "Tempéré continental",
                         options: ["Tempéré maritime", "Tempéré continental"]
-                    }
+                    },
+                    showLoss: { name: "Afficher l'atténuation", value: "Oui", options: ["Oui", "Non"] },
+                    duration: { name: "Durée", value: 1.0, unit: "s", step: 0.1, min: 0.1, max: 10 },
+                    sampling_interval: { name: "Intervalle d'échantillonnage", value: 1, unit: "ms", step: 1, min: 1, max: 100, convertedToMili: true },
+                    showDomain: { name: "Domaine de la fichage", value: "domaine fréquentiel", options: ["domaine fréquentiel", "domaine temporel"] },
                 }),
                 endPoint: "/longley-rice-signal-simulation"
             }
@@ -1751,7 +1795,11 @@ Il est particulièrement utile dans les environnements où la topographie joue u
                     gilen: { name: "Longueur du préfixe cyclique", value: 16, unit: "", step: 1, min: 0, max: 256 },
                     data_sc: { name: "Sous-porteuses de données", value: 48, unit: "", step: 1, min: 1, max: 1024 },
                     esn0: { name: "Es/N0", value: 10, unit: "dB", step: 1, min: -10, max: 30 },
-                    showAtten: { name: "Afficher l'atténuation", value: "Oui", options: ["Oui", "Non"] }
+                    showAtten: { name: "Afficher l'atténuation", value: "Oui", options: ["Oui", "Non"] },
+                    frequency_MHz: { name: "Fréquence du signal", value: 1, unit: "MHz", step: 1, min: 1, max: 10 },
+                    duration: { name: "Durée", value: 1.0, unit: "s", step: 0.1, min: 0.1, max: 10 },
+                    sampling_interval: { name: "Intervalle d'échantillonnage", value: 1, unit: "ms", step: 1, min: 1, max: 100, convertedToMili: true },
+                    showDomain: { name: "Domaine de la fichage", value: "domaine fréquentiel", options: ["domaine fréquentiel", "domaine temporel"] },
                 }),
                 endPoint: "/ofdm"
             }
@@ -1924,9 +1972,11 @@ La robustesse et l'efficacité de l'OFDM en font une pierre angulaire des systè
                     d: { name: "Distance", value: 1, unit: "m", step: 1, min: 1, max: 20, convertedToMili: true },
                     environment: { name: "Environnement", value: "rural", options: ["urban", "suburban", "rural"] },
                     apply_fading: { name: "Appliquer l'Évanouissement", value: "Non", options: ["Oui", "Non"] },
-                    duration: { name: "Durée du Signal", value: 1.0, unit: "s", step: 0.1, min: 0.1, max: 10 },
-                    sampling_rate: { name: "Taux d'Échantillonnage", value: 1000, unit: "Hz", step: 100, min: 100, max: 5000 },
-                    showAttenuation: { name: "Afficher l'Atténuation", value: "Oui", options: ["Oui", "Non"] }
+
+                    showLoss: { name: "Afficher l'atténuation", value: "Oui", options: ["Oui", "Non"] },
+                    duration: { name: "Durée", value: 1.0, unit: "s", step: 0.1, min: 0.1, max: 10 },
+                    sampling_interval: { name: "Intervalle d'échantillonnage", value: 1, unit: "ms", step: 1, min: 1, max: 100, convertedToMili: true },
+                    showDomain: { name: "Domaine de la fichage", value: "domaine fréquentiel", options: ["domaine fréquentiel", "domaine temporel"] },
                 }),
                 endPoint: "/Cost231/fading"
             }
