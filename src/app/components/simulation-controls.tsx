@@ -49,7 +49,6 @@ export function SimulationControls({ simulation }: { simulation: Simulation }) {
         value: value,
       }
     }));
-    if (autoRun) runSimulation();
   }
 
   useEffect(() => {
@@ -89,6 +88,8 @@ export function SimulationControls({ simulation }: { simulation: Simulation }) {
     setAutoRun(false);
     setIsRunning(false);
   }
+
+  useEffect(() => { if (autoRun) runSimulation() }, [paramValues]);
 
   return (
     <div className="space-y-8">
