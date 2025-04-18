@@ -40,10 +40,28 @@ def generate_time_array(duration: float, Te: float) -> np.ndarray:
     """Generate centered time array [-duration/2, duration/2) with step Te"""
     return np.arange(-duration/2, duration/2, Te)
 
-def generate_frequency_axis(t: np.ndarray, Te: float) -> np.ndarray:
-    """Generate centered frequency axis for FFT"""
-    n = len(t)
-    return np.fft.fftshift(np.fft.fftfreq(n, d=Te))
+def generate_frequency(
+    signal: np.ndarray,
+    Te: float,    
+):
+    """
+    Compute the magnitude spectrum |FFT(signal)| and its frequency axis in Hz.
+
+    Args:
+      signal    : real-valued 1D array of time‑domain samples
+      Te        : sampling interval in seconds
+      one_sided : if True, return only non-negative freqs (0 … Fs/2)
+
+    Returns:
+      freqs     : list of frequencies in Hz
+      spectrum  : list of magnitudes
+    """    
+    signal = np.abs(np.fft.fft(signal))
+    N = signal.size
+    
+    f = np.fft.fftfreq(N, d=Te)  
+    
+    return f, signal
 
 def generate_sinus(t,amplitude:float,freq:float,phase:float) -> np.ndarray:
     return amplitude * np.sin(2 * np.pi * freq * t + phase)
@@ -58,7 +76,7 @@ def generate_comb_signal(duration: float, period: float, Te: float) -> dict:
         Te (float): Time resolution/sampling interval (must be > 0)
     
     Returns:
-        dict: {"time": list_of_timestamps, "signal": list_of_0s_and_1s}
+        dict: {"x": list_of_timestamps, "y": list_of_0s_and_1s}
     """
     # Generate time axis from -duration/2 to duration/2 (centered)
     time_array = np.arange(-duration/2, duration/2, Te)
@@ -68,7 +86,7 @@ def generate_comb_signal(duration: float, period: float, Te: float) -> dict:
     signal = np.zeros_like(time_array, dtype=int)
     
     if len(time_array) == 0:  # Handle empty time array edge case
-        return {"time": time, "signal": signal.tolist()}
+        return {"x": time, "y": signal.tolist()}
     
     # Calculate first/last impulse indices within the time range
     t_start, t_end = -duration/2, duration/2 - 1e-9  # Boundary adjustment
@@ -82,7 +100,7 @@ def generate_comb_signal(duration: float, period: float, Te: float) -> dict:
         if 0 <= index < len(signal):
             signal[index] = 1
     
-    return {"time": time, "signal": signal.tolist()}
+    return {"x": time, "y": signal.tolist()}
              
 def validate_positive(**params):
     """Validate parameters are positive"""
@@ -168,6 +186,82 @@ def calculate_cost231(f: float, h_bs: float, h_ms: float, d: float, environment:
 
     return L
 
+def fspl(distance_m, frequency_hz):
+    """Calculate Free Space Path Loss in dB."""
+    c = 3e8  # Speed of light (m/s)   
+    distance_m *= 1e3
+    frequency_hz *= 1e9 
+    return 20 * np.log10(distance_m) + 20 * np.log10(frequency_hz) + 20 * np.log10(4 * np.pi / c)
+
+def weissberger_loss(distances_km, foliage_depth_km, frequency_MHz):
+    """
+    Calculate Weissberger path loss in dB.
+    
+    Args:
+        distances_km (np.ndarray): Distance array in kilometers
+        foliage_depth_km (float): Depth of foliage in kilometers
+        frequency_MHz (float): Frequency in MHz
+    
+    Returns:
+        np.ndarray: Loss in dB
+    """
+    # Generalized Weissberger model
+    return 1.33 * (frequency_MHz ** 0.284) * ((distances_km * foliage_depth_km) ** 0.588)
+
+
+def hata_loss(f, h_b, h_m, d, environment='urban', city_size='Grande'):
+    """
+    Calcule l'atténuation de propagation selon le modèle Okumura-Hata.
+    
+    :param f: Fréquence en MHz (150 ≤ f ≤ 1500)
+    :param h_b: Hauteur de l'antenne de la station de base en mètres (30 ≤ h_b ≤ 200)
+    :param h_m: Hauteur de l'antenne mobile en mètres (1 ≤ h_m ≤ 10)
+    :param d: Distance entre la station de base et le mobile en km (1 ≤ d ≤ 20)
+    :param environment: Type d'environnement ('urban', 'suburban', 'rural')
+    :param city_size: Taille de la ville ('Grande', 'Moyenne/Petite')
+    :return: Atténuation en dB
+    """
+    if not (150 <= f <= 1500 and 30 <= h_b <= 200 and 1 <= h_m <= 10 and 1 <= d <= 20):
+        raise ValueError("Les paramètres sont hors des plages valides.")
+
+    f *= 10e6       
+    d *= 1000 
+    # Correction selon la hauteur de l'antenne mobile et la taille de la ville
+    if city_size == 'Grande':  
+        if f >= 400*10e6:
+            a_hm = 3.2 * (np.log10(11.75 * h_m))**2 - 4.97
+        else:
+            a_hm = (1.1 * np.log10(f) - 0.7) * h_m - (1.56 * np.log10(f) - 0.8)
+    else:
+        a_hm = (1.1 * np.log10(f) - 0.7) * h_m - (1.56 * np.log10(f) - 0.8)
+    
+    L = 69.55 + 26.16 * np.log10(f) - 13.82 * np.log10(h_b) - a_hm \
+        + (44.9 - 6.55 * np.log10(h_b)) * np.log10(d)
+    
+    if environment == 'suburban':
+        L -= 2 * (np.log10(f / 28))**2 - 5.4
+    elif environment == 'rural':
+        L -= 4.78 * (np.log10(f))**2 - 18.33 * np.log10(f) + 40.94
+    
+    return L
+
+
+def nlos_loss(frequency_MHz, distance_km, delta_nlos=20):
+    """
+    Calculate NLOS loss in dB with additional attenuation.
+    
+    Parameters:
+        frequency_MHz (float): Frequency in MHz
+        distance_km (float or np.ndarray): Distance in km
+        delta_nlos (float): Additional attenuation in dB
+    
+    Returns:
+        float or np.ndarray: NLOS loss in dB
+    """
+    frequency_hz = frequency_MHz * 1e6  # Convert MHz to Hz
+    distance_m = distance_km * 1000     # Convert km to m
+    return fspl(distance_m, frequency_hz) + delta_nlos
+
 
 # --------------------------
 # Signal Generation Endpoints
@@ -188,8 +282,8 @@ async def get_rect(x: float,duration:float=10e-3):
         scaled_time = t / (x * T_pulse)                
 
         return {
-            "time": t.tolist(),            
-            "signal": rect(scaled_time).tolist(),
+            "x": t.tolist(),            
+            "y": rect(scaled_time).tolist(),
             "parameters": {
                 "largeur": x,
                 "sampling_frequency": fs,
@@ -216,8 +310,8 @@ async def get_sinus(
     freq = 1/period
     signal = generate_sinus(t=t,amplitude=amplitude,freq=freq,phase=phase)
     return {
-        "time": t.tolist(),
-        "signal": signal.tolist(),
+        "x": t.tolist(),
+        "y": signal.tolist(),
         "parameters": {
             "frequency": freq,
             "amplitude": amplitude,
@@ -241,8 +335,8 @@ async def get_impulse(
         signal[len(signal)//2] = 1
     
     return {
-        "time": t.tolist(),
-        "signal": signal.tolist(),
+        "x": t.tolist(),
+        "y": signal.tolist(),
         "parameters": {"Te": Te, "duration": duration}
     }
 
@@ -259,12 +353,12 @@ async def get_dirac_comb(
         "Te": Te,
         "duration": duration,
         "t_impulse": t_impulse,
-        "impulse_count": len(signalTime["signal"])
+        "impulse_count": len(signalTime["y"])
     }
 
     return {
-        "time": signalTime["time"],
-        "signal": signalTime["signal"],
+        "x": signalTime["x"],
+        "y": signalTime["y"],
         "parameters": parameters
     }
 
@@ -276,7 +370,7 @@ async def get_sample_sinus(
     phase: float = 0.0,
     duration: float = 20e-3,  # Increased duration for better visibility
     Te: float = 1/250e3,
-    impulse_period: float = 0.002  # Adjusted for better demonstration
+    impulse_period: float = 0.002 , # Adjusted for better demonstration    
 ):
     """
     Generate a sampled sinusoidal signal using Dirac comb sampling
@@ -296,8 +390,8 @@ async def get_sample_sinus(
         Te=Te
     )    
     # Create centered time array
-    t = comb_data["time"]
-    comb_signal= comb_data["signal"]
+    t = comb_data["x"]
+    comb_signal= comb_data["y"]
     # Generate sinusoid
     frequency = 1 / sinus_period    
     sinus_signal = generate_sinus(t=np.array(t),amplitude=amplitude,freq=frequency,phase=phase)
@@ -305,16 +399,9 @@ async def get_sample_sinus(
     # Explicit elementwise multiplication using list comprehension
     sampled_signal = [c * s for c, s in zip(comb_signal, sinus_signal.tolist())]
 
-    parameters = {
-        "sinus_frequency": frequency,
-        "sampling_frequency": 1/impulse_period,
-        "nyquist_frequency": 1/(2*impulse_period),        
-    }
-
     return {
-        "time": t,        
-        "signal": sampled_signal,   
-        "parameters": parameters
+        "x": t,        
+        "y": sampled_signal,           
     }
 
 @app.get("/fading")
@@ -325,7 +412,9 @@ def fading_endpoint(
     freq: float = 5.0,
     phase: float = 0.0,
     fading_model: int = 2,
-    num_paths: int = 500
+    num_paths: int = 500,
+    showLoss:str = "Oui",
+    showDomain:str = "domaine fréquentiel" #domaine temporel || domaine fréquentiel
 ):
     """
     Returns a JSON with:
@@ -335,32 +424,32 @@ def fading_endpoint(
     """
     # Generate time array and sinusoidal signal.
     t = generate_time_array(duration, Te)
-    sinus_signal = generate_sinus(t, amplitude, freq, phase)
+    signal = generate_sinus(t, amplitude, freq, phase)
     
-    # Apply fading (multipath) to the sinusoidal signal.
-    sampled_signal, gain = apply_fading(sinus_signal, fading_model, num_paths)    
+
+    if showLoss == "Oui":
+        # Apply fading (multipath) to the sinusoidal signal.
+        sampled_signal, gain = apply_fading(signal, fading_model, num_paths)    
+            
+        # In case the sampled signal is complex, we take the real part.
+        signal = [float(x.real) for x in sampled_signal.tolist()]
+        # signal = np.abs(sampled_signal).tolist()
     
-    # Convert NumPy arrays to Python lists.
-    t_list = t.tolist()
-    # In case the sampled signal is complex, we take the real part.
-    sampled_signal_list = [float(x.real) for x in sampled_signal.tolist()]
     
-    # Bundle parameters into a dictionary.
-    parameters = {
-        "duration": duration,
-        "Te": Te,
-        "amplitude": amplitude,
-        "freq": freq,
-        "phase": phase,
-        "fading_model": fading_model,
-        "num_paths": num_paths        
-    }
-    
-    return {
-        "time": t_list,
-        "signal": sampled_signal_list,
-        "parameters": parameters
-    }
+    if showDomain == "domaine fréquentiel":
+        f, signal = generate_frequency(signal=signal, Te=Te)
+        return {
+            "x":         f.tolist(),
+            "y":         signal.tolist(),
+            "x_label":   "Fréquence (Hz)"
+        }
+    else:
+        return {
+            "x":         t.tolist(),
+            "y":         signal,            
+        }
+
+
 
 @app.get("/Cost231/fading")
 def simulate_parameters(
@@ -369,10 +458,12 @@ def simulate_parameters(
     h_ms: float = 1.5,
     d: float = 0.001,  # 1 meter distance for visible signal
     environment: str = "rural",
-    apply_fading: str = "Non",
-    duration: float = 1.0,
-    sampling_rate: int = 1000,
-    showAttenuation:str = "Oui"
+    apply_fading: str = "Non",            
+
+    duration:float = 1,    
+    sampling_interval: float = 0.001,
+    showLoss:str = "Oui",
+    showDomain:str = "domaine temporel" #domaine temporel || domaine fréquentiel
 ):
     """
     Simulate wireless channel with COST231 model and optional fading,
@@ -381,9 +472,8 @@ def simulate_parameters(
     # Calculate attenuation
     attenuation = calculate_cost231(f, h_bs, h_ms, d, environment)
 
-    # Generate time array using predefined function
-    Te = 1/sampling_rate
-    t = generate_time_array(duration, Te)
+    # Generate time array using predefined function    
+    t = generate_time_array(duration=duration, Te=sampling_interval)
 
     # Create carrier signal using predefined sinus generator
     carrier_freq = 20  # Visualizable frequency
@@ -398,25 +488,26 @@ def simulate_parameters(
     )
 
     # Apply channel effects
-    if(showAttenuation == "Oui"):
+    if(showLoss == "Oui"):
         signal *= db_to_watts(-attenuation)
     
     if apply_fading == "Oui":
         signal *= np.random.rayleigh(scale=1.0, size=len(t))
 
-    return {
-        "time": t.tolist(),
-        "signal": signal.tolist(),
-        "parameters": {
-            "frequency_mhz": f,
-            "distance_km": d,
-            "tx_power_dbm": tx_power_dbm,
-            "attenuation_db": round(attenuation, 2),
-            "fading_enabled": apply_fading,
-            "carrier_freq_hz": carrier_freq,
-            "environment": environment
+    
+    if showDomain == "domaine fréquentiel":
+        f, signal = generate_frequency(signal=signal, Te=sampling_interval)
+        return {
+            "x":         f.tolist(),
+            "y":         signal.tolist(),
+            "x_label":   "Fréquence (Hz)"
         }
-    }
+    else:
+        return {
+            "x":         t.tolist(),
+            "y":         signal.tolist(),            
+        }
+
 
 
 @app.post("/simulate/coverage")
@@ -464,26 +555,20 @@ def simulate_coverage(data: SimulationRequest):
 
 
 
-def fspl(distance_m, frequency_hz):
-    """Calculate Free Space Path Loss in dB."""
-    c = 3e8  # Speed of light (m/s)   
-    distance_m *= 1e3
-    frequency_hz *= 1e9 
-    return 20 * np.log10(distance_m) + 20 * np.log10(frequency_hz) + 20 * np.log10(4 * np.pi / c)
 
 
 @app.get('/fspl')
 def get_fspl(
     carrier_frequency_GHz: float = 2.4,  # Carrier frequency in GHz for FSPL * 10^9
-    baseband_frequency_Hz: float = 1000,  # Baseband signal frequency in Hz
-    distance_m: float = 1,             # Distance in meters (e.g., 1km) en km           
-    amplitudeIfLossAffected:int=1,
+    baseband_frequency_Hz: float = 10,  # Baseband signal frequency in Hz
+    distance_m: float = 1,             # Distance in meters (e.g., 1km) en km               
+    
+    duration:float = 1,    
+    sampling_interval: float = 0.001,
     showLoss:str = "Oui",
-): 
-    # Define duration and sampling period
-    Te = 1 / 250e3  # Sampling period (s), 250 kHz sampling rate
-    duration = 10e-3  # Duration in seconds (10 ms)
-    t = generate_time_array(duration=duration, Te=Te)
+    showDomain:str = "domaine temporel" #domaine temporel || domaine fréquentiel
+):     
+    t = generate_time_array(duration=duration, Te=sampling_interval)
     
     # Generate baseband signal (sine wave at baseband frequency)
     signal = np.sin(2 * np.pi * baseband_frequency_Hz * t)
@@ -494,53 +579,38 @@ def get_fspl(
         # Convert FSPL (loss) to attenuation factor (amplitude ratio)
         attenuation = db_to_amplitude(-fspl_db)            
         # Apply attenuation to the signal
-        signal *= attenuation * 1e5 * amplitudeIfLossAffected
+        signal *= attenuation * 1e4
     
-    # Parameters dictionary for output
-    parameters = {        
-        "baseband_frequency_Hz": baseband_frequency_Hz,
-        "distance_m": distance_m,       
-        "sampling_rate_Hz": 1 / Te,
-        "duration_s": duration
-    }
     
-    return {
-        "time": t.tolist(),
-        "signal": signal.tolist(),
-        "parameters": parameters
-    }
+    if showDomain == "domaine fréquentiel":
+        f, signal = generate_frequency(signal=signal, Te=sampling_interval)
+        return {
+            "x":         f.tolist(),
+            "y":         signal.tolist(),
+            "x_label":   "Fréquence (Hz)"
+        }
+    else:
+        return {
+            "x":         t.tolist(),
+            "y":         signal.tolist(),            
+        }
 
 
 
-
-def nlos_loss(frequency_MHz, distance_km, delta_nlos=20):
-    """
-    Calculate NLOS loss in dB with additional attenuation.
-    
-    Parameters:
-        frequency_MHz (float): Frequency in MHz
-        distance_km (float or np.ndarray): Distance in km
-        delta_nlos (float): Additional attenuation in dB
-    
-    Returns:
-        float or np.ndarray: NLOS loss in dB
-    """
-    frequency_hz = frequency_MHz * 1e6  # Convert MHz to Hz
-    distance_m = distance_km * 1000     # Convert km to m
-    return fspl(distance_m, frequency_hz) + delta_nlos
 
 @app.get("/itu-r-p1411")
 def run_itu_r_p1411_simulation(
     frequency_MHz: float = 2400,    # Frequency in MHz
     d_min: float = 1,              # Minimum distance in meters
     d_max: float = 1000,           # Maximum distance in meters
-    environment: str = "urban",    # Options: urban, suburban, open
-    los: str = "Oui",              # Options: Oui, Non
-    A: float = 10,                 # Amplitude of sinusoidal signal in dB
-    f_signal: float = 1,           # Frequency of sinusoidal signal in Hz
-    t_max: float = 10,             # Maximum time in seconds
+    environment: str = "urban",    # Options: urban, suburban, open        
+    f_signal: float = 10,           # Frequency of sinusoidal signal in Hz    
     P0: float = 0,                 # Average transmitted power in dBm
-    affectLoss: str = "Oui"        # Options: Oui, Non 
+    duration:float = 1,
+    amplitude:float=1,
+    sampling_interval: float = 0.001,
+    showLoss:str = "Oui",
+    showDomain:str = "domaine temporel" #domaine temporel || domaine fréquentiel
 ):
     """
     Simulate ITU-R P.1411 path loss model applied to a sinusoidal signal over time.
@@ -557,162 +627,74 @@ def run_itu_r_p1411_simulation(
         P0 (float): Average transmitted power in dBm
     
     Returns:
-        dict: {"time": list, "signal": list, "parameters": dict}
-    """
-    # Input validation
-    if frequency_MHz <= 0:
-        return {"error": "frequency_MHz must be positive"}
-    if d_min <= 0 or d_max <= 0:
-        return {"error": "d_min and d_max must be positive"}
-    if d_max <= d_min:
-        return {"error": "d_max must be greater than d_min"}
-    if environment not in ["urban", "suburban", "open"]:
-        return {"error": "environment must be 'urban', 'suburban', or 'open'"}
-    if los not in ["Oui", "Non"]:
-        return {"error": "los must be 'Oui' or 'Non'"}
-    if A < 0:
-        return {"error": "A must be non-negative"}
-    if f_signal <= 0:
-        return {"error": "f_signal must be positive"}
-    if t_max <= 0:
-        return {"error": "t_max must be positive"}
-
+        dict: {"x": list, "y": list, "parameters": dict}
+    """ 
     # Generate time points
-    time_points = np.linspace(0, t_max, 200)
+    t = generate_time_array(duration=duration,Te=sampling_interval)
 
-    # Generate distances (receiver moving from d_min to d_max over t_max)
-    distances_m = np.linspace(d_min, d_max, 200)
+    # Generate distances (receiver moving from d_min to d_max)
+    distances_m = np.linspace(d_min, d_max, len(t))
     distances_km = distances_m / 1000
 
     # Generate sinusoidal transmitted power
-    P_tx = P0 + A * np.sin(2 * np.pi * f_signal * time_points)
-
-    # Determine delta_nlos based on environment
-    delta_nlos = {"urban": 20, "suburban": 15, "open": 10}.get(environment, 20)
-
-    # Calculate path loss based on los
-    if los == "Oui":
-        selected_loss = fspl(distances_m, frequency_MHz * 1e6)
-    else:
-        selected_loss = nlos_loss(frequency_MHz, distances_km, delta_nlos)
+    P_tx_dB = P0 + amplitude * np.sin(2 * np.pi * f_signal * t)    
 
     # Apply path loss to get received signal
-    signal = P_tx 
-    if affectLoss == "Oui":
-        signal -= selected_loss
+    signal = db_to_watts(P_tx_dB)
+    if showLoss == "Oui":
+        # Calculate path loss based on los        
+        # Determine delta_nlos based on environment
+        delta_nlos = {"urban": 20, "suburban": 15, "open": 10}.get(environment, 20)
+        L_dB = nlos_loss(frequency_MHz, distances_km, delta_nlos)
+        signal *= db_to_amplitude(-L_dB) * 1e15
 
-    # Prepare parameters for response
-    parameters = {
-        "frequency_MHz": frequency_MHz,
-        "d_min": d_min,
-        "d_max": d_max,
-        "environment": environment,
-        "los": los,
-        "delta_nlos": delta_nlos if los == "Non" else None,
-        "num_points": 200,
-        "P0": P0,
-        "A": A,
-        "f_signal": f_signal,
-        "t_max": t_max
-    }
-
-    # Prepare response
-    response = {
-        "time": time_points.tolist(),
-        "signal": signal.tolist(),
-        "parameters": parameters
-    }
-
-    return response
-
-
-def generate_propagated_signal_with_delay(distance_km, attenuation_factor, frequency_hz=1000):
-    """
-    Génère un signal sinusoïdal propagé avec atténuation et délai.
-    """
-    # Use generate_time_array instead of linspace
-    duration = .0  # 1 second
-    Te = 0.001  # 1 ms sampling
-    t = generate_time_array(duration, Te)
-    
-    # Fixed propagation delay calculation (convert km to meters)
-    time_delay = (distance_km * 1000) / 299792458  # Convert km to meters for correct SI units
-    
-    signal = np.sin(2 * np.pi * frequency_hz * (t - time_delay)) * attenuation_factor
-    return t, signal
-
-
-
-def hata_loss(f, h_b, h_m, d, environment='urban', city_size='Grande'):
-    """
-    Calcule l'atténuation de propagation selon le modèle Okumura-Hata.
-    
-    :param f: Fréquence en MHz (150 ≤ f ≤ 1500)
-    :param h_b: Hauteur de l'antenne de la station de base en mètres (30 ≤ h_b ≤ 200)
-    :param h_m: Hauteur de l'antenne mobile en mètres (1 ≤ h_m ≤ 10)
-    :param d: Distance entre la station de base et le mobile en km (1 ≤ d ≤ 20)
-    :param environment: Type d'environnement ('urban', 'suburban', 'rural')
-    :param city_size: Taille de la ville ('Grande', 'Moyenne/Petite')
-    :return: Atténuation en dB
-    """
-    if not (150 <= f <= 1500 and 30 <= h_b <= 200 and 1 <= h_m <= 10 and 1 <= d <= 20):
-        raise ValueError("Les paramètres sont hors des plages valides.")
-
-    f *= 10e6       
-    d *= 1000 
-    # Correction selon la hauteur de l'antenne mobile et la taille de la ville
-    if city_size == 'Grande':  
-        if f >= 400*10e6:
-            a_hm = 3.2 * (np.log10(11.75 * h_m))**2 - 4.97
-        else:
-            a_hm = (1.1 * np.log10(f) - 0.7) * h_m - (1.56 * np.log10(f) - 0.8)
+    if showDomain == "domaine fréquentiel":
+        f, signal = generate_frequency(signal=signal, Te=sampling_interval)
+        return {
+            "x":         f.tolist(),
+            "y":         signal.tolist(),
+            "x_label":   "Fréquence (Hz)"
+        }
     else:
-        a_hm = (1.1 * np.log10(f) - 0.7) * h_m - (1.56 * np.log10(f) - 0.8)
-    
-    L = 69.55 + 26.16 * np.log10(f) - 13.82 * np.log10(h_b) - a_hm \
-        + (44.9 - 6.55 * np.log10(h_b)) * np.log10(d)
-    
-    if environment == 'suburban':
-        L -= 2 * (np.log10(f / 28))**2 - 5.4
-    elif environment == 'rural':
-        L -= 4.78 * (np.log10(f))**2 - 18.33 * np.log10(f) + 40.94
-    
-    return L
+        return {
+            "x":         t.tolist(),
+            "y":         signal.tolist(),            
+        }
 
 
 @app.get('/hata')
 def generate_hata_signal(
     f: float = 900,
-    signal_frequency: float = 900.0,
+    signal_frequency: float = 10.0,
     h_b: float = 50,
     h_m: float = 1.5,
     d: float = 1,
     environment: str = 'urban',
     city_size: str = 'petite/meduim',
-    duration:float = 10e-3,
+    duration:float = 1,
     amplitude:float=1,
-    Te: float = 0.00001
+    sampling_interval: float = 0.001,
+    showLoss:str = "Oui",
+    showDomain:str = "domaine temporel" #domaine temporel || domaine fréquentiel
 ):
-    loss = hata_loss(f, h_b, h_m, d, environment, city_size)
-    attenuation_factor = db_to_amplitude(-loss)    
-    t = generate_time_array(duration=duration,Te=Te)
-    signal =10e20*amplitude* attenuation_factor * np.sin(2 * np.pi * signal_frequency * t)              
-    parameters = {
-        "frequency_MHz": f,
-        "base_height_m": h_b,
-        "mobile_height_m": h_m,
-        "distance_km": d,
-        "environment": environment,
-        "city_size": city_size,
-        "signal_frequency_Hz": signal_frequency,
-        "duration_s": duration,
-        "sampling_interval_s": Te,
-        
-    }
+    t = generate_time_array(duration=duration,Te=sampling_interval)
+    signal = amplitude *np.sin(2 * np.pi * signal_frequency * t)                 
+
+    if showLoss == "Oui":
+        loss = hata_loss(f, h_b, h_m, d, environment, city_size)
+        attenuation_factor = db_to_amplitude(-loss)    
+        signal *= 1e19 * attenuation_factor
+
+    if showDomain == "domaine fréquentiel":
+        f,signal = generate_frequency(signal=signal,Te=sampling_interval)
+        return {
+            "x":f.tolist(),
+            "y":signal.tolist(),
+            "x_label":"Fréquence (Hz)"
+        }
     return {
-        "time": t.tolist(),
-        "signal": signal.tolist(),
-        "parameters": parameters
+        "x": t.tolist(),
+        "y": signal.tolist(),        
     }
 
 
@@ -734,37 +716,37 @@ def two_ray_ground_loss(d, ht, hr, frequency_MHz):
 @app.get("/two-ray-ground-with-signal")
 def run_two_ray_simulation_with_sinus(
     frequency_MHz: float = 900,       # Carrier frequency for path loss calculation
-    signal_frequency_Hz: float = 1000, # Frequency of generated sine signal
+    signal_frequency_Hz: float = 10, # Frequency of generated sine signal
     ht: float = 30,                    # Transmitter height (m)
     hr: float = 1.5,                   # Receiver height (m)
-    d: float = 100                     # Distance between antennas (m)
+    d: float = 100   ,                  # Distance between antennas (m),
+    duration: float = 1.0,             # Duration in seconds    
+    sampling_interval: float = 0.001,  # Sampling interval in seconds        
+    showLoss:str = "Oui",
+    showDomain:str = "domaine fréquentiel" #domaine temporel || domaine fréquentiel
 ):
-    # Time and signal generation
-    duration = 1.0      # seconds
-    Te = 0.001          # Sampling period = 1 ms → fs = 1 kHz
-    t = generate_time_array(duration, Te)
+    # Time and signal generation    
+    t = generate_time_array(duration=duration, Te=sampling_interval)
 
     # Generate sine wave signal at baseband frequency
     signal = np.sin(2 * np.pi * signal_frequency_Hz * t)
 
-    # Calculate attenuation based on two-ray model
-    losses_db = two_ray_ground_loss(d=d, ht=ht, hr=hr, frequency_MHz=frequency_MHz)
-    attenuation = db_to_amplitude(-losses_db)
-    signal *= attenuation*1e20  # Apply attenuation to the signal
+    if showLoss == "Oui":
+        # Calculate attenuation based on two-ray model
+        losses_db = two_ray_ground_loss(d=d, ht=ht, hr=hr, frequency_MHz=frequency_MHz)
+        attenuation = db_to_amplitude(-losses_db)
+        signal *= attenuation*1e6  # Apply attenuation to the signal
 
-    parameters = {
-        "carrier_frequency_MHz": frequency_MHz,
-        "signal_frequency_Hz": signal_frequency_Hz,
-        "transmitter_height_m": ht,
-        "receiver_height_m": hr,
-        "distance_m": d,
-        "attenuation_dB": float(losses_db)
-    }
-
+    if showDomain == "domaine fréquentiel":
+        f,signal = generate_frequency(signal=signal,Te=sampling_interval)
+        return {
+            "x":f.tolist(),
+            "y":signal.tolist(),
+            "x_label":"Fréquence (Hz)"
+        }
     return {
-        "time": t.tolist(),
-        "signal": signal.tolist(),
-        "parameters": parameters
+        "x": t.tolist(),
+        "y": signal.tolist(),        
     }
 
 
@@ -780,49 +762,27 @@ def run_two_ray_simulation(
 
     distances = np.linspace(d_min, d_max, 500)  # distances en mètres
     loss = two_ray_ground_loss(distances, ht, hr, frequency_MHz)
-
-    parameters = {
-        "frequency_MHz": frequency_MHz,
-        "ht": ht,
-        "hr": hr,
-        "d_min": d_min,
-        "d_max": d_max,
-        "num_points": 500
-    }
     
     return {
-        "time": distances.tolist(),
+        "x": distances.tolist(),
         "x_label":'distance ',
         "y_label":'Perte en db',
-        "signal": loss.tolist(),
-        "parameters": parameters
+        "y": loss.tolist(),        
     }
 
 
 
-
-
-def weissberger_loss(distances_km, foliage_depth_km, frequency_MHz):
-    """
-    Calculate Weissberger path loss in dB.
-    
-    Args:
-        distances_km (np.ndarray): Distance array in kilometers
-        foliage_depth_km (float): Depth of foliage in kilometers
-        frequency_MHz (float): Frequency in MHz
-    
-    Returns:
-        np.ndarray: Loss in dB
-    """
-    # Generalized Weissberger model
-    return 1.33 * (frequency_MHz ** 0.284) * ((distances_km * foliage_depth_km) ** 0.588)
 
 @app.get("/weissberger-signal-simulation")
 def run_weissberger_simulation_with_sinus(
     frequency_MHz: float = 900,
     foliage_depth_km: float = 0.1,
     d_min: float = 1,
-    d_max: float = 1000
+    d_max: float = 1000,
+    duration: float = 1.0,             # Duration in seconds    
+    sampling_interval: float = 0.001,  # Sampling interval in seconds        
+    showLoss:str = "Oui",
+    showDomain:str = "domaine temporel" #domaine fréquentiel || domaine fréquentiel
 ):
     """
     Simulate a signal with Weissberger attenuation over a moving distance range.
@@ -836,45 +796,42 @@ def run_weissberger_simulation_with_sinus(
     Returns:
         dict: Time, signal, and simulation parameters
     """
-    # Time and frequency setup
-    duration = 1.0  # 1 second
-    Te = 0.001  # 1 ms sampling interval
-    t = np.arange(0, duration, Te)
+    # Time and frequency setup    
+    t = generate_time_array(duration=duration,Te=sampling_interval)
     carrier_freq = frequency_MHz * 1e6  # Convert to Hz
     
     # Distance varies linearly over time
     distances_km = np.linspace(d_min, d_max, len(t))
-    
-    # Compute Weissberger loss and attenuation
-    losses = weissberger_loss(distances_km, foliage_depth_km, frequency_MHz)
-    attenuation_factors = db_to_amplitude(-losses)  # Convert dB loss to linear scale
-    
+        
     # Compute delays
     time_delays = (distances_km * 1000) / 299792458  # Delay in seconds
     
     # Generate vectorized signal
-    composite_signal = attenuation_factors * np.sin(2 * np.pi * carrier_freq * (t - time_delays))
+    composite_signal = np.sin(2 * np.pi * carrier_freq * (t - time_delays))
+
+    if showLoss == "Oui":
+        # Compute Weissberger loss and attenuation
+        losses = weissberger_loss(distances_km, foliage_depth_km, frequency_MHz)
+        attenuation_factors = db_to_amplitude(-losses)  # Convert dB loss to linear scale
+        composite_signal *= attenuation_factors
     
     # Normalize to prevent clipping
     max_abs = np.max(np.abs(composite_signal))
     if max_abs > 0:
         composite_signal /= max_abs
-    
-    # Simulation parameters
-    parameters = {
-        "frequency_MHz": frequency_MHz,
-        "foliage_depth_km": foliage_depth_km,
-        "distance_range_km": [float(d_min), float(d_max)],
-        "duration": duration,
-        "sampling_interval": Te,
-        "carrier_frequency_hz": carrier_freq,
-        "signal_type": "weissberger_attenuated"
-    }
-    
+       
+    if showDomain == "domaine fréquentiel":
+        f,signal = generate_frequency(signal=composite_signal,Te=sampling_interval)
+        return {
+            "x":f.tolist(),
+            "y":signal.tolist(),
+            "x_label":"Fréquence (Hz)"
+        }
+
+
     return {
-        "time": t.tolist(),
-        "signal": composite_signal.tolist(),
-        "parameters": parameters
+        "x": t.tolist(),
+        "y": composite_signal.tolist(),
     }
 
 @app.get("/weissberger")
@@ -884,19 +841,12 @@ def run_weissberger_simulation(
 
     depths = np.linspace(1, max_depth, 400)  # Profondeurs de 1 m à max_depth m
     losses = [weissberger_loss(distances_km=d,frequency_MHz=frequency_MHz,foliage_depth_km=max_depth) for d in depths]
-    
-    parameters = {
-        "frequency_MHz": frequency_MHz,
-        "depth_range_m": [1, max_depth],
-        "num_points": 400
-    }
-    
+      
     return {
-        "time": depths.tolist(),
-        "signal": losses,
+        "x": depths.tolist(),
+        "y": losses,
         "x_label":'distance ',
-        "y_label":'Perte en db',
-        "parameters": parameters
+        "y_label":'Perte en db',        
     }
 
 
@@ -939,7 +889,11 @@ def simulate_longley_rice_signal(
     d_min: float = 1,
     d_max: float = 1000,
     terrain_irregularity: float = 50,
-    climate: str = 'Tempéré continental'
+    climate: str = 'Tempéré continental',
+    duration: float = 1.0,             # Duration in seconds    
+    sampling_interval: float = 0.001,  # Sampling interval in seconds        
+    showLoss:str = "Oui",
+    showDomain:str = "domaine temporel" #domaine temporel || domaine fréquentiel
 ):
     """
     Simulate a radio signal with Longley-Rice attenuation for a moving receiver.
@@ -955,11 +909,8 @@ def simulate_longley_rice_signal(
     
     Returns:
         dict: Time, simulated signal, and simulation parameters
-    """
-    # Simulation parameters
-    duration = 1.0  # Duration in seconds
-    sampling_interval = 0.001  # Sampling interval in seconds (1 ms)
-    t = np.arange(0, duration, sampling_interval)  # Time array
+    """    
+    t = generate_time_array(duration=duration,Te=sampling_interval)
     carrier_frequency = frequency_MHz * 1e6  # Convert to Hz
 
     # Linear distance variation over time
@@ -973,29 +924,27 @@ def simulate_longley_rice_signal(
     time_delays = (distances_km * 1000) / 299792458  # Delay in seconds (speed of light)
 
     # Generate signal with attenuation and delay
-    signal = attenuation_factors * np.sin(2 * np.pi * carrier_frequency * (t - time_delays))
+    signal = np.sin(2 * np.pi * carrier_frequency * (t - time_delays))
+
+    if showLoss == "Oui":
+         signal *= attenuation_factors
 
     # Normalize signal to avoid clipping
     max_amplitude = np.max(np.abs(signal))
     if max_amplitude > 0:
-        signal /= max_amplitude
+        signal /= max_amplitude    
 
-    # Parameters for response
-    parameters = {
-        "frequency_MHz": frequency_MHz,
-        "transmitter_height_m": height_tx,
-        "receiver_height_m": height_rx,
-        "distance_range_km": [float(d_min), float(d_max)],
-        "terrain_irregularity_m": terrain_irregularity,
-        "climate": climate,
-        "duration_s": duration,
-        "sampling_interval_s": sampling_interval
-    }
-
+    if showDomain == "domaine fréquentiel":
+        f,signal = generate_frequency(signal=signal,Te=sampling_interval)
+        return {
+            "x":f.tolist(),
+            "y":signal.tolist(),
+            "x_label":"Fréquence (Hz)"
+        }
+    
     return {
-        "time": t.tolist(),
-        "signal": signal.tolist(),
-        "parameters": parameters
+        "x": t.tolist(),
+        "y": signal.tolist(),        
     }
 
 @app.get("/longley-rice-loss-simulation")
@@ -1005,7 +954,7 @@ def run_longley_rice_loss_simulation(
     height_rx: float = 1.5,
     terrain_irregularity: float = 50,
     climate: str = 'Tempéré continental',# Tempéré maritime or Tempéré continental
-    num_points: int = 300
+    num_points: int = 300,    
 ):
     """
     Simulate Longley-Rice propagation loss over a range of distances.
@@ -1024,22 +973,11 @@ def run_longley_rice_loss_simulation(
     distances_km = np.linspace(1, 100, num_points)  # Distances in km
     losses = [calculate_longley_rice_loss(d, frequency_MHz, height_tx, height_rx, terrain_irregularity, climate) for d in distances_km]
 
-    parameters = {
-        "frequency_MHz": frequency_MHz,
-        "transmitter_height_m": height_tx,
-        "receiver_height_m": height_rx,
-        "terrain_irregularity_m": terrain_irregularity,
-        "climate": climate,
-        "distance_range_km": [1, 100],
-        "num_points": num_points
-    }
-
     return {
-        "time": distances_km.tolist(),
-        "signal": losses,
+        "x": distances_km.tolist(),
+        "y": losses,
         "x_label":'Distance en km',
-        "y_label":'Perte en db',
-        "parameters": parameters
+        "y_label":'Perte en db',        
     }
 
 
@@ -1050,15 +988,15 @@ async def ofdm_on_sine(
     data_sc: int = 48,
     esn0: int = 1,
     showAtten: str = "Non",  # "Oui" or "Non"
-):
-    br: int = 80000000
-    ns: int = 4
-    fs = br  # Sampling rate = bandwidth
-    duration = ns * fftlen / fs
-    t = generate_time_array(duration=duration, Te=1/fs)
+    frequency_Mhz: float = 1.0,      # Frequency of the sine wave in Hz    
+    duration: float = 1.0,             # Duration in seconds    
+    sampling_interval: float = 0.001,  # Sampling interval in seconds        
+    showDomain:str = "domaine fréquentiel" #domaine temporel || domaine fréquentiel
+):    
+    t = generate_time_array(duration=duration, Te=sampling_interval)
 
     # Generate sinusoid
-    freq = 1e6
+    freq = frequency_Mhz * 1e6
     sine_wave = np.sin(2 * np.pi * freq * t)
 
     # Prepare OFDM symbols
@@ -1092,36 +1030,32 @@ async def ofdm_on_sine(
     real_signal = np.real(faded_complex)
     noise = np.random.normal(0, noise_std, len(real_signal))
     final_signal = real_signal + noise
-
+    
     # Prepare output
-    total_samples = len(final_signal)
-    final_time = np.arange(total_samples) / fs
-
-    return {
-        "time": final_time.tolist(),
-        "signal": final_signal.tolist(),
-        "parameters": {
-            "sample_rate": fs,
-            "fft_length": fftlen,
-            "guard_interval": gilen,
-            "num_symbols": ns,
-            "data_subcarriers": data_sc,
-            "esn0_dB": esn0,
-            "noise_std": noise_std,
-            "show_attenuation": showAtten
-        }
-    }
+    if showDomain == "domaine temporel":                
+        return {"x":t.tolist(),"y":final_signal.tolist()}
+    else:
+        f,signal = generate_frequency(signal=final_signal,Te=sampling_interval)
+        return {"x":f.tolist(),"y":signal.tolist(),"x_label":"Fréquence (Hz)"}
+        
 
 
 @app.get("/rician")
 async def run_rician_model(
     k_db: int = 10,
-    signal_power: int = 1,
-    show_signal_type:str = "rician_channel",    
+    signal_power: int = 20,
+    show_signal_type:str = "convol_sign", 
+    duration: float = 1.0,             # Duration in seconds    
+    sampling_interval: float = 0.001,  # Sampling interval in seconds        
+    frequency_hz: float = 900.0,      # Frequency of the sine wave in Hz
+    showLoss:str = "Oui",   
+    showDomain:str = "domaine fréquentiel" #domaine temporel || domaine fréquentiel
 ):
     # Generate sinusoidal waveform
-    t = np.linspace(1, 100, 750)
-    x_volts = 20 * np.sin(t / (2 * np.pi))    
+    # Calculate amplitude from signal power (for sine wave, power = A^2 / 2)
+    amplitude = np.sqrt(2 * signal_power)
+    t = generate_time_array(duration=duration,Te=sampling_interval)
+    signal = amplitude * np.sin(2 * np.pi * frequency_hz * t)    
 
     # Generate Rician channel coefficients
     N = 1000  # Number of samples
@@ -1131,7 +1065,7 @@ async def run_rician_model(
 
     h = (sigma * np.random.randn(N) + mu) + 1j * (sigma * np.random.randn(N) + mu)
     h_mag = np.abs(h)        
-
+    
 
     signal_type = ["rician_channel","ricianchannel_db","convol_sign"]
     if show_signal_type == signal_type[0]:        
@@ -1139,38 +1073,38 @@ async def run_rician_model(
     elif show_signal_type == signal_type[1]:
         h_mag_dB = 10 * np.log10(h_mag)  # Channel response in dB
         signal = h_mag_dB
-    else:
-        # Convolve the Rician channel response with the sinusoidal waveform
-        Y4 = np.convolve(h, x_volts)
-        signal = np.abs(Y4)
-        
+        obj["x_label"] = "db"
+    elif show_signal_type == signal_type[2]:
+        if showLoss == "Oui":
+            # Convolve the Rician channel response with the sinusoidal waveform
+            Y4 = np.convolve(h, signal)
+            signal = np.abs(Y4)                            
 
-    parameters = {
-        "k_db": k_db,
-        "signal_power": signal_power,        
-        "N": N,
-        "K": K,
-        "mu": mu,
-        "sigma": sigma
-    }
+    obj = {}
+    if showDomain == "domaine temporel":
+        obj["x"] = t.tolist()
+    else:
+        f,signal = generate_frequency(signal=signal,Te=sampling_interval)
+        obj["x"] = f.tolist()
+        obj["x_label"] = "Fréquence (Hz)"
+   
+    obj["y"] = signal.tolist()    
 
     # Return JSON object
-    return {
-        "time": t.tolist(),
-        "signal": signal.tolist(),
-        "parameters": parameters
-    }
+    return obj
 
 
 
 @app.get("/nakagami-fading-signal")
 def simulate_nakagami_fading_signal(
-    frequency_hz: float = 1000.0,      # Frequency of the sine wave in Hz
+    frequency_hz: float = 900.0,      # Frequency of the sine wave in Hz
     signal_power: float = 3.0,         # Power of the input sine wave
     m: float = 1.0,                    # Nakagami m parameter
     omega: float = 1.0,                # Nakagami omega parameter (average fading power)
     duration: float = 1.0,             # Duration in seconds    
-    sampling_interval: float = 0.001,  # Sampling interval in seconds    
+    sampling_interval: float = 0.001,  # Sampling interval in seconds        
+    showLoss:str = "Oui",
+    showDomain:str = "domaine temporel" #domaine temporel || domaine fréquentiel
 ):
     """
     Simulate a sinusoidal signal with Nakagami fading applied, returning time, signal, and parameters.
@@ -1193,33 +1127,26 @@ def simulate_nakagami_fading_signal(
     amplitude = np.sqrt(2 * signal_power)
     
     # Generate sinusoidal signal
-    s = amplitude * np.sin(2 * np.pi * frequency_hz * t)
+    signal = amplitude * np.sin(2 * np.pi * frequency_hz * t)
     
-    # Generate Nakagami fading envelope
-    # h^2 follows Gamma(m, omega/m), so h = sqrt(Gamma(m, omega/m))
-    Y = gamma.rvs(a=m, scale=omega / m, size=len(t))
-    h = np.sqrt(Y)
-    
-    # Apply fading to the signal
-    signal = h * s
+    if showLoss == "Oui":
+        # Generate Nakagami fading envelope
+        # h^2 follows Gamma(m, omega/m), so h = sqrt(Gamma(m, omega/m))
+        Y = gamma.rvs(a=m, scale=omega / m, size=len(t))
+        h = np.sqrt(Y)
+        # Apply fading to the signal
+        signal *= h    
 
-    
-    # Package parameters for response
-    parameters = {
-        "frequency_hz": frequency_hz,
-        "signal_power": signal_power,
-        "amplitude": float(amplitude),
-        "m": m,
-        "omega": omega,
-        "duration": duration,
-        "sampling_interval": sampling_interval,        
-    }
-    
+    obj = {}
+
+    if showDomain == "domaine temporel":
+        obj["x"] = t.tolist()        
+    else:
+        f,signal = generate_frequency(signal=signal,Te=sampling_interval)
+        obj["x"] = f.tolist()
+        obj["x_label"] = "Fréquence (Hz)"        
+
+    obj["y"] = signal.tolist()
     # Return JSON response
-    return {
-        "time": t.tolist(),
-        "signal": signal.tolist(),
-        "parameters": parameters
-    }
-
+    return obj
 
