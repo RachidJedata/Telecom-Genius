@@ -64,8 +64,17 @@ export async function getCourse(courseId: string) {
 }
 
 
-export async function fetchCoursesPages() {
-    return await prisma.courses.count();
+export async function fetchCoursesPages(channelType: String = "") {
+    const includes = Object.values(ModelType).includes(channelType as ModelType);
+    return await prisma.courses.count({
+        ...(
+            includes && {
+                where: {
+                    channelType: channelType as ModelType
+                }
+            }
+        )
+    })
 }
 
 

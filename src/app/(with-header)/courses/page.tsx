@@ -15,10 +15,11 @@ export default async function Home(props: {
   const searchParams = await props.searchParams;
   const currentPage = Number(searchParams?.page) || 1;
   const limit = 8;
-  const totalPages = Math.ceil((await fetchCoursesPages()) / limit);
+  const channelType = await searchParams?.type || "";
+
+  const totalPages = Math.ceil((await fetchCoursesPages(channelType)) / limit);
   const offset = limit * (currentPage - 1);
 
-  const channelType = await searchParams?.type || "";
 
   const courses = await getCourses(limit, offset, channelType);
 
