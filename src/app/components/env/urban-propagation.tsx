@@ -419,7 +419,7 @@ export default function Simulation3D() {
     return (
         <div className="w-full h-screen bg-gradient-to-b from-slate-900 to-slate-800 flex">
 
-            {true && (
+            {false && (
                 <PropagationController
                     showLabels={showLabels}
                     showPathLoss={showPathLoss}
@@ -504,12 +504,12 @@ export default function Simulation3D() {
                     )}
 
                     {/* Environment preset based on weather and time */}
-                    <Environment                    
+                    <Environment
                         preset={
                             timeOfDay === "day" ? (weather === "clear" ? "city" : weather === "cloudy" ? "dawn" : "sunset") : "night"
                         }
                     />
-                    
+
 
                     <PropagationModel
                         showLabels={showLabels}
@@ -529,9 +529,7 @@ export default function Simulation3D() {
                         weather={weather}
                         buildingStyle={buildingStyle}
                         terrainType={terrainType}
-                        antennas={antennas}
-                        selectedAntennaId={selectedAntennaId}
-                        calculatedDistances={calculatedDistances}
+                        selectedAntenna={selectedAntenna}
                     />
                 </Canvas>
             )}

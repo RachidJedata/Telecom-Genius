@@ -2,8 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three'
 import { Antenna } from './urban-propagation';
 import { useFrame } from '@react-three/fiber';
-import { Grid, Html, OrbitControls, Text } from "@react-three/drei";
-
+import { Grid, Html, OrbitControls, Text, useGLTF } from "@react-three/drei";
 
 interface Building {
     id: string,
@@ -30,9 +29,8 @@ interface PropagrationModelProps {
     weather: string,
     buildingStyle: string,
     terrainType: string,
-    antennas: Antenna[],
-    selectedAntennaId: number,
-    calculatedDistances: { [key: number]: number },
+    selectedAntenna: Antenna,
+    // calculatedDistances: { [key: number]: number },
 
 }
 
@@ -72,11 +70,20 @@ export function PropagationModel({
     weather,
     buildingStyle,
     terrainType,
-    antennas,
-    selectedAntennaId,
-    calculatedDistances,
+    // calculatedDistances,
+    selectedAntenna,
 }: PropagrationModelProps) {
 
+
+
+    const { scene: originalScene } = useGLTF('/person_model/human_on_phone.gltf');
+    // 2. Clone + memoize so `scene` ref only changes when originalScene changes
+    const personScene = useMemo(
+        () => originalScene.clone(true),
+        [originalScene]
+    );
+
+   
     const baseStationRef = useRef<THREE.Group>(null)
     const mobileStationRef = useRef<THREE.Group>(null)
     const pathsRef = useRef<THREE.Group>(null)
@@ -85,6 +92,9 @@ export function PropagationModel({
     const terrainRef = useRef<THREE.Group>(null)
     const buildingsRef = useRef<THREE.Group>(null)
     const weatherEffectsRef = useRef<THREE.Group>(null)
+
+    const [popupVisibleMobile, setPopupVisibleMobile] = useState(false);
+    const [popupVisibleAntenta, setPopupVisibleAntenta] = useState(false);
 
     // Model parameters (matching the diagram)
     const totalDistance = distance // Use the distance from props
@@ -109,11 +119,10 @@ export function PropagationModel({
 
     // Calculate number of buildings that fit in the urban area
     const numBuildings = useMemo(
-        () => Math.floor(urbanLength / (buildingWidth + buildingSpacing)),
+        () => Math.min(Math.floor(urbanLength / (buildingWidth + buildingSpacing)), 100),
         [urbanLength, buildingWidth, buildingSpacing]
     );
 
-    // const numBuildings = 5;
     console.log(numBuildings);
 
     // Add this near the beginning of the PropagationModel component
@@ -271,141 +280,134 @@ export function PropagationModel({
 
     // Create paths
     useEffect(() => {
-        if (!pathsRef.current || !mobileStationRef.current) return
+        if (!pathsRef.current || !mobileStationRef.current || !baseStationRef.current) return
 
         // Clear previous paths
         while (pathsRef.current.children.length) {
             pathsRef.current.remove(pathsRef.current.children[0])
         }
 
-        const mobileStationPos = new THREE.Vector3(mobileStationOffset, mobileHeight, 0)
 
-        // Create paths for each antenna
-        antennas.forEach((antenna) => {
-            // Calculate position for this antenna
-            const antennaDistance = calculatedDistances[antenna.id] || distance / 1000
-            const antennaOffset = -antennaDistance * 500 // Scale to scene units
-            const baseStationPos = new THREE.Vector3(antennaOffset, antenna.height, 0)
+        const mobileStationPos = mobileStationRef.current.position;
+        const baseStationPos = baseStationRef.current.position;
 
-            // Only show detailed paths for the selected antenna
-            const isSelected = antenna.id === selectedAntennaId
 
-            // Direct path
-            if (showDirectPath) {
-                const directPath = new THREE.Line(
-                    new THREE.BufferGeometry().setFromPoints([baseStationPos, mobileStationPos]),
-                    new THREE.LineBasicMaterial({
-                        color: new THREE.Color(antenna.color),
-                        linewidth: isSelected ? 2 : 1,
-                        opacity: isSelected ? 1 : 0.4,
-                        transparent: true,
-                    }),
+        // Direct path
+        if (showDirectPath) {
+            const directPath = new THREE.Line(
+                new THREE.BufferGeometry().setFromPoints([baseStationPos, mobileStationPos]),
+                new THREE.LineBasicMaterial({
+                    color: new THREE.Color(selectedAntenna.color),
+                    linewidth: 2,
+                    opacity: 1,
+                    transparent: true,
+                }),
+            )
+            directPath.name = `directPath-${selectedAntenna.id}`
+            pathsRef.current?.add(directPath)
+        }
+
+        // Only show diffraction and reflection paths for selected antenna
+
+        // Diffraction paths
+        if (showDiffractionPaths) {
+            // Calculate building positions
+            const buildingStartX = antennaOffset + (antennaDistance * 1000 - urbanLength) / 2
+
+            for (let i = 0; i < numBuildings; i++) {
+                const buildingX = buildingStartX + i * (buildingWidth + buildingSpacing) + buildingWidth / 2
+                const buildingHeight = buildingHeights[i % buildingHeights.length]
+                const buildingTopPos = new THREE.Vector3(buildingX, buildingHeight, 0)
+
+                // Diffraction over this building
+                const diffractionPath = new THREE.Line(
+                    new THREE.BufferGeometry().setFromPoints([baseStationPos, buildingTopPos, mobileStationPos]),
+                    new THREE.LineBasicMaterial({ color: 0x0000ff, linewidth: 2, opacity: 0.7, transparent: true }),
                 )
-                directPath.name = `directPath-${antenna.id}`
-                pathsRef.current?.add(directPath)
+                diffractionPath.name = `diffractionPath-${i}`
+                pathsRef.current?.add(diffractionPath)
+
+                // Add diffraction marker
+                const diffractionMarker = new THREE.Mesh(
+                    new THREE.SphereGeometry(1),
+                    new THREE.MeshBasicMaterial({ color: 0x0000ff }),
+                )
+                diffractionMarker.position.copy(buildingTopPos)
+                pathsRef.current?.add(diffractionMarker)
             }
+        }
 
-            // Only show diffraction and reflection paths for selected antenna
-            if (isSelected) {
-                // Diffraction paths
-                if (showDiffractionPaths) {
-                    // Calculate building positions
-                    const buildingStartX = antennaOffset + (antennaDistance * 1000 - urbanLength) / 2
+        // Reflection paths
+        if (showReflectionPaths) {
+            // Ground reflection
+            const groundReflectionPoint = new THREE.Vector3((baseStationPos.x + mobileStationPos.x) / 2, 0, 0)
 
-                    for (let i = 0; i < numBuildings; i++) {
-                        const buildingX = buildingStartX + i * (buildingWidth + buildingSpacing) + buildingWidth / 2
-                        const buildingHeight = buildingHeights[i % buildingHeights.length]
-                        const buildingTopPos = new THREE.Vector3(buildingX, buildingHeight, 0)
+            const groundReflectionPath = new THREE.Line(
+                new THREE.BufferGeometry().setFromPoints([baseStationPos, groundReflectionPoint, mobileStationPos]),
+                new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 2, opacity: 0.7, transparent: true }),
+            )
+            groundReflectionPath.name = "groundReflectionPath"
+            pathsRef.current?.add(groundReflectionPath)
 
-                        // Diffraction over this building
-                        const diffractionPath = new THREE.Line(
-                            new THREE.BufferGeometry().setFromPoints([baseStationPos, buildingTopPos, mobileStationPos]),
-                            new THREE.LineBasicMaterial({ color: 0x0000ff, linewidth: 2, opacity: 0.7, transparent: true }),
-                        )
-                        diffractionPath.name = `diffractionPath-${i}`
-                        pathsRef.current?.add(diffractionPath)
+            // Add reflection marker
+            const groundReflectionMarker = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.5, 0.5, 1, 16),
+                new THREE.MeshBasicMaterial({ color: 0x00ff00 }),
+            )
+            groundReflectionMarker.position.copy(groundReflectionPoint.clone().add(new THREE.Vector3(0, 0.5, 0)))
+            groundReflectionMarker.rotation.x = Math.PI / 2
+            pathsRef.current?.add(groundReflectionMarker)
 
-                        // Add diffraction marker
-                        const diffractionMarker = new THREE.Mesh(
-                            new THREE.SphereGeometry(1),
-                            new THREE.MeshBasicMaterial({ color: 0x0000ff }),
-                        )
-                        diffractionMarker.position.copy(buildingTopPos)
-                        pathsRef.current?.add(diffractionMarker)
-                    }
-                }
+            // Building reflections
+            const buildingStartX = antennaOffset + (antennaDistance * 1000 - urbanLength) / 2
 
-                // Reflection paths
-                if (showReflectionPaths) {
-                    // Ground reflection
-                    const groundReflectionPoint = new THREE.Vector3((baseStationPos.x + mobileStationPos.x) / 2, 0, 0)
+            for (let i = 0; i < numBuildings; i++) {
+                const buildingX = buildingStartX + i * (buildingWidth + buildingSpacing) + buildingWidth / 2
+                const buildingHeight = buildingHeights[i % buildingHeights.length]
 
-                    const groundReflectionPath = new THREE.Line(
-                        new THREE.BufferGeometry().setFromPoints([baseStationPos, groundReflectionPoint, mobileStationPos]),
-                        new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 2, opacity: 0.7, transparent: true }),
+                // Reflection points on building sides
+                const sides = [
+                    {
+                        // Left side
+                        point: new THREE.Vector3(
+                            buildingX - buildingWidth / 2,
+                            buildingHeight / 2,
+                            buildingWidth / 2, // Offset in Z to show 3D reflection
+                        ),
+                        color: 0x00dd00,
+                    },
+                    {
+                        // Right side
+                        point: new THREE.Vector3(
+                            buildingX + buildingWidth / 2,
+                            buildingHeight / 2,
+                            -buildingWidth / 2, // Offset in Z to show 3D reflection
+                        ),
+                        color: 0x00bb00,
+                    },
+                ]
+
+                // Add reflection paths for each side
+                sides.forEach((side, sideIndex) => {
+                    const buildingReflectionPath = new THREE.Line(
+                        new THREE.BufferGeometry().setFromPoints([baseStationPos, side.point, mobileStationPos]),
+                        new THREE.LineBasicMaterial({ color: side.color, linewidth: 2, opacity: 0.6, transparent: true }),
                     )
-                    groundReflectionPath.name = "groundReflectionPath"
-                    pathsRef.current?.add(groundReflectionPath)
+                    buildingReflectionPath.name = `buildingReflectionPath-${i}-${sideIndex}`
+                    pathsRef.current?.add(buildingReflectionPath)
 
                     // Add reflection marker
-                    const groundReflectionMarker = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.5, 0.5, 1, 16),
-                        new THREE.MeshBasicMaterial({ color: 0x00ff00 }),
+                    const reflectionMarker = new THREE.Mesh(
+                        new THREE.SphereGeometry(0.7),
+                        new THREE.MeshBasicMaterial({ color: side.color }),
                     )
-                    groundReflectionMarker.position.copy(groundReflectionPoint.clone().add(new THREE.Vector3(0, 0.5, 0)))
-                    groundReflectionMarker.rotation.x = Math.PI / 2
-                    pathsRef.current?.add(groundReflectionMarker)
-
-                    // Building reflections
-                    const buildingStartX = antennaOffset + (antennaDistance * 1000 - urbanLength) / 2
-
-                    for (let i = 0; i < numBuildings; i++) {
-                        const buildingX = buildingStartX + i * (buildingWidth + buildingSpacing) + buildingWidth / 2
-                        const buildingHeight = buildingHeights[i % buildingHeights.length]
-
-                        // Reflection points on building sides
-                        const sides = [
-                            {
-                                // Left side
-                                point: new THREE.Vector3(
-                                    buildingX - buildingWidth / 2,
-                                    buildingHeight / 2,
-                                    buildingWidth / 2, // Offset in Z to show 3D reflection
-                                ),
-                                color: 0x00dd00,
-                            },
-                            {
-                                // Right side
-                                point: new THREE.Vector3(
-                                    buildingX + buildingWidth / 2,
-                                    buildingHeight / 2,
-                                    -buildingWidth / 2, // Offset in Z to show 3D reflection
-                                ),
-                                color: 0x00bb00,
-                            },
-                        ]
-
-                        // Add reflection paths for each side
-                        sides.forEach((side, sideIndex) => {
-                            const buildingReflectionPath = new THREE.Line(
-                                new THREE.BufferGeometry().setFromPoints([baseStationPos, side.point, mobileStationPos]),
-                                new THREE.LineBasicMaterial({ color: side.color, linewidth: 2, opacity: 0.6, transparent: true }),
-                            )
-                            buildingReflectionPath.name = `buildingReflectionPath-${i}-${sideIndex}`
-                            pathsRef.current?.add(buildingReflectionPath)
-
-                            // Add reflection marker
-                            const reflectionMarker = new THREE.Mesh(
-                                new THREE.SphereGeometry(0.7),
-                                new THREE.MeshBasicMaterial({ color: side.color }),
-                            )
-                            reflectionMarker.position.copy(side.point)
-                            pathsRef.current?.add(reflectionMarker)
-                        })
-                    }
-                }
+                    reflectionMarker.position.copy(side.point)
+                    pathsRef.current?.add(reflectionMarker)
+                })
             }
-        })
+        }
+
+
 
         return () => {
             if (pathsRef.current) {
@@ -422,9 +424,7 @@ export function PropagationModel({
         numBuildings,
         baseStationOffset,
         mobileStationOffset,
-        antennas,
-        selectedAntennaId,
-        calculatedDistances,
+        // calculatedDistances,
         buildingHeights,
     ])
 
@@ -453,6 +453,15 @@ export function PropagationModel({
     }, [timeOfDay]);
 
 
+    // Configuration for circular block layout
+    const CITY_LAYOUT = {
+        blocks: 1,              // Number of circular blocks
+        buildingsPerBlock: numBuildings,   // Buildings per block
+        blockRadius: 40,        // Base radius of each block
+        cityRadius: 20,        // Radius of the entire city circle
+        heightVariation: 1,   // Building height variation (30%)
+        positionJitter: 500      // Position randomness
+    };
 
     // Create buildings
     useEffect(() => {
@@ -463,26 +472,9 @@ export function PropagationModel({
             buildingsRef.current.remove(buildingsRef.current.children[0])
         }
 
-        // Create buildings based on the selected antenna's position
-        const selectedAntenna = antennas.find((ant) => ant.id === selectedAntennaId) || antennas[0]
-        const antennaDistance = calculatedDistances[selectedAntenna.id] || distance / 1000
-        const antennaOffset = -antennaDistance * 500 // Scale to scene units
-
-        // Calculate building positions
-        const buildingStartX = antennaOffset + (antennaDistance * 1000 - urbanLength) / 2
-
         // At the end of the building creation useEffect
         const buildingData: Building[] = [];
 
-        // Configuration for circular block layout
-        const CITY_LAYOUT = {
-            blocks: 1,              // Number of circular blocks
-            buildingsPerBlock: numBuildings,   // Buildings per block
-            blockRadius: 40,        // Base radius of each block
-            cityRadius: 20,        // Radius of the entire city circle
-            heightVariation: 1,   // Building height variation (30%)
-            positionJitter: 500      // Position randomness
-        };
 
         // Create buildings in circular blocks
         for (let blockIndex = 0; blockIndex < CITY_LAYOUT.blocks; blockIndex++) {
@@ -511,16 +503,6 @@ export function PropagationModel({
                 const buildingX = blockX + baseX + jitterX;
                 const buildingZ = blockZ + baseZ + jitterZ;
 
-                // Create building material based on style and time of day
-                const buildingMaterial = new THREE.MeshStandardMaterial({
-                    color: buildingStyle === "historic" ?
-                        (timeOfDay === "day" ? "#d2b48c" : "#8b7355") :
-                        buildingStyle === "industrial" ?
-                            (timeOfDay === "day" ? "#a9a9a9" : "#696969") :
-                            (timeOfDay === "day" ? "#64748b" : "#334155"),
-                    roughness: buildingStyle === "historic" ? 0.9 : buildingStyle === "industrial" ? 0.7 : 0.5,
-                    metalness: buildingStyle === "industrial" ? 0.3 : 0.2
-                });
 
                 // Create building mesh
                 const building = new THREE.Mesh(
@@ -595,7 +577,7 @@ export function PropagationModel({
                 }
 
                 // Add roof details for historic style
-                if (buildingStyle === "historic" && buildingIndex % 2 === 0) {
+                if (buildingStyle === "historic") {// && buildingIndex % 2 === 0
                     const roof = new THREE.Mesh(
                         new THREE.ConeGeometry(buildingWidth / 1.5, 8, 4),
                         new THREE.MeshStandardMaterial({ color: "#8b4513" })
@@ -614,7 +596,7 @@ export function PropagationModel({
             }
         }
 
-        setBuildings(buildingData)
+        setBuildings(buildingData);
 
         return () => {
             if (buildingsRef.current) {
@@ -631,216 +613,11 @@ export function PropagationModel({
         buildingWidth,
         buildingSpacing,
         buildingHeights,
-        antennas,
-        selectedAntennaId,
-        calculatedDistances,
+        // calculatedDistances,
+        selectedAntenna,
     ])
 
-    function computeLineDistances(form: THREE.BufferGeometry): THREE.BufferGeometry {
-        const posAttr = form.attributes.position;
-        if (!posAttr) return form;
 
-        const n = posAttr.count;
-        const lineDistances = new Float32Array(n);
-        let cumulativeDistance = 0;
-        lineDistances[0] = 0;
-        const positions = posAttr.array as Float32Array;
-        for (let i = 1; i < n; i++) {
-            const indexPrev = (i - 1) * 3;
-            const indexCurr = i * 3;
-            const dx = positions[indexCurr] - positions[indexPrev];
-            const dy = positions[indexCurr + 1] - positions[indexPrev + 1];
-            const dz = positions[indexCurr + 2] - positions[indexPrev + 2];
-            const segmentDistance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-            cumulativeDistance += segmentDistance;
-            lineDistances[i] = cumulativeDistance;
-        }
-        form.setAttribute('lineDistance', new THREE.BufferAttribute(lineDistances, 1));
-        return form;
-    };
-
-    // Create measurements
-    useEffect(() => {
-
-        if (!measurementsRef.current || !mobileStationRef.current) return
-
-        // Clear previous measurements
-        while (measurementsRef.current.children.length) {
-            measurementsRef.current.remove(measurementsRef.current.children[0])
-        }
-
-        if (!showLabels) return
-
-        // Get selected antenna position
-        const selectedAntenna = antennas.find((ant) => ant.id === selectedAntennaId) || antennas[0]
-        const antennaDistance = calculatedDistances[selectedAntenna.id] || distance / 1000
-        const baseStationOffset = -antennaDistance * 500 // Scale to scene units
-
-        const baseStationPos = new THREE.Vector3(baseStationOffset, selectedAntenna.height, 0)
-        const mobileStationPos = new THREE.Vector3(mobileStationOffset, mobileHeight, 0)
-
-        // Total distance (d)
-        const distanceLine = new THREE.Line(
-            new THREE.BufferGeometry().setFromPoints([
-                new THREE.Vector3(baseStationOffset, -5, 0),
-                new THREE.Vector3(mobileStationOffset, -5, 0),
-            ]),
-            new THREE.LineBasicMaterial({ color: 0xffff00, linewidth: 1 }),
-        )
-        measurementsRef.current.add(distanceLine)
-
-        // Distance label
-        const distanceLabel = new THREE.Group()
-        distanceLabel.position.set(0, -10, 0)
-        measurementsRef.current.add(distanceLabel)
-
-        // Urban length (l)
-        const urbanStartX = baseStationOffset + (antennaDistance * 1000 - urbanLength) / 2
-        const urbanEndX = urbanStartX + urbanLength
-
-        const urbanLengthLine = new THREE.Line(
-            new THREE.BufferGeometry().setFromPoints([
-                new THREE.Vector3(urbanStartX, -15, 0),
-                new THREE.Vector3(urbanEndX, -15, 0),
-            ]),
-            new THREE.LineBasicMaterial({ color: 0xffff00, linewidth: 1 }),
-        )
-        measurementsRef.current.add(urbanLengthLine)
-
-        // Urban length label
-        const urbanLengthLabel = new THREE.Group()
-        urbanLengthLabel.position.set((urbanStartX + urbanEndX) / 2, -20, 0)
-        measurementsRef.current.add(urbanLengthLabel)
-
-        // Building width (w) and spacing (s)
-        const buildingStartX = baseStationOffset + (antennaDistance * 1000 - urbanLength) / 2
-
-        for (let i = 0; i < numBuildings; i++) {
-            const buildingX = buildingStartX + i * (buildingWidth + buildingSpacing)
-
-            // Building width
-            const widthLine = new THREE.Line(
-                new THREE.BufferGeometry().setFromPoints([
-                    new THREE.Vector3(buildingX, -25, 0),
-                    new THREE.Vector3(buildingX + buildingWidth, -25, 0),
-                ]),
-                new THREE.LineBasicMaterial({ color: 0xffff00, linewidth: 1 }),
-            )
-            measurementsRef.current.add(widthLine);
-
-
-            // Skip spacing line for the last building
-            if (i < numBuildings - 1) {
-                // Create geometry first
-                let spacingGeometry = new THREE.BufferGeometry().setFromPoints([
-                    new THREE.Vector3(buildingX + buildingWidth, -25, 0),
-                    new THREE.Vector3(buildingX + buildingWidth + buildingSpacing, -25, 0),
-                ]);
-
-                // Required for dashed lines
-                spacingGeometry = computeLineDistances(spacingGeometry);
-
-                // Use LineDashedMaterial with dash parameters
-                const spacingLine = new THREE.Line(
-                    spacingGeometry,
-                    new THREE.LineDashedMaterial({
-                        color: 0xffaa00,
-                        linewidth: 1,
-                        dashSize: 2,
-                        gapSize: 1,
-                        scale: 1
-                    })
-                );
-
-                measurementsRef.current.add(spacingLine);
-            }
-        }
-
-        // Base station height (hb)
-        const baseHeightLine = new THREE.Line(
-            new THREE.BufferGeometry().setFromPoints([
-                new THREE.Vector3(baseStationOffset - 5, 0, 0),
-                new THREE.Vector3(baseStationOffset - 5, selectedAntenna.height, 0),
-            ]),
-            new THREE.LineDashedMaterial({
-                color: 0xffff00,
-                linewidth: 1,
-                dashSize: 2,  // Add dash parameters
-                gapSize: 1
-            })
-        );
-        baseHeightLine.geometry = computeLineDistances(baseHeightLine.geometry);
-        measurementsRef.current.add(baseHeightLine);
-
-        // Mobile station height (hm)
-        const mobileHeightLine = new THREE.Line(
-            new THREE.BufferGeometry().setFromPoints([
-                new THREE.Vector3(mobileStationOffset + 5, 0, 0),
-                new THREE.Vector3(mobileStationOffset + 5, mobileHeight, 0),
-            ]),
-            new THREE.LineDashedMaterial({  // Changed to LineDashedMaterial
-                color: 0xffff00,
-                linewidth: 1,
-                dashSize: 2,
-                gapSize: 1
-            })
-        );
-        mobileHeightLine.geometry = computeLineDistances(mobileHeightLine.geometry);
-        measurementsRef.current.add(mobileHeightLine);
-
-        // Vertical lines using dashed material
-        const baseVerticalLine = new THREE.Line(
-            new THREE.BufferGeometry().setFromPoints([
-                new THREE.Vector3(baseStationOffset, 0, 0),
-                new THREE.Vector3(baseStationOffset, selectedAntenna.height, 0),
-            ]),
-            new THREE.LineDashedMaterial({
-                color: 0x888888,
-                linewidth: 1,
-                dashSize: 2,
-                gapSize: 1
-            })
-        );
-        baseVerticalLine.geometry = computeLineDistances(baseVerticalLine.geometry);
-        measurementsRef.current.add(baseVerticalLine);
-
-        const mobileVerticalLine = new THREE.Line(
-            new THREE.BufferGeometry().setFromPoints([
-                new THREE.Vector3(mobileStationOffset, 0, 0),
-                new THREE.Vector3(mobileStationOffset, mobileHeight, 0),
-            ]),
-            new THREE.LineDashedMaterial({
-                color: 0x888888,
-                linewidth: 1,
-                dashSize: 2,
-                gapSize: 1
-            })
-        );
-        mobileVerticalLine.geometry = computeLineDistances(mobileVerticalLine.geometry);
-        measurementsRef.current.add(mobileVerticalLine);
-
-
-        return () => {
-            if (measurementsRef.current) {
-                disposeGroup(measurementsRef.current);
-            }
-            if (mobileStationRef.current) {
-                disposeGroup(mobileStationRef.current);
-            }
-        };
-
-    }, [
-        showLabels,
-        mobileHeight,
-        distance,
-        urbanLength,
-        numBuildings,
-        baseStationOffset,
-        mobileStationOffset,
-        antennas,
-        selectedAntennaId,
-        calculatedDistances,
-    ]);
 
     // Create path loss visualization
     useEffect(() => {
@@ -853,10 +630,6 @@ export function PropagationModel({
 
         if (!showPathLoss) return
 
-        // Get selected antenna
-        const selectedAntenna = antennas.find((ant) => ant.id === selectedAntennaId) || antennas[0]
-        const antennaDistance = calculatedDistances[selectedAntenna.id] || distance / 1000
-        const baseStationOffset = -antennaDistance * 500 // Scale to scene units
 
         // Create a color gradient based on path loss or height gain
         const getColorForPathLoss = (loss: number) => {
@@ -991,9 +764,7 @@ export function PropagationModel({
         showLabels,
         modelType,
         calculateOkumuraHeightGain,
-        antennas,
-        selectedAntennaId,
-        calculatedDistances,
+        // calculatedDistances,
     ])
 
     // Animate paths and weather effects
@@ -1057,11 +828,16 @@ export function PropagationModel({
                 })
             }
         }
-    })
+    });
+
+    // Calculate position for this antenna
+    // const antennaDistance = calculatedDistances[selectedAntenna.id] || distance / 1000
+    const antennaDistance = CITY_LAYOUT.blockRadius
+    const antennaOffset = antennaDistance * 7 // Scale to scene units
 
     return (
         <group>
-            <OrbitControls target={[0, 20, 0]} maxPolarAngle={Math.PI / 2 - 0.1} />
+            <OrbitControls target={[0, 20, 0]} maxPolarAngle={Math.PI / 2 - 0.1} />            
             <group>
                 {/* Terrain */}
                 <group ref={terrainRef} />
@@ -1085,73 +861,83 @@ export function PropagationModel({
                 <group ref={buildingsRef} />
 
                 {/* Base Stations */}
-                {antennas.map((antenna) => {
-                    // Calculate position for this antenna
-                    const antennaDistance = calculatedDistances[antenna.id] || distance / 1000
-                    const antennaOffset = -antennaDistance * 500 // Scale to scene units
+                <group ref={baseStationRef} position={[antennaOffset, 0, 0]}
+                    onPointerOver={() => setPopupVisibleAntenta(true)}
+                    onPointerOut={() => setPopupVisibleAntenta(false)}
+                    onClick={() => setPopupVisibleAntenta(prev => !prev)}
+                >
+                    {/* Tower */}
+                    <mesh position={[0, selectedAntenna.height / 2, 0]} castShadow>
+                        <boxGeometry args={[4, selectedAntenna.height, 4]} />
+                        <meshStandardMaterial color={timeOfDay === "day" ? "#64748b" : "#334155"} />
+                    </mesh>
 
-                    return (
-                        <group key={`base-station-${antenna.id}`} position={[antennaOffset, 0, 0]}>
-                            {/* Tower */}
-                            <mesh position={[0, antenna.height / 2, 0]} castShadow>
-                                <boxGeometry args={[4, antenna.height, 4]} />
-                                <meshStandardMaterial color={timeOfDay === "day" ? "#64748b" : "#334155"} />
+                    {/* Antenna */}
+                    <mesh position={[0, selectedAntenna.height + 2, 0]} castShadow>
+                        <cylinderGeometry args={[0.5, 1, 4, 8]} />
+                        <meshStandardMaterial
+                            color={timeOfDay === "day" ? selectedAntenna.color : "#334155"}
+                            emissive={selectedAntenna.color}
+                            emissiveIntensity={0.3}
+                        />
+                    </mesh>
+
+                    {/* Antenna dishes */}
+                    {[0, Math.PI / 2, Math.PI, Math.PI * 1.5].map((angle, i) => (
+                        <group key={`dish-${i}`} position={[0, selectedAntenna.height - 5 - i * 5, 0]} rotation={[0, angle, 0]}>
+                            <mesh position={[2, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
+                                <cylinderGeometry args={[1.5, 1.5, 0.5, 16, 1, false, 0, Math.PI]} />
+                                <meshStandardMaterial color="#888888" metalness={0.5} />
                             </mesh>
-
-                            {/* Antenna */}
-                            <mesh position={[0, antenna.height + 2, 0]} castShadow>
-                                <cylinderGeometry args={[0.5, 1, 4, 8]} />
-                                <meshStandardMaterial
-                                    color={timeOfDay === "day" ? antenna.color : "#334155"}
-                                    emissive={antenna.color}
-                                    emissiveIntensity={0.3}
-                                />
-                            </mesh>
-
-                            {/* Antenna dishes */}
-                            {[0, Math.PI / 2, Math.PI, Math.PI * 1.5].map((angle, i) => (
-                                <group key={`dish-${i}`} position={[0, antenna.height - 5 - i * 5, 0]} rotation={[0, angle, 0]}>
-                                    <mesh position={[2, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
-                                        <cylinderGeometry args={[1.5, 1.5, 0.5, 16, 1, false, 0, Math.PI]} />
-                                        <meshStandardMaterial color="#888888" metalness={0.5} />
-                                    </mesh>
-                                </group>
-                            ))}
-
-                            <Html position={[0, antenna.height + 10, 0]}>
-                                <div className="bg-black/80 text-white px-2 py-1 rounded text-sm whitespace-nowrap">
-                                    {antenna.name}
-                                    <br />
-                                    Height: {antenna.height}m<br />
-                                    Frequency: {antenna.frequency} MHz
-                                </div>
-                            </Html>
                         </group>
-                    )
-                })}
+                    ))}
+                    {popupVisibleAntenta && (
+                        <Html
+                            position={[0, selectedAntenna.height + 10, 0]}
+                            // distanceFactor={50
+                            style={{
+                                transition: 'all 0.2s',
+                                pointerEvents: 'none',
+                                transform: 'translateX(-50%)'
+                            }}
+                        >
+                            <div className="bg-black/80 text-white px-2 py-1 rounded text-sm whitespace-nowrap">
+                                {selectedAntenna.name}
+                                <br />
+                                <p>Height: {selectedAntenna.height}m</p>
+                                <p>Frequency: {selectedAntenna.frequency} MHz</p>
+                            </div>
+                        </Html>
+                    )}
+                </group>
 
                 {/* Mobile Station */}
-                <group ref={mobileStationRef} position={[mobileStationOffset, 0, 0]}>
+                <group ref={mobileStationRef} position={[-antennaOffset, 0, 0]}
+                >
+                    <mesh visible={false}
+                        onPointerOver={() => setPopupVisibleMobile(true)}
+                        onPointerOut={() => setPopupVisibleMobile(false)}
+                        onClick={() => setPopupVisibleMobile((prev) => !prev)}
+                    >
+                        <boxGeometry args={[4, selectedAntenna.height, 4]} />
+                        <meshStandardMaterial color="#ffff" />
+                    </mesh>
+
                     {/* Person */}
-                    <mesh position={[0, mobileHeight - 0.5, 0]} castShadow>
-                        <capsuleGeometry args={[0.5, 1, 4, 8]} />
-                        <meshStandardMaterial color="#60a5fa" />
-                    </mesh>
+                    <mesh scale={[0.01, 0.01, 0.01]} position={[0, -mobileHeight - 0.5, 0]} castShadow>
+                        <primitive object={personScene} />
+                    </mesh>;
 
-                    {/* Phone */}
-                    <mesh position={[0.5, mobileHeight, 0]} rotation={[0, 0, Math.PI / 4]} castShadow>
-                        <boxGeometry args={[0.2, 0.4, 0.05]} />
-                        <meshStandardMaterial color="#000000" />
-                    </mesh>
-
-                    <Html position={[0, mobileHeight + 5, 0]}>
-                        <div className="bg-black/80 text-white px-2 py-1 rounded text-sm whitespace-nowrap">
-                            Mobile User (EM)
-                            <br />
-                            Height: {mobileHeight}m<br />
-                            Path Loss: {pathLoss.toFixed(1)} dB
-                        </div>
-                    </Html>
+                    {popupVisibleMobile && (
+                        <Html position={[0, mobileHeight + 5, 0]}>
+                            <div className="bg-black/80 text-white px-2 py-1 rounded text-sm whitespace-nowrap">
+                                Mobile User (EM)
+                                <br />
+                                Height: {mobileHeight}m<br />
+                                Path Loss: {pathLoss.toFixed(1)} dB
+                            </div>
+                        </Html>
+                    )}
                 </group>
 
                 {/* Paths Group */}
@@ -1164,7 +950,7 @@ export function PropagationModel({
                 <group ref={pathLossVisualizationRef} />
 
                 {/* Labels */}
-                {showLabels && (
+                {(showLabels && false) && (
                     <>
                         <Text position={[0, -15, 0]} color="#ffff00" fontSize={5} anchorX="center" anchorY="middle">
                             d = {(distance / 1000).toFixed(2)} km
@@ -1305,16 +1091,6 @@ export function PropagationModel({
                         {terrainType.charAt(0).toUpperCase() + terrainType.slice(1)} Terrain
                     </Text>
                 </group>
-
-                {/* Building height labels
-            {showLabels &&
-                buildings.map((building) => (
-                    <Html key={`building-label-${building.id}`} position={building.position}>
-                        <div className="bg-black/80 text-white px-2 py-1 rounded text-sm whitespace-nowrap">
-                            h = {building.height}m
-                        </div>
-                    </Html>
-                ))} */}
 
             </group>
         </group>);
