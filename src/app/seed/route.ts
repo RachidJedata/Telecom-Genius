@@ -17,10 +17,10 @@ export async function GET(req: NextRequest) {
                     fading_model: { name: 'Modèle d\'évanouissement', value: 2, unit: '', step: 1, min: 0, max: 22, dropdown: [0, 1, 11, 2, 22] },
                     num_paths: { name: 'Nombre de trajets', value: 500, unit: '', step: 10, min: 10, max: 1000 },
 
-                    showLoss: { name: "Afficher l'atténuation", value: "Oui", options: ["Oui", "Non"] },                                    
+                    showLoss: { name: "Afficher l'atténuation", value: "Oui", options: ["Oui", "Non"] },
                     showDomain: { name: "Domaine de la fichage", value: "domaine fréquentiel", options: ["domaine fréquentiel", "domaine temporel"] },
                 }),
-                endPoint: '/fading'
+                endPoint: '/fading',
             }
         });
 
@@ -200,7 +200,8 @@ Le modèle de Rayleigh est largement utilisé pour :
                             simulationId: simulationRayleigh.simulationId
                         }
                     ]
-                }
+                },
+                channelType: "Fading",
             }
         });
 
@@ -520,7 +521,8 @@ Où $$ * $$ désigne la convolution. Cette opération combine l’effet du canal
                             simulationId: simulationRicianConvolv.simulationId
                         }
                     ]
-                }
+                },
+                channelType: "Fading",
             }
         });
 
@@ -531,7 +533,7 @@ Où $$ * $$ désigne la convolution. Cette opération combine l’effet du canal
                 name: "Simulation du Canal de Fading Nakagami",
                 description: "Simule les variations d'amplitude du signal dans un canal sans fil en utilisant le modèle de fading Nakagami.",
                 params: JSON.stringify({
-                    frequency_hz: { name: "Fréquence du signal", value: 1000.0, unit: "Hz", step: 10, min: 20, max: 10000 },
+                    frequency_hz: { name: "Fréquence du signal", value: 900.0, unit: "Hz", step: 10, min: 20, max: 10000 },
                     m: { name: "Paramètre de forme m", value: 1.0, unit: "", step: 0.1, min: 0.5, max: 10 },
                     omega: { name: "Paramètre d'étalement Ω", value: 1.0, unit: "", step: 0.1, min: 0.1, max: 10 },
                     signal_power: { name: "Puissance du signal", value: 3.0, unit: "W", step: 0.1, min: 0.1, max: 10 },
@@ -703,7 +705,8 @@ Sa capacité à modéliser diverses conditions de fading en fait un outil préci
                             simulationId: simulationNakagami.simulationId
                         }
                     ]
-                }
+                },
+                channelType: "Fading",
             }
         });
 
@@ -930,7 +933,8 @@ Le FSPL est idéal et ne reflète pas les conditions réelles (obstacles, réfle
                             simulationId: simulationFSPL.simulationId
                         }
                     ]
-                }
+                },
+                channelType: "PathLoss",
             }
         });
 
@@ -1145,7 +1149,8 @@ En LOS, la perte est similaire à celle de l’espace libre, tandis qu’en NLOS
                             simulationId: simulationITU.simulationId
                         }
                     ]
-                }
+                },
+                channelType: "Standard",
             }
         });
 
@@ -1308,7 +1313,8 @@ Il reste pertinent pour les fréquences basses des réseaux modernes, bien que l
                             simulationId: simulationHata.simulationId
                         }
                     ]
-                }
+                },
+                channelType:"PathLoss",
             }
         });
 
@@ -1473,7 +1479,8 @@ Il est surtout efficace lorsque la longueur d’onde est comparable aux hauteurs
                             simulationId: simulationTwoRayGroundSignal.simulationId
                         }
                     ]
-                }
+                },
+                channelType:"Multipath",
             }
         });
 
@@ -1619,7 +1626,8 @@ Ce modèle est particulièrement pertinent pour les fréquences UHF (230-950 MHz
                             simulationId: simulationWeissbergerSignal.simulationId
                         }
                     ]
-                }
+                },
+                channelType:"PathLoss",
             }
         });
 
@@ -1782,7 +1790,8 @@ Il est particulièrement utile dans les environnements où la topographie joue u
                             simulationId: simulationLongleyRiceSignal.simulationId
                         }
                     ]
-                }
+                },
+                channelType:"PathLoss",
             }
         });
 
@@ -1955,7 +1964,8 @@ La robustesse et l'efficacité de l'OFDM en font une pierre angulaire des systè
                             simulationId: simulationOFDM.simulationId
                         }
                     ]
-                }
+                },
+                channelType:"Modulation",
             }
         });
 
@@ -2137,7 +2147,8 @@ Bien que conçu pour les réseaux 2G et 3G, le modèle reste pertinent pour :
                             simulationId: simulationCost.simulationId
                         }
                     ]
-                }
+                },
+                channelType:"PathLoss",
             }
         });
 

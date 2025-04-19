@@ -1,6 +1,6 @@
 'use server'
 
-import { Prisma } from "@prisma/client";
+import { ModelType, Prisma } from "@prisma/client";
 import prisma from "./prisma";
 import bcrypt from 'bcryptjs'
 
@@ -35,11 +35,20 @@ export async function saveUser(data: Prisma.UserCreateInput) {
     }
 }
 
-export async function getCourses(limit: number, offset: number = 0) {
+export async function getCourses(channelType: String = "", limit: number, offset: number = 0) {
+    const includes = Object.values(ModelType).includes(channelType as ModelType);
+
     return await prisma.courses.findMany({
         take: limit,
         skip: offset,
         orderBy: { dateAdded: 'desc' }, // Explicit sorting order
+        ...(
+            includes && {
+                where: {
+                    channelType: channelType as ModelType
+                }
+            }
+        )
     });
 }
 

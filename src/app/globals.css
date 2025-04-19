@@ -195,3 +195,14 @@
     @apply bg-background text-foreground;
   }
 }
+
+.html-popup {
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.html-popup div {
+  max-width: 200px;
+  word-break: break-word;
+}
