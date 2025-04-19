@@ -1,0 +1,189 @@
+{
+    "asset": {
+        "version": "2.0",
+        "generator": "Open Asset Import Library (assimp v5.2.cf7d3637)"
+    },
+    "extensionsUsed": [
+        "KHR_materials_volume",
+        "KHR_materials_ior",
+        "FB_ngon_encoding"
+    ],
+    "accessors": [
+        {
+            "bufferView": 0,
+            "byteOffset": 0,
+            "componentType": 5126,
+            "count": 91350,
+            "type": "VEC3",
+            "max": [
+                285.21478271484377,
+                1884.6434326171876,
+                355.9822082519531
+            ],
+            "min": [
+                -285.2148742675781,
+                0.00001907350088004023,
+                -355.98211669921877
+            ]
+        },
+        {
+            "bufferView": 1,
+            "byteOffset": 0,
+            "componentType": 5126,
+            "count": 91350,
+            "type": "VEC3",
+            "max": [
+                0.9999880194664002,
+                0.999449610710144,
+                0.9998323321342468
+            ],
+            "min": [
+                -0.9999741911888123,
+                -0.999742329120636,
+                -0.9999560117721558
+            ]
+        },
+        {
+            "bufferView": 2,
+            "byteOffset": 0,
+            "componentType": 5126,
+            "count": 91350,
+            "type": "VEC3",
+            "max": [
+                1.0241875648498536,
+                1.0241875648498536,
+                1.024186134338379
+            ],
+            "min": [
+                -0.02418750524520874,
+                -0.024187564849853517,
+                -0.024186134338378907
+            ]
+        },
+        {
+            "bufferView": 3,
+            "byteOffset": 0,
+            "componentType": 5125,
+            "count": 91350,
+            "type": "SCALAR",
+            "max": [
+                91349
+            ],
+            "min": [
+                0
+            ]
+        }
+    ],
+    "buffers": [
+        {
+            "byteLength": 3654000,
+            "uri": "human_on_phone.bin"
+        }
+    ],
+    "bufferViews": [
+        {
+            "buffer": 0,
+            "byteOffset": 0,
+            "byteLength": 1096200,
+            "target": 34962
+        },
+        {
+            "buffer": 0,
+            "byteOffset": 1096200,
+            "byteLength": 1096200,
+            "target": 34962
+        },
+        {
+            "buffer": 0,
+            "byteOffset": 2192400,
+            "byteLength": 1096200,
+            "target": 34962
+        },
+        {
+            "buffer": 0,
+            "byteOffset": 3288600,
+            "byteLength": 365400,
+            "target": 34963
+        }
+    ],
+    "materials": [
+        {
+            "name": "DefaultMaterial",
+            "pbrMetallicRoughness": {
+                "baseColorFactor": [
+                    0.6000000238418579,
+                    0.6000000238418579,
+                    0.6000000238418579,
+                    1.0
+                ],
+                "metallicFactor": 0.0
+            },
+            "extensions": {
+                "KHR_materials_ior": {
+                    "ior": 1.0
+                }
+            }
+        },
+        {
+            "name": "wire_138008110",
+            "pbrMetallicRoughness": {
+                "baseColorFactor": [
+                    0.6000000238418579,
+                    0.6000000238418579,
+                    0.6000000238418579,
+                    1.0
+                ],
+                "metallicFactor": 0.0
+            },
+            "extensions": {
+                "KHR_materials_ior": {
+                    "ior": 1.0
+                }
+            }
+        }
+    ],
+    "meshes": [
+        {
+            "name": "Ivan_1304_COR",
+            "primitives": [
+                {
+                    "extensions": {
+                        "FB_ngon_encoding": {}
+                    },
+                    "mode": 4,
+                    "material": 1,
+                    "indices": 3,
+                    "attributes": {
+                        "POSITION": 0,
+                        "NORMAL": 1,
+                        "TEXCOORD_0": 2
+                    }
+                }
+            ]
+        }
+    ],
+    "nodes": [
+        {
+            "name": "uploads_files_2289781_Ivan_1304.obj",
+            "children": [
+                1,
+                2
+            ]
+        },
+        {
+            "name": "Ivan_1304_COR"
+        },
+        {
+            "name": "Ivan_1304_COR_node",
+            "mesh": 0
+        }
+    ],
+    "scenes": [
+        {
+            "nodes": [
+                0
+            ]
+        }
+    ],
+    "scene": 0
+}
