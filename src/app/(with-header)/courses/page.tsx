@@ -20,7 +20,7 @@ export default async function Home(props: {
 
   const channelType = await searchParams?.type || "";
 
-  const courses = await getCourses(channelType, limit, offset);
+  const courses = await getCourses(limit, offset, channelType);
 
   const modelTypes = Object.values(ModelType);
 

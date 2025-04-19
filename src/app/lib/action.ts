@@ -35,7 +35,7 @@ export async function saveUser(data: Prisma.UserCreateInput) {
     }
 }
 
-export async function getCourses(channelType: String = "", limit: number, offset: number = 0) {
+export async function getCourses(limit: number, offset: number = 0, channelType: String = "") {
     const includes = Object.values(ModelType).includes(channelType as ModelType);
 
     return await prisma.courses.findMany({
