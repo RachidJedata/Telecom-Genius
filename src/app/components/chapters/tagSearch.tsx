@@ -8,10 +8,9 @@ const CLASSES = "bg-primary/20 p-2 rounded-md cursor-pointer hover:bg-primary/70
 export default function TagSearch({ modelTypes, selectedTag }: { modelTypes: string[], selectedTag: string }) {
 
     const router = useRouter();
-    const searchParams = useSearchParams();
 
     const handleClick = (model: string) => {
-        const params = new URLSearchParams(searchParams.toString());
+        const params = new URLSearchParams();
         params.set('type', model); // Update the query param
         router.push(`?${params.toString()}`);
     };

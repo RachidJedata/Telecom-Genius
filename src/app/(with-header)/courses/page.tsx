@@ -2,8 +2,6 @@ import { fetchCoursesPages, getCourses } from "@/app/lib/action";
 import { ChapterGrid } from "@/app/components/chapters/chapter-grid";
 import Pagination from "@/app/components/pagination";
 import { ModelType } from "@prisma/client";
-import { cn } from "@/app/lib/utils";
-import { redirect } from "next/navigation";
 import TagSearch from "@/app/components/chapters/tagSearch";
 
 export default async function Home(props: {
