@@ -11,9 +11,8 @@ export default async function Home() {
             <section className="py-20 px-4">
                 <div className="max-w-6xl mx-auto text-center space-y-8 fade-in">
                     <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#3e96be] to-primary">
-                        Master en Télécommunications
-                        <br />
-                        avec Guidance d'Expert
+                        TelecomGenius<br />
+                        <span className="font-normal">Ton guide pour devenir un expert en Télécommunications</span>
                     </h1>
                     <p className="text-xl text-primary text-muted-foreground max-w-2xl mx-auto">
                         Rejoignez notre plateforme pour apprendre auprès d'experts de l'industrie et faire avancer votre carrière en télécommunications.
