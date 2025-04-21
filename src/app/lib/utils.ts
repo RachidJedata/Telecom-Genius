@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import slugify from 'slugify'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -37,3 +38,10 @@ export const generatePagination = (currentPage: number, totalPages: number) => {
     totalPages,
   ];
 };
+
+export function turnToUrl(value: string): string {
+  return slugify(value, {
+    lower: true, // Convert to lowercase
+    remove: /[*+~.()'"!:@]/g, // Remove these characters
+  })
+}

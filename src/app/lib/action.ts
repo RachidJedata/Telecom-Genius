@@ -1,6 +1,6 @@
 'use server'
 
-import { ModelType, Prisma } from "@prisma/client";
+import { Chapters, ModelType, Prisma } from "@prisma/client";
 import prisma from "./prisma";
 import bcrypt from 'bcryptjs'
 
@@ -52,15 +52,17 @@ export async function getCourses(limit: number, offset: number = 0, channelType:
     });
 }
 
-export async function getCourse(courseId: string) {
-    return await prisma.courses.findUnique({
-        include: {
-            chapters: { orderBy: { dateAdded: 'asc' } }, // Sorting order explicitly set
-        },
-        where: {
-            courseId: courseId
-        }
-    });
+export async function getCourse(slug: string) {
+    const pattern = `%${slug}%`;
+
+    return await prisma.$queryRaw<(Chapters & { title: string })[]>`
+      SELECT p.*, c.title
+      FROM "Chapters" p
+      JOIN "Courses" c  ON c."courseId" = p."courseId"
+      JOIN course_with_slug s ON s."courseId" = p."courseId"
+      WHERE s.slug LIKE ${pattern}
+      ORDER BY p."dateAdded" DESC
+    `;        
 }
 
 

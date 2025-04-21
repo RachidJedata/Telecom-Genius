@@ -1,0 +1,16 @@
+CREATE EXTENSION IF NOT EXISTS unaccent;
+CREATE OR REPLACE FUNCTION slugify(text)
+RETURNS text AS $$
+SELECT lower(
+         regexp_replace(
+           unaccent($1),
+           '[^a-zA-Z0-9]+',
+           '-',
+           'g'
+         )
+       )::text;
+$$ LANGUAGE SQL IMMUTABLE;
+
+
+create view course_with_slug 
+AS SELECT *, slugify(title) as slug FROM "Courses";

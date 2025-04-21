@@ -5,13 +5,15 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import IconDisplay from "../UI/iconDisplay"
 import { Courses } from "@prisma/client"
+import { turnToUrl } from "@/app/lib/utils"
 
 export function ChapterGrid({ courses }: { courses: Courses[] }) {
   const router = useRouter()
   const [hoveredId, setHoveredId] = useState<string | null>(null)
 
-  const handleCardClick = (id: string) => {
-    router.push(`/chapters/${id}`)
+  const handleCardClick = (title: string) => {
+    const slug = turnToUrl(title);
+    router.push(`/chapters/${slug}`);
   }
 
   return (
@@ -25,7 +27,7 @@ export function ChapterGrid({ courses }: { courses: Courses[] }) {
             key={course.courseId}
             className={`cursor-pointer transition-all duration-300 ${isHovered ? "transform scale-105 shadow-lg border-primary" : "hover:border-primary/50"
               }`}
-            onClick={() => handleCardClick(course.courseId)}
+            onClick={() => handleCardClick(course.title)}
             onMouseEnter={() => setHoveredId(course.courseId)}
             onMouseLeave={() => setHoveredId(null)}
           >

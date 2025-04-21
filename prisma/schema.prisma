@@ -29,7 +29,7 @@ datasource db {
 }
 
 model User {
-  userId   String    @id @default(uuid()) @map("user_id")
+  userId   String    @id @default(uuid())
   name     String?
   email    String?   @unique
   password String?
@@ -38,31 +38,31 @@ model User {
 }
 
 model Courses {
-  courseId    String     @id @default(uuid()) @map("course_id")
+  courseId    String     @id @default(uuid())
   title       String
   description String
   icon        String
-  channelType ModelType? @map("channel_type")
+  channelType ModelType?
   chapters    Chapters[]
   dateAdded   DateTime   @default(now())
 }
 
 model Quizes {
-  quizId             Int        @id @default(autoincrement()) @map("quiz_id")
+  quizId             Int        @id @default(autoincrement())
   question           String
   options            String[]
-  correctAnswerIndex Int        @map("correct_answer_index")
+  correctAnswerIndex Int
   explaination       String
   chapters           Chapters[] @relation("QuizChapters")
 }
 
 model Chapters {
-  chapterId    String      @id @default(uuid()) @map("chapter_id")
+  chapterId    String      @id @default(uuid())
   name         String
   body         String
   icon         String
-  simulationId Int?        @map("simulation_id")
-  courseId     String?     @map("course_id")
+  simulationId Int?
+  courseId     String?
   quizes       Quizes[]    @relation("QuizChapters")
   course       Courses?    @relation(fields: [courseId], references: [courseId])
   simulation   Simulation? @relation(fields: [simulationId], references: [simulationId])
@@ -70,10 +70,10 @@ model Chapters {
 }
 
 model Simulation {
-  simulationId Int        @id @default(autoincrement()) @map("simulation_id")
+  simulationId Int        @id @default(autoincrement())
   name         String
   description  String
   params       String // Parameters of API stored as JSON
-  endPoint     String     @map("end_point")
+  endPoint     String
   Chapters     Chapters[]
 }
