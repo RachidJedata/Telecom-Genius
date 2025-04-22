@@ -1,5 +1,5 @@
 'use client'
-import { ChangeEventHandler, useState } from 'react';
+import React, { useState } from 'react';
 
 export default function ScenarioForm() {
     const [formData, setFormData] = useState({
@@ -7,9 +7,13 @@ export default function ScenarioForm() {
         description: '',
         body: '',
         title: '',
+        scenarioTitle: '',
+        imageUrlScenario: '',
     });
 
-    const handleChange = (e: ChangeEventHandler<HTMLInputElement>) => {
+    const handleChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    ) => {
         const { name, value } = e.target;
         setFormData(prevData => ({
             ...prevData,
@@ -17,7 +21,7 @@ export default function ScenarioForm() {
         }));
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             // Replace with your actual API endpoint
