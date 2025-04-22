@@ -9,7 +9,7 @@ import { turnToUrl } from "@/app/lib/utils"
 
 export function ChapterGrid({ courses }: { courses: Courses[] }) {
   const router = useRouter()
-  const [hoveredId, setHoveredId] = useState<string | null>(null)
+  const [hoveredId, setHoveredId] = useState<number | null>(null)
 
   const handleCardClick = (title: string) => {
     const slug = turnToUrl(title);
