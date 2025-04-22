@@ -25,7 +25,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  // directUrl = env("DIRECT_URL")   
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -38,7 +38,7 @@ model User {
 }
 
 model Courses {
-  courseId    String     @id @default(uuid())
+  courseId    Int        @id @default(autoincrement())
   title       String
   description String
   icon        String
@@ -62,7 +62,7 @@ model Chapters {
   body         String
   icon         String
   simulationId Int?
-  courseId     String?
+  courseId     Int?
   quizes       Quizes[]    @relation("QuizChapters")
   course       Courses?    @relation(fields: [courseId], references: [courseId])
   simulation   Simulation? @relation(fields: [simulationId], references: [simulationId])
@@ -76,4 +76,24 @@ model Simulation {
   params       String // Parameters of API stored as JSON
   endPoint     String
   Chapters     Chapters[]
+}
+
+model EnvironmentScenarios {
+  envId        Int    @id @default(autoincrement())
+  title        String
+  imageUrl     String
+  description  String
+  envDetailsId String @unique
+
+  Envdetails    EnvironmentDetails   @relation(fields: [envDetailsId], references: [envDetailsId])
+  SuggestedEnvs EnvironmentDetails[] @relation("SuggestedEnvs")
+}
+
+model EnvironmentDetails {
+  envDetailsId String @id @default(uuid())
+  body         String
+  title        String
+
+  environmentScenario EnvironmentScenarios?
+  SuggestedScenarios  EnvironmentScenarios[] @relation("SuggestedEnvs")
 }

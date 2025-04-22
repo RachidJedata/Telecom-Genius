@@ -14,3 +14,10 @@ $$ LANGUAGE SQL IMMUTABLE;
 
 create view course_with_slug 
 AS SELECT *, slugify(title) as slug FROM "Courses";
+
+
+DROP table "_QuizChapters" CASCADE;
+DROP table "Quizes" CASCADE;
+DROP table "Simulation" CASCADE;
+DROP table "Chapters" CASCADE;
+DROP table "Courses" CASCADE;
