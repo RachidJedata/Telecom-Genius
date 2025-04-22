@@ -1,5 +1,6 @@
 'use client'
 import React, { useState } from 'react';
+import { createScenario } from '../lib/action';
 
 export default function ScenarioForm() {
     const [formData, setFormData] = useState({
@@ -23,25 +24,7 @@ export default function ScenarioForm() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        try {
-            // Replace with your actual API endpoint
-            const response = await fetch('/api/scenarios', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData),
-            });
-
-            if (response.ok) {
-                alert('Scenario saved successfully!');
-                // Reset form or redirect
-            } else {
-                alert('Failed to save scenario');
-            }
-        } catch (error) {
-            console.error('Error saving scenario:', error);
-        }
+        // createScenario(formData);
     };
 
     return (

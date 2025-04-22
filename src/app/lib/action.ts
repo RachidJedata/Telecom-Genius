@@ -62,7 +62,7 @@ export async function getCourse(slug: string) {
       JOIN course_with_slug s ON s."courseId" = p."courseId"
       WHERE s.slug LIKE ${pattern}
       ORDER BY p."dateAdded" DESC
-    `;        
+    `;
 }
 
 
@@ -99,4 +99,8 @@ export async function getQuiz(chapterId: string) {
             },
         },
     });
+}
+
+export async function createScenario(formData: FormData) {
+
 }

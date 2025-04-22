@@ -9,7 +9,7 @@ import { turnToUrl } from "@/app/lib/utils"
 
 export function ChapterGrid({ courses }: { courses: Courses[] }) {
   const router = useRouter()
-  const [hoveredId, setHoveredId] = useState<number | null>(null)
+  const [hoveredId, setHoveredId] = useState<number | undefined>(undefined)
 
   const handleCardClick = (title: string) => {
     const slug = turnToUrl(title);
@@ -29,7 +29,7 @@ export function ChapterGrid({ courses }: { courses: Courses[] }) {
               }`}
             onClick={() => handleCardClick(course.title)}
             onMouseEnter={() => setHoveredId(course.courseId)}
-            onMouseLeave={() => setHoveredId(null)}
+            onMouseLeave={() => setHoveredId(undefined)}
           >
             <CardHeader className="pb-2">
               <div
