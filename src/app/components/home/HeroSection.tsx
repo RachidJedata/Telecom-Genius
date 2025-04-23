@@ -27,7 +27,7 @@ export function Hero() {
                 )}>
                     Rejoignez notre plateforme pour apprendre auprès d'experts de l'industrie et faire avancer votre carrière en télécommunications.
                 </p>
-                <HomeLink href="/scenarios" text="Demmarer l'apprentissage" />
+                <HomeLink href="/scenarios" text="Démmarer l'apprentissage" />
             </div>
         </section>
     );

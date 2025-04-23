@@ -1,11 +1,11 @@
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Clock } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Image from 'next/image';
 
-import MarkdownContent from "@/app/components/markDown";
 import { getScenarioDetails } from "@/app/lib/action";
-import ScenarioCards from "@/app/components/scenarios/scenario-card";
+import { YouMightLikeCards } from "@/app/components/scenarios/you-might-like-cards";
+import Markdown from "react-markdown";
 
 export default async function Page({
     params
@@ -19,44 +19,50 @@ export default async function Page({
     if (!envDetails) return notFound();
 
     return (
-        <div className="min-h-screen bg-white">
-            <main className="container mx-auto px-4 py-8">
-                {/* Back button */}
-                <Link
-                    href="/scenarios"
-                    className="inline-flex items-center text-sm font-medium text-gray-600 hover:text-gray-900 mb-8"
-                >
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back
-                </Link>
+        <div className="min-h-screen dark:bg-black dark:text-white">
+            <main className="container mx-auto px-4 py-12">
+                <div className="max-w-3xl mx-auto">
+                    <Link href="/scenarios/" className="inline-flex items-center text-gray-400 hover:dark:text-white hover:text-primary mb-8">
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Back to scenarios
+                    </Link>
 
+                    <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-6 text-primary">{envDetails.title}</h1>
 
-                {/* Featured image */}
-                {envDetails.imageUrl && (
-                    <div className="relative w-full h-[250px] md:h-[400px] lg:h-[500px] mb-10 rounded-xl overflow-hidden">
-                        <Image
-                            src={envDetails.imageUrl}
-                            alt={envDetails.title || ""}
-                            fill
-                            priority
-                            className="object-cover"
-                        />
+                    <div className="flex items-center gap-4 text-sm text-semiGgray mb-8">
+                        <div className="flex items-center gap-1">
+                            <Clock className="h-4 w-4" />
+                            <span>8min lecture</span>
+                        </div>
+                        <div>May 15, 2025</div>
                     </div>
-                )}
 
-                {/* Blog content */}
-                <div className="max-w-full px-4">
-                    <MarkdownContent content={envDetails.body} />
-                </div>
+                    {envDetails.imageUrl && (
+                        <div className="relative h-[400px] md:h-[500px] rounded-xl overflow-hidden border border-gray-800 mb-8">
+                            <Image
+                                src={envDetails.imageUrl}
+                                alt="Article hero image showing GAN-generated art"
+                                fill
+                                className="object-cover"
+                                priority
+                            />
+                        </div>
+                    )}
 
-                {/* Related posts section */}
-                <div className="mt-16 border-t mx-auto border-gray-200 pt-16">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-8">Tu peux aussi Voir</h2>                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-5">
-                        {envDetails.SuggestedScenarios.length > 0 && (
-                            <ScenarioCards cards={envDetails.SuggestedScenarios} />
-                        )}
-                    </div>
+                    <article className="text-black dark:text-white/75 prose prose-invert prose-purple max-w-none">
+                        <Markdown>
+                            {envDetails.body}
+                        </Markdown>
+                    </article>
+
+                    {envDetails.SuggestedScenarios.length > 0 && (
+                        <div className="border-t border-gray-800 mt-12 pt-8">
+                            <h3 className="text-xl font-bold mb-6">Scenario Smiliar</h3>
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <YouMightLikeCards cards={envDetails.SuggestedScenarios} />
+                            </div>
+                        </div>
+                    )}
                 </div>
             </main>
         </div>

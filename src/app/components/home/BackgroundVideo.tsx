@@ -8,11 +8,17 @@ export default function BackgroundVideo({ setIsLoading }: { setIsLoading: (v: bo
     const vidRef = useRef<HTMLVideoElement>(null);
 
     useEffect(() => {
-        setIsLoading(false); // When component mounts, loading is done
-        if (vidRef.current) {
-            vidRef.current.playbackRate = 0.4;
+        setIsLoading(false);
+        const video = vidRef.current;
+        if (video) {
+            video.playbackRate = 0.4;
+            // Explicitly play the video to handle cases where autoplay may not trigger
+            video.play().catch(error => {
+                console.error('Video play failed:', error);
+            });
         }
-    }, []);
+    }, [setIsLoading]); // Include setIsLoading in dependencies if it's not stable
+    
 
     return (
         <video

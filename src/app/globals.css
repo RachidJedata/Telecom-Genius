@@ -206,3 +206,21 @@
   max-width: 200px;
   word-break: break-word;
 }
+
+.prose strong,
+.prose h1,
+.prose h2,
+.prose h3,
+.prose p,
+.prose a {
+  color: black;
+}
+
+.dark .prose strong,
+.dark .prose h1,
+.dark .prose h2,
+.dark .prose h3,
+.dark .prose p,
+.dark .prose a {
+  color: rgba(255, 255, 255, 0.75);
+}
