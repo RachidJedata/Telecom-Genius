@@ -2,7 +2,8 @@
 
 import { Chapters, ModelType, Prisma } from "@prisma/client";
 import prisma from "./prisma";
-import bcrypt from 'bcryptjs'
+import bcrypt from 'bcryptjs';
+import { FormState } from "./utils";
 
 export async function saveUser(data: Prisma.UserCreateInput) {
     try {
@@ -101,6 +102,52 @@ export async function getQuiz(chapterId: string) {
     });
 }
 
-export async function createScenario(formData: FormData) {
+export async function createScenario(prevState: FormState, formData: FormData) {
 
+    const imageUrl = formData.get('imageUrl')?.toString() || '';
+    const description = formData.get('description')?.toString() || '';
+    const title = formData.get('title')?.toString() || '';
+
+
+    const scenarioTitle = formData.get('scenarioTitle')?.toString() || '';
+    const imageUrlScenario = formData.get('imageUrlScenario')?.toString() || '';
+    const body = formData.get('body')?.toString() || '';
+
+
+    await prisma.environmentScenarios.create({
+        data: {
+            title: title,
+            imageUrl: imageUrl,
+            description: description,
+            Envdetails: {
+                create: {
+                    title: scenarioTitle,
+                    imageUrl: imageUrlScenario,
+                    body: body,
+                }
+            }
+        }
+    });
+
+
+    // Return success state
+    return {
+        message: 'Scenario created successfully! ' + imageUrl,
+    };
+
+}
+
+export async function getScenarios() {
+    return await prisma.environmentScenarios.findMany();
+}
+
+export async function getScenarioDetails(scenarioId: string) {
+    return await prisma.environmentDetails.findUnique({
+        where: {
+            envDetailsId: scenarioId
+        },
+        include: {
+            SuggestedScenarios: true
+        }
+    })
 }

@@ -1,37 +1,22 @@
 'use client'
-import React, { useState } from 'react';
+import React, { useActionState } from 'react';
 import { createScenario } from '../lib/action';
 
 export default function ScenarioForm() {
-    const [formData, setFormData] = useState({
-        imageUrl: '',
-        description: '',
-        body: '',
-        title: '',
-        scenarioTitle: '',
-        imageUrlScenario: '',
-    });
 
-    const handleChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-    ) => {
-        const { name, value } = e.target;
-        setFormData(prevData => ({
-            ...prevData,
-            [name]: value
-        }));
-    };
+    const initialState = {
+        message: '',
+        errors: {},
+        fields: {}
+    };   
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        // createScenario(formData);
-    };
+    const [state, formAction] = useActionState(createScenario, initialState);
 
     return (
         <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
             <h1 className="text-2xl font-bold text-center mb-6 text-gray-800">Create New Scenario</h1>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form action={formAction} className="space-y-6">
                 <section className="space-y-4">
                     <h2 className="text-xl font-semibold text-gray-700">Scenario Details</h2>
 
@@ -43,8 +28,6 @@ export default function ScenarioForm() {
                             type="text"
                             id="title"
                             name="title"
-                            value={formData.title}
-                            onChange={handleChange}
                             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Title"
                         />
@@ -57,8 +40,6 @@ export default function ScenarioForm() {
                             type="text"
                             id="imageUrl"
                             name="imageUrl"
-                            value={formData.imageUrl}
-                            onChange={handleChange}
                             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="https://example.com/image.jpg"
                         />
@@ -71,8 +52,6 @@ export default function ScenarioForm() {
                         <textarea
                             id="description"
                             name="description"
-                            value={formData.description}
-                            onChange={handleChange}
                             rows={3}
                             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Enter scenario description..."
@@ -91,8 +70,6 @@ export default function ScenarioForm() {
                             type="text"
                             id="scenarioTitle"
                             name="scenarioTitle"
-                            value={formData.scenarioTitle}
-                            onChange={handleChange}
                             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Title"
                         />
@@ -105,8 +82,6 @@ export default function ScenarioForm() {
                             type="text"
                             id="imageUrlScenario"
                             name="imageUrlScenario"
-                            value={formData.imageUrlScenario}
-                            onChange={handleChange}
                             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="https://example.com/image.jpg"
                         />
@@ -121,8 +96,6 @@ export default function ScenarioForm() {
                         <textarea
                             id="body"
                             name="body"
-                            value={formData.body}
-                            onChange={handleChange}
                             rows={6}
                             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Enter detailed scenario content..."
@@ -138,6 +111,7 @@ export default function ScenarioForm() {
                         Save Scenario
                     </button>
                 </div>
+                {state.message && <p>{state.message}</p>}
             </form>
         </div>
     );

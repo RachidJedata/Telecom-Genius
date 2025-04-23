@@ -45,3 +45,9 @@ export function turnToUrl(value: string): string {
     remove: /[*+~.()'"!:@]/g, // Remove these characters
   })
 }
+
+export type FormState = {
+  message?: string;
+  errors?: Record<string, string>;
+  fields?: Record<string, string>;
+};

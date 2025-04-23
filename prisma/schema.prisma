@@ -25,7 +25,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  // directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -90,9 +90,10 @@ model EnvironmentScenarios {
 }
 
 model EnvironmentDetails {
-  envDetailsId String @id @default(uuid())
+  envDetailsId String  @id @default(uuid())
   body         String
-  title        String
+  title        String?
+  imageUrl     String?
 
   environmentScenario EnvironmentScenarios?
   SuggestedScenarios  EnvironmentScenarios[] @relation("SuggestedEnvs")
