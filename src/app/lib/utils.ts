@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import slugify from 'slugify'
+// import slugify from 'slugify'
+import { remove as removeDiacritics } from 'diacritics';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -40,10 +41,14 @@ export const generatePagination = (currentPage: number, totalPages: number) => {
 };
 
 export function turnToUrl(value: string): string {
-  return slugify(value, {
-    lower: true, // Convert to lowercase
-    remove: /[*+~.()'"!:@]/g, // Remove these characters
-  })
+    // Step 1: Remove accents (equivalent to PostgreSQL unaccent)
+    const unaccented = removeDiacritics(value);
+
+    // Step 2: Replace all non-alphanumeric characters with hyphens
+    const slugified = unaccented.replace(/[^a-zA-Z0-9]+/g, '-');
+  
+    // Step 3: Convert to lowercase
+    return slugified.toLowerCase();
 }
 
 export type FormState = {
