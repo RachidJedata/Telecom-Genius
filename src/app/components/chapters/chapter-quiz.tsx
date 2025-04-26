@@ -100,7 +100,7 @@ export function ChapterQuiz({ quiz }: { quiz: Quizes[] }) {
                 <div className="text-lg font-medium mb-4">
                   <MarkdownContent
                     style={{ backgroundColor: "inherit", color: "inherit" }}
-                    content={currentQuestion.question} />                    
+                    content={currentQuestion.question} />
                 </div>
 
                 <RadioGroup
@@ -165,12 +165,14 @@ export function ChapterQuiz({ quiz }: { quiz: Quizes[] }) {
                           </div>
 
                           <div className="mt-2 text-sm">
-                            <p className="font-medium">
+                            <div className="font-medium">
                               Votre réponse:{" "}
                               {selectedAnswers[index] >= 0
-                                ? question.options[selectedAnswers[index]]
+                                ? (<MarkdownContent
+                                  style={{ backgroundColor: "inherit" }}
+                                  content={question.options[selectedAnswers[index]]} />)
                                 : "No answer selected"}
-                            </p>
+                            </div>
 
                             {!isCorrect && (
                               <div className="font-medium text-green-600 dark:text-green-400 mt-1">
