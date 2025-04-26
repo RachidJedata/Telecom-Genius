@@ -88,11 +88,8 @@ export function ChapterQuiz({ quiz }: { quiz: Quizes[] }) {
             <>
               <div className="mb-4">
                 <div className="flex justify-between text-sm text-gray-500 mb-2">
-                  <MarkdownContent
-                    style={{ backgroundColor: "inherit", color: "inherit" }}
-                    content={`Question ${currentQuestionIndex + 1} of ${quiz.length}`} />
                   <span>
-
+                    Question {currentQuestionIndex + 1} of {quiz.length}
                   </span>
                   <span>Progression: {Math.round(progress)}%</span>
                 </div>
@@ -100,7 +97,11 @@ export function ChapterQuiz({ quiz }: { quiz: Quizes[] }) {
               </div>
 
               <div className="py-4">
-                <h3 className="text-lg font-medium mb-4">{currentQuestion.question}</h3>
+                <div className="text-lg font-medium mb-4">
+                  <MarkdownContent
+                    style={{ backgroundColor: "inherit", color: "inherit" }}
+                    content={currentQuestion.question} />                    
+                </div>
 
                 <RadioGroup
                   value={selectedAnswers[currentQuestionIndex]?.toString() || ""}
@@ -111,7 +112,9 @@ export function ChapterQuiz({ quiz }: { quiz: Quizes[] }) {
                     <div key={index} className="flex items-center space-x-2">
                       <RadioGroupItem value={index.toString()} id={`option-${index}`} />
                       <Label htmlFor={`option-${index}`} className="cursor-pointer">
-                        {option}
+                        <MarkdownContent
+                          style={{ backgroundColor: "inherit", color: "inherit" }}
+                          content={option} />
                       </Label>
                     </div>
                   ))}

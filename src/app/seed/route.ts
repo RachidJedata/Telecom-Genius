@@ -156,8 +156,8 @@ Pour normaliser à 1, on choisit $$ \\sigma = \\sqrt{\\frac{1}{2}} $$.
                                         question: "Quelle est la puissance moyenne $$ E[|h|^2] $$ dans un canal Rayleigh normalisé ?",
                                         options: [
                                             "1",
-                                            "2\\sigma^2",
-                                            "\\sigma^2",
+                                            "$$2\\sigma^2$$",
+                                            "$$\\sigma^2$$",
                                             "0"
                                         ],
                                         correctAnswerIndex: 0,
@@ -398,7 +398,7 @@ Ces valeurs équilibrent la contribution de la composante LOS et des multipaths 
                             quizes: {
                                 create: [
                                     {
-                                        question: "Que représente \\sigma dans le canal Rician ?",
+                                        question: "Que représente $$\\sigma$$ dans le canal Rician ?",
                                         options: [
                                             "La moyenne de la LOS",
                                             "L’écart-type des multipaths",
@@ -406,7 +406,7 @@ Ces valeurs équilibrent la contribution de la composante LOS et des multipaths 
                                             "Le facteur K"
                                         ],
                                         correctAnswerIndex: 1,
-                                        explaination: "L’écart-type \\sigma = \\sqrt{\\frac{1}{2(K + 1)}} mesure la dispersion des multipaths."
+                                        explaination: "L’écart-type $$\\sigma = \\sqrt{\\frac{1}{2(K + 1)}}$$ mesure la dispersion des multipaths."
                                     }
                                 ]
                             }
@@ -436,7 +436,7 @@ Où :
                             quizes: {
                                 create: [
                                     {
-                                        question: "Quelle loi suit l’amplitude |h| dans un canal Rician ?",
+                                        question: "Quelle loi suit l’amplitude $$|h|$$ dans un canal Rician ?",
                                         options: [
                                             "Normale",
                                             "Rayleigh",
@@ -444,7 +444,7 @@ Où :
                                             "Uniforme"
                                         ],
                                         correctAnswerIndex: 2,
-                                        explaination: "L’amplitude |h| suit une distribution de Rice, caractéristique du canal Rician."
+                                        explaination: "L’amplitude $$|h|$$ suit une distribution de Rice, caractéristique du canal Rician."
                                     }
                                 ]
                             },
@@ -477,13 +477,13 @@ Cela permet de comparer les niveaux de signal dans des unités logarithmiques.
                                     {
                                         question: "Comment convertit-on la puissance en dB ?",
                                         options: [
-                                            "10 \\cdot \\log_{10}(P)",
-                                            "20 \\cdot \\log_{10}(P)",
-                                            "\\log_{10}(P)",
-                                            "P \\cdot 10"
+                                            "$$10 \\cdot \\log_{10}(P)$$",
+                                            "$$20 \\cdot \\log_{10}(P)$$",
+                                            "$$\\log_{10}(P)$$",
+                                            "$$P \\cdot 10$$"
                                         ],
                                         correctAnswerIndex: 0,
-                                        explaination: "La puissance en dB est calculée par  P_{dB} = 10 \\cdot \\log_{10}(P) ."
+                                        explaination: "La puissance en dB est calculée par $$P_{dB} = 10 \\cdot \\log_{10}(P)$$ ."
                                     }
                                 ]
                             },
@@ -506,7 +506,7 @@ Où $$ * $$ désigne la convolution. Cette opération combine l’effet du canal
                             quizes: {
                                 create: [
                                     {
-                                        question: "Que représente y(t) = h(t) * x(t) dans un canal Rician ?",
+                                        question: "Que représente $$y(t) = h(t) * x(t)$$ dans un canal Rician ?",
                                         options: [
                                             "La puissance du signal",
                                             "Le signal reçu après convolution",
@@ -514,7 +514,7 @@ Où $$ * $$ désigne la convolution. Cette opération combine l’effet du canal
                                             "Le bruit ajouté"
                                         ],
                                         correctAnswerIndex: 1,
-                                        explaination: "Cela représente le signal reçu, résultat de la convolution entre le canal h(t) et le signal transmis x(t) "
+                                        explaination: "Cela représente le signal reçu, résultat de la convolution entre le canal $$h(t)$$ et le signal transmis $$x(t)$$"
                                     }
                                 ]
                             },
@@ -848,7 +848,7 @@ $$`,
                                             "Gigahertz (GHz)"
                                         ],
                                         correctAnswerIndex: 2,
-                                        explaination: "Dans la formule FSPL = 32.45 + 20 log₁₀(d_km) + 20 log₁₀(f_MHz), la fréquence est exprimée en mégahertz (MHz)."
+                                        explaination: "Dans la formule $$FSPL = 32.45 + 20 log₁₀(d_km) + 20 log₁₀(f_MHz)$$, la fréquence est exprimée en mégahertz (MHz)."
                                     },
                                     {
                                         question: "Que se passe-t-il si la fréquence double dans la formule FSPL ?",
@@ -859,7 +859,7 @@ $$`,
                                             "La perte est divisée par deux"
                                         ],
                                         correctAnswerIndex: 0,
-                                        explaination: "Doubler la fréquence (facteur 2) augmente la perte de 20 log₁₀(2) ≈ 6 dB, car elle est logarithmique."
+                                        explaination: "Doubler la fréquence (facteur 2) augmente la perte de $$20 log₁₀(2) ≈ 6 dB$$, car elle est logarithmique."
                                     }
                                 ]
                             }
@@ -890,7 +890,7 @@ Plus la distance ou la fréquence augmente, plus la puissance reçue diminue rap
                                             "Elle augmente linéairement"
                                         ],
                                         correctAnswerIndex: 1,
-                                        explaination: "Dans le FSPL, la puissance reçue diminue avec le carré de la distance 1/d^2, ce qui se traduit par une perte logarithmique en dB."
+                                        explaination: "Dans le FSPL, la puissance reçue diminue avec le carré de la distance $$1/d^2$$, ce qui se traduit par une perte logarithmique en dB."
                                     }
                                 ]
                             }
@@ -1125,24 +1125,24 @@ En LOS, la perte est similaire à celle de l’espace libre, tandis qu’en NLOS
                                     {
                                         question: "Quelle formule est utilisée pour le cas LOS dans ITU-R P.1411 ?",
                                         options: [
-                                            "L = 20 log₁₀(f) + 20 log₁₀(d) + 32.45",
-                                            "L = 46.3 + 33.9 log₁₀(f)",
-                                            "L = L_LOS + ∆L_NLOS",
-                                            "L = 32.45 + 20 log₁₀(d)"
+                                            "$$L = 20 log₁₀(f) + 20 log₁₀(d) + 32.45$$",
+                                            "$$L = 46.3 + 33.9 log₁₀(f)$$",
+                                            "$$L = L_LOS + ∆L_NLOS$$",
+                                            "$$L = 32.45 + 20 log₁₀(d)$$"
                                         ],
                                         correctAnswerIndex: 0,
-                                        explaination: "Pour le cas LOS, ITU-R P.1411 utilise la formule de l’espace libre : L = 20 log₁₀(f) + 20 log₁₀(d) + 32.45."
+                                        explaination: "Pour le cas LOS, ITU-R P.1411 utilise la formule de l’espace libre : $$L = 20 log₁₀(f) + 20 log₁₀(d) + 32.45$$."
                                     },
                                     {
                                         question: "Qu’est-ce qui est ajouté à la perte LOS pour calculer la perte NLOS ?",
                                         options: [
                                             "Une constante fixe de 10 dB",
-                                            "Un facteur ∆L_NLOS dépendant de l’environnement",
+                                            "Un facteur $$∆L_NLOS$$ dépendant de l’environnement",
                                             "La hauteur des antennes",
                                             "La vitesse de la lumière"
                                         ],
                                         correctAnswerIndex: 1,
-                                        explaination: "En NLOS, la perte est L = L_LOS + ∆L_NLOS, où ∆L_NLOS dépend des obstacles, réflexions et de l’environnement."
+                                        explaination: "En NLOS, la perte est $$L = L_LOS + ∆L_NLOS$$, où $$∆L_NLOS$$ dépend des obstacles, réflexions et de l’environnement."
                                     }
                                 ]
                             },
@@ -1259,24 +1259,24 @@ $$
                                     {
                                         question: "Quel est le facteur de correction a(h_m) pour une grande ville ?",
                                         options: [
-                                            "a(h_m) = [1.1 log₁₀(f) - 0.7] h_m - [1.56 log₁₀(f) - 0.8]",
-                                            "a(h_m) = 3.2 [log₁₀(11.75 h_m)]² - 4.97",
-                                            "a(h_m) = 2 [log₁₀(f / 28)]²",
-                                            "a(h_m) = 4.78 [log₁₀(f)]²"
+                                            "$$a(h_m) = [1.1 log₁₀(f) - 0.7] h_m - [1.56 log₁₀(f) - 0.8]$$",
+                                            "$$a(h_m) = 3.2 [log₁₀(11.75 h_m)]² - 4.97$$",
+                                            "$$a(h_m) = 2 [log₁₀(f / 28)]²$$",
+                                            "$$a(h_m) = 4.78 [log₁₀(f)]²$$",
                                         ],
                                         correctAnswerIndex: 1,
-                                        explaination: "Dans une grande ville, a(h_m) = 3.2 [log₁₀(11.75 h_m)]² - 4.97, tenant compte de la hauteur de l’antenne mobile."
+                                        explaination: "Dans une grande ville, $$a(h_m) = 3.2 [log₁₀(11.75 h_m)]² - 4.97$$, tenant compte de la hauteur de l’antenne mobile."
                                     },
                                     {
                                         question: "Comment calcule-t-on la perte en milieu rural ?",
                                         options: [
-                                            "L_rur = L_urb - 4.78 [log₁₀(f)]² + 18.33 log₁₀(f) - 40.94",
-                                            "L_rur = L_urb + 2 [log₁₀(f / 28)]²",
-                                            "L_rur = L_urb - 5.4",
-                                            "L_rur = L_urb + 18.33 log₁₀(f)"
+                                            "$$L_rur = L_urb - 4.78 [log₁₀(f)]² + 18.33 log₁₀(f) - 40.94$$",
+                                            "$$L_rur = L_urb + 2 [log₁₀(f / 28)]²$$",
+                                            "$$L_rur = L_urb - 5.4$$",
+                                            "$$L_rur = L_urb + 18.33 log₁₀(f)$$",
                                         ],
                                         correctAnswerIndex: 0,
-                                        explaination: "La perte en milieu rural est donnée par L_rur = L_urb - 4.78 [log₁₀(f)]² + 18.33 log₁₀(f) - 40.94 ."
+                                        explaination: "La perte en milieu rural est donnée par $$L_rur = L_urb - 4.78 [log₁₀(f)]² + 18.33 log₁₀(f) - 40.94 $$."
                                     }
                                 ]
                             }
@@ -1424,13 +1424,13 @@ Avec :
                                     {
                                         question: "Quelle est la formule de la perte de propagation dans le modèle Two-Ray Ground ?",
                                         options: [
-                                            "L(d) = 20 \\log_{10}(d) + 20 \\log_{10}(f) + 32.44",
-                                            "L(d) = 40 \\log_{10}(d) - 20 \\log_{10}(h_t h_r)",
-                                            "L(d) = 69.55 + 26.16 \\log_{10}(f) - 13.82 \\log_{10}(h_b)",
-                                            "L(d) = 10 n \\log_{10}(d) + C"
+                                            "$$L(d) = 20 \\log_{10}(d) + 20 \\log_{10}(f) + 32.44$$",
+                                            "$$L(d) = 40 \\log_{10}(d) - 20 \\log_{10}(h_t h_r)$$",
+                                            "$$L(d) = 69.55 + 26.16 \\log_{10}(f) - 13.82 \\log_{10}(h_b)$$",
+                                            "$$L(d) = 10 n \\log_{10}(d) + C$$",
                                         ],
                                         correctAnswerIndex: 1,
-                                        explaination: "La formule correcte est L(d) = 40 \\log_{10}(d) - 20 \\log_{10}(h_t h_r) ."
+                                        explaination: "La formule correcte est $$L(d) = 40 \\log_{10}(d) - 20 \\log_{10}(h_t h_r)$$ ."
                                     },
                                     {
                                         question: "Que se passe-t-il pour les distances inférieures à la distance critique d_c ?",
@@ -1441,7 +1441,7 @@ Avec :
                                             "La réflexion sur le sol disparaît"
                                         ],
                                         correctAnswerIndex: 1,
-                                        explaination: "Pour d < d_c , le modèle Two-Ray Ground peut ne pas être précis."
+                                        explaination: "Pour $$d < d_c$$ , le modèle Two-Ray Ground peut ne pas être précis."
                                     }
                                 ]
                             },
@@ -1582,10 +1582,10 @@ $$
                                     {
                                         question: "Quelle est la formule pour $$ L_v $$ quand $$ d_v $$ vaut 10 mètres ?",
                                         options: [
-                                            "1.33 f^{0.284} d_v^{0.588}",
-                                            "0.45 f^{0.284} d_v",
-                                            "1.33 f^{0.284} d_v",
-                                            "0.45 f^{0.588} d_v"
+                                            "$$1.33 f^{0.284} d_v^{0.588}$$",
+                                            "$$0.45 f^{0.284} d_v$$",
+                                            "$$1.33 f^{0.284} d_v$$",
+                                            "$$0.45 f^{0.588} d_v$$",
                                         ],
                                         correctAnswerIndex: 1,
                                         explaination: "Pour $$ 0 < d_v \\leq 14 $$ m, la formule est $$ L_v = 0.45 f^{0.284} d_v $$."

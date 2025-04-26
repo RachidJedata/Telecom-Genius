@@ -44,7 +44,7 @@ export default async function ChapterPage({
                 </header>
 
                 <div className="flex flex-col lg:flex-row gap-8">
-                    <aside className="lg:w-64 flex-shrink-0">
+                    <aside className="lg:w-72 flex-shrink-0">
                         <div className="space-y-6">
                             <ChapterNavigation courseTitle={chapter.title} chapters={chapters} currentChapterId={chapter.chapterId} />
 

@@ -9,7 +9,7 @@ import IconDisplay from "../UI/iconDisplay"
 export function ChapterNavigation({ chapters, courseTitle, currentChapterId }: { chapters: Chapters[], currentChapterId: string, courseTitle: string }) {
   // console.log(chapters);
   return (
-    <nav className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4">
+    <nav className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4 pr-2 ">
       <h2 className="text-lg font-semibold mb-4 px-2 text-gray-800 dark:text-gray-200">Chapitres</h2>
       <ul className="space-y-1">
         {chapters.map((chapter) => {

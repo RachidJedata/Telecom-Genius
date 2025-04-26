@@ -86,12 +86,12 @@ export function AiChatButton() {
               <div key={index} className={cn("flex", message.role === "user" ? "justify-end" : "justify-start")}>
                 <div
                   className={cn(
-                    "max-w-[90%] rounded-lg px-4 py-2",
-                    message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted",
+                    "max-w-[90%] rounded-lg px-4 py-2  text-black dark:text-white",
+                    message.role === "user" ? "bg-primary" : "bg-muted",
                   )}
                 >
                   <MarkdownContent
-                    style={{ backgroundColor: "inherit" }}
+                    style={{ backgroundColor: "inherit", color: "inherit" }}
                     content={message.content.trim()} />
                 </div>
               </div>
