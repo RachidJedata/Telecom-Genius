@@ -1,7 +1,7 @@
-import { getCourses } from "@/app/lib/action";
-import HomeLink from "@/app/components/home/link";
-import { ChapterGrid } from "@/app/components/chapters/chapter-grid";
-import { Hero } from "../components/home/HeroSection";
+import { getCourses } from "@/lib/action";
+import HomeLink from "@/components/home/link";
+import { ChapterGrid } from "@/components/chapters/chapter-grid";
+import { Hero } from "@/components/home/HeroSection";
 import Link from "next/link";
 
 

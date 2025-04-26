@@ -3,8 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Image from 'next/image';
 
-import { getScenarioDetails } from "@/app/lib/action";
-import { YouMightLikeCards } from "@/app/components/scenarios/you-might-like-cards";
+import { getScenarioDetails } from "@/lib/action";
+import { YouMightLikeCards } from "@/components/scenarios/you-might-like-cards";
 import Markdown from "react-markdown";
 
 export default async function Page({

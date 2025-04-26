@@ -1,14 +1,14 @@
 'use client'
 
 import Link from "next/link"
-import { Button } from "@/app/components/UI/button"
-import { Input } from "@/app/components/UI/input"
+import { Button } from "@/components/UI/button"
+import { Input } from "@/components/UI/input"
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from 'next/navigation';
-import GithubButton from "@/app/components/signGithub";
-import GoogleButton from "@/app/components/signGoogle";
+import GithubButton from "@/components/signGithub";
+import GoogleButton from "@/components/signGoogle";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");

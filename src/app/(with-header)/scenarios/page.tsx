@@ -1,6 +1,6 @@
 import Image from "next/image"
-import { getScenarios } from "@/app/lib/action"
-import ScenarioCards from "@/app/components/scenarios/scenario-card";
+import { getScenarios } from "@/lib/action"
+import ScenarioCards from "@/components/scenarios/scenario-card";
 
 export default async function Home() {
     const cards = await getScenarios();

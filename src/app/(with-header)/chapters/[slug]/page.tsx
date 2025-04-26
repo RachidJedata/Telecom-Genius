@@ -1,12 +1,12 @@
-import { getCourse, getQuiz, getSimulation } from "@/app/lib/action"
-import { Button } from "@/app/components/UI/button"
-import { ChapterNavigation } from "@/app/components/chapters/chapter-navigation"
-import MarkdownContent from "@/app/components/markDown"
-import { SimulationControls } from "@/app/components/simulation-controls"
+import { getCourse, getQuiz, getSimulation } from "@/lib/action"
+import { Button } from "@/components/UI/button"
+import { ChapterNavigation } from "@/components/chapters/chapter-navigation"
+import MarkdownContent from "@/components/markDown"
+import { SimulationControls } from "@/components/simulation-controls"
 import { ChevronLeft } from "lucide-react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ChapterQuiz } from "@/app/components/chapters/chapter-quiz"
+import { ChapterQuiz } from "@/components/chapters/chapter-quiz"
 
 
 export default async function ChapterPage({

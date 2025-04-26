@@ -1,10 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
-import SignOutButton from "@/app/components/signOut";
-import Footer from "@/app/components/footer";
-import { AiChatButton } from "@/app/components/ai-chat-button";
-import { authOptions } from "../lib/auth";
+import SignOutButton from "@/components/signOut";
+import Footer from "@/components/footer";
+import { AiChatButton } from "@/components/ai-chat-button";
+import { authOptions } from "@/lib/auth";
 
 
 export default async function RootLayout({

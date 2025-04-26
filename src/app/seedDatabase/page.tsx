@@ -1,6 +1,6 @@
 'use client'
 import React, { useActionState } from 'react';
-import { createScenario } from '../lib/action';
+import { createScenario } from '@/lib/action';
 
 export default function ScenarioForm() {
 
