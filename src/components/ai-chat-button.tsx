@@ -91,7 +91,6 @@ export function AiChatButton() {
                   )}
                 >
                   <MarkdownContent
-                    style={{ backgroundColor: "inherit", color: "inherit" }}
                     content={message.content.trim()} />
                 </div>
               </div>

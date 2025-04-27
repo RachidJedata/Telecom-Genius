@@ -18,7 +18,8 @@ export default function TagSearch({ modelTypes, selectedTag }: { modelTypes: str
     const selected = modelTypes.includes(selectedTag) ? selectedTag : "Tous";
 
     return (
-        <>
+
+        <div className="grid grid-cols-3 md:grid-cols-1 md:grid-flow-col gap-2">
             <div className={cn(CLASSES, {
                 "bg-primary text-black/85": selected === "Tous"
             })}
@@ -37,6 +38,6 @@ export default function TagSearch({ modelTypes, selectedTag }: { modelTypes: str
                     </div>
                 ))
             }
-        </>
+        </div>
     );
 }

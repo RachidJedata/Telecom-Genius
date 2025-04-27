@@ -5,7 +5,7 @@ import Image from 'next/image';
 
 import { getScenarioDetails } from "@/lib/action";
 import { YouMightLikeCards } from "@/components/scenarios/you-might-like-cards";
-import Markdown from "react-markdown";
+import MarkdownContent from "@/components/markDown";
 
 export default async function Page({
     params
@@ -50,9 +50,8 @@ export default async function Page({
                     )}
 
                     <article className="text-black dark:text-white/75 prose prose-invert prose-purple max-w-none">
-                        <Markdown>
-                            {envDetails.body}
-                        </Markdown>
+                        <MarkdownContent content={envDetails.body} />
+                                                   
                     </article>
 
                     {envDetails.SuggestedScenarios.length > 0 && (

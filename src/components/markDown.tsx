@@ -6,8 +6,10 @@ import "katex/dist/katex.min.css";
 import 'github-markdown-css';
 import { cn } from "@/lib/utils";
 
-const MarkdownContent = ({ content, className, style }: { content: string, className?: string, style?: {} }) => (
-    <div className={cn("markdown-body", className)} style={style}>
+const MarkdownContent = ({ content, className }: { content: string, className?: string }) => (
+    <div className={cn("markdown-body", className)}
+        style={{ backgroundColor: "inherit", color: "inherit" }}
+    >
         <ReactMarkdown
             remarkPlugins={[remarkMath]}
             rehypePlugins={[rehypeKatex]}

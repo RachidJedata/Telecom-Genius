@@ -134,9 +134,9 @@ export function SimulationControls({ simulation }: { simulation: Simulation }) {
           );
         })}
       </div>
-
-      <div className="flex gap-4 items-center">
-        <Button onClick={runSimulation} disabled={isLoading || autoRun} className="flex items-center gap-2">
+      <div className="grid grid-cols-1 md:grid-flow-col gap-4 items-center">
+        {/* <div className="flex gap-4 items-center"> */}
+        <Button onClick={runSimulation} disabled={isLoading || autoRun} className="flex items-center gap-2 text-white">
           {isLoading && !autoRun ? (
             <>
               <RefreshCw className="h-4 w-4 animate-spin" />
@@ -165,7 +165,7 @@ export function SimulationControls({ simulation }: { simulation: Simulation }) {
         <Button
           variant="outline"
           onClick={resetSimulation}
-          className="ml-auto"
+          className="ml-auto w-full"
         >
           Réinitialiser les paramètres
         </Button>

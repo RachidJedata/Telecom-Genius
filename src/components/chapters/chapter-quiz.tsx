@@ -98,8 +98,7 @@ export function ChapterQuiz({ quiz }: { quiz: Quizes[] }) {
 
               <div className="py-4">
                 <div className="text-lg font-medium mb-4">
-                  <MarkdownContent
-                    style={{ backgroundColor: "inherit", color: "inherit" }}
+                  <MarkdownContent                    
                     content={currentQuestion.question} />
                 </div>
 
@@ -113,7 +112,7 @@ export function ChapterQuiz({ quiz }: { quiz: Quizes[] }) {
                       <RadioGroupItem value={index.toString()} id={`option-${index}`} />
                       <Label htmlFor={`option-${index}`} className="cursor-pointer">
                         <MarkdownContent
-                          style={{ backgroundColor: "inherit", color: "inherit" }}
+                          
                           content={option} />
                       </Label>
                     </div>
@@ -159,8 +158,7 @@ export function ChapterQuiz({ quiz }: { quiz: Quizes[] }) {
                         )}
                         <div>
                           <div className="font-medium">
-                            <MarkdownContent
-                              style={{ backgroundColor: "inherit" }}
+                            <MarkdownContent                              
                               content={question.question} />
                           </div>
 
@@ -168,8 +166,7 @@ export function ChapterQuiz({ quiz }: { quiz: Quizes[] }) {
                             <div className="font-medium">
                               Votre réponse:{" "}
                               {selectedAnswers[index] >= 0
-                                ? (<MarkdownContent
-                                  style={{ backgroundColor: "inherit" }}
+                                ? (<MarkdownContent                                  
                                   content={question.options[selectedAnswers[index]]} />)
                                 : "No answer selected"}
                             </div>
@@ -177,14 +174,14 @@ export function ChapterQuiz({ quiz }: { quiz: Quizes[] }) {
                             {!isCorrect && (
                               <div className="font-medium text-green-600 dark:text-green-400 mt-1">
                                 <MarkdownContent
-                                  style={{ backgroundColor: "inherit", color: "inherit" }}
+                                  
                                   content={`Réponse correcte: ${question.options[question.correctAnswerIndex]}`} />
                               </div>
                             )}
 
                             <div className="mt-2 text-gray-600 dark:text-gray-400">
                               <MarkdownContent
-                                style={{ backgroundColor: "inherit", color: "inherit" }}
+                                
                                 content={question.explaination} />
                             </div>
                           </div>

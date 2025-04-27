@@ -1,9 +1,7 @@
-import { EnvironmentScenarios } from "@prisma/client";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../UI/card";
 import Image from "next/image";
-import { Clock } from "lucide-react";
 import Link from "next/link";
 
+import { EnvironmentScenarios } from "@prisma/client";
 
 
 export async function YouMightLikeCards({ cards }: { cards: EnvironmentScenarios[] }) {
