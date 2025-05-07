@@ -11,6 +11,7 @@ export default function BackgroundVideo({ setIsLoading }: { setIsLoading: (v: bo
         setIsLoading(false);
         const video = vidRef.current;
         if (video) {
+            video.currentTime = 0; // Start from the beginning
             video.playbackRate = 0.4;
             // Explicitly play the video to handle cases where autoplay may not trigger
             video.play().catch(error => {
@@ -18,7 +19,7 @@ export default function BackgroundVideo({ setIsLoading }: { setIsLoading: (v: bo
             });
         }
     }, [setIsLoading]); // Include setIsLoading in dependencies if it's not stable
-    
+
 
     return (
         <video
