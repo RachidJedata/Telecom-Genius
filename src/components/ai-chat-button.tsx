@@ -48,8 +48,8 @@ export function AiChatButton() {
       });
 
       const data = await res.json();
-      const generatedText = data.result[0].generated_text;
-      const cleanResponse = generatedText.split("<start_of_turn>model")[1]?.trim() || "";
+      const generatedText = data.result[0];
+      const cleanResponse = generatedText.generated_text.split("[/INST]")[1]?.trim() || "";
 
       setMessages((prev) => [...prev, { role: "assistant", content: cleanResponse }]);
     } catch (error) {
@@ -86,8 +86,8 @@ export function AiChatButton() {
               <div key={index} className={cn("flex", message.role === "user" ? "justify-end" : "justify-start")}>
                 <div
                   className={cn(
-                    "max-w-[90%] rounded-lg px-4 py-2  text-black dark:text-white",
-                    message.role === "user" ? "bg-primary" : "bg-muted",
+                    "max-w-[90%] rounded-lg px-4 py-2",
+                    message.role === "user" ? "bg-primary text-white" : "bg-muted text-black dark:text-white",
                   )}
                 >
                   <MarkdownContent
