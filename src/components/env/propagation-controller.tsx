@@ -24,23 +24,21 @@ type Props = {
     // Existing properties
     calculateOkumuraHeightGain: (height: number) => number,
     calculateCoverageRadius: (antenna: Antenna) => number,
-    showLabels: boolean,
+    // showLabels: boolean,
     showPathLoss: boolean,
     showDirectPath: boolean,
-    showDiffractionPaths: boolean,
-    showReflectionPaths: boolean,
+    showPaths: boolean,
     selectedAntennaId: number,
     modelType: string,
     environmentType: string,
     setModelType: (model: string) => void,
     setEnvironmentType: (envType: string) => void,
     setSelectedAntennaId: (id: number) => void,
-    setShowLabels: (val: boolean) => void,
+    // setShowLabels: (val: boolean) => void,
     setShowAllCoverages: (val: boolean) => void,
     setShowPathLoss: (val: boolean) => void,
-    setShowReflectionPaths: (val: boolean) => void,
+    setShowPaths: (val: boolean) => void,
     setShowDirectPath: (val: boolean) => void,
-    setShowDiffractionPaths: (val: boolean) => void,
     antennas: Antenna[],
 
     // Additional variables from your code
@@ -77,22 +75,19 @@ type Props = {
 
 
 export function PropagationController({
-    showLabels,
+    // showLabels,
     showPathLoss,
     showDirectPath,
-    showDiffractionPaths,
-    showReflectionPaths,
+    showPaths,
     selectedAntennaId,
     modelType,
     environmentType,
     setModelType,
     setEnvironmentType,
     setSelectedAntennaId,
-    setShowLabels,
+    // setShowLabels,
     setShowPathLoss,
-    setShowReflectionPaths,
     setShowDirectPath,
-    setShowDiffractionPaths,
     antennas,
     calculateOkumuraHeightGain,
     calculateCoverageRadius,
@@ -128,6 +123,7 @@ export function PropagationController({
     setBuildingStyle,
     terrainType,
     setTerrainType,
+    setShowPaths,
 }: Props) {
     return (
         <div className="absolute top-4 left-4 z-10 bg-black/70 p-4 rounded-lg text-white max-w-md">
@@ -144,12 +140,7 @@ export function PropagationController({
                     <p className="text-sm mb-4">3D visualization of radio wave propagation</p>
 
                     <div className="space-y-4">
-                        <div className="flex items-center space-x-2 mb-2">
-                            <Switch id="show-labels" checked={showLabels} onCheckedChange={setShowLabels} />
-                            <Label htmlFor="show-labels" className="text-sm">
-                                Show Measurements
-                            </Label>
-                        </div>
+
 
                         <div className="flex items-center space-x-2 mb-2">
                             <Switch id="show-direct" checked={showDirectPath} onCheckedChange={setShowDirectPath} />
@@ -160,19 +151,12 @@ export function PropagationController({
 
                         <div className="flex items-center space-x-2 mb-2">
                             <Switch
-                                id="show-diffraction"
-                                checked={showDiffractionPaths}
-                                onCheckedChange={setShowDiffractionPaths}
+                                id="show-diffraction-reflexion"
+                                checked={showPaths}
+                                onCheckedChange={setShowPaths}
                             />
-                            <Label htmlFor="show-diffraction" className="text-sm">
-                                Diffraction Paths
-                            </Label>
-                        </div>
-
-                        <div className="flex items-center space-x-2 mb-2">
-                            <Switch id="show-reflection" checked={showReflectionPaths} onCheckedChange={setShowReflectionPaths} />
-                            <Label htmlFor="show-reflection" className="text-sm">
-                                Reflection Paths
+                            <Label htmlFor="show-diffraction-reflexion" className="text-sm">
+                                Diffraction/Reflexion Paths
                             </Label>
                         </div>
 
@@ -191,12 +175,8 @@ export function PropagationController({
                                     <span>Direct Path</span>
                                 </div>
                                 <div className="flex items-center">
-                                    <div className="w-3 h-3 bg-blue-500 mr-1"></div>
-                                    <span>Diffraction</span>
-                                </div>
-                                <div className="flex items-center">
                                     <div className="w-3 h-3 bg-green-500 mr-1"></div>
-                                    <span>Reflection</span>
+                                    <span>Diffraction/Reflection</span>
                                 </div>
                                 <div className="flex items-center">
                                     <div className="w-3 h-3 bg-yellow-500 mr-1"></div>

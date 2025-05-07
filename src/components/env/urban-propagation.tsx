@@ -34,10 +34,9 @@ interface City {
 
 export default function Simulation3D() {
 
-    const [showLabels, setShowLabels] = useState<boolean>(true)
+    // const [showLabels, setShowLabels] = useState<boolean>(true)
     const [showDirectPath, setShowDirectPath] = useState(true)
-    const [showDiffractionPaths, setShowDiffractionPaths] = useState(false)
-    const [showReflectionPaths, setShowReflectionPaths] = useState(false)
+    const [showPaths, setShowPaths] = useState(false)
     const [showPathLoss, setShowPathLoss] = useState(true)
     // const [showMap, setShowMap] = useState(false)
 
@@ -419,120 +418,115 @@ export default function Simulation3D() {
     return (
         <div className="w-full h-screen bg-gradient-to-b from-slate-900 to-slate-800 flex">
 
-            {false && (
-                <PropagationController
-                    showLabels={showLabels}
-                    showPathLoss={showPathLoss}
-                    showDirectPath={showDirectPath}
-                    showDiffractionPaths={showDiffractionPaths}
-                    showReflectionPaths={showReflectionPaths}
-                    selectedAntennaId={selectedAntennaId}
-                    modelType={modelType}
-                    environmentType={environmentType}
-                    setModelType={setModelType}
-                    setEnvironmentType={setEnvironmentType}
-                    setSelectedAntennaId={setSelectedAntennaId}
-                    setShowLabels={setShowLabels}
-                    setShowPathLoss={setShowPathLoss}
-                    setShowReflectionPaths={setShowReflectionPaths}
-                    setShowDirectPath={setShowDirectPath}
-                    setShowDiffractionPaths={setShowDiffractionPaths}
-                    antennas={antennas}
-                    calculateOkumuraHeightGain={calculateOkumuraHeightGain}
-                    calculateCoverageRadius={calculateCoverageRadius}
-                    removeAntenna={removeAntenna}
-                    setShowAllCoverages={setShowAllCoverages}
-                    selectedAntenna={selectedAntenna}
-                    updateAntenna={updateAntenna}
-                    mobileHeight={mobileHeight}
-                    setMobileHeight={setMobileHeight}
-                    distance={distance}
-                    setDistance={setDistance}
-                    calculatedDistances={calculatedDistances}
-                    pathLoss={pathLoss}
-                    cities={cities}
-                    selectedCity={selectedCity}
-                    setSelectedCity={setSelectedCity}
-                    mapCenter={mapCenter}
-                    setMapCenter={setMapCenter}
-                    mapZoom={mapZoom}
-                    mobileStationPosition={mobileStationPosition}
-                    setMobileStationPosition={setMobileStationPosition}
-                    setActiveMarker={setActiveMarker}
-                    showAllCoverages={showAllCoverages}
-                    addAntenna={addAntenna}
-                    timeOfDay={timeOfDay}
-                    setTimeOfDay={setTimeOfDay}
-                    weather={weather}
-                    setWeather={setWeather}
-                    buildingStyle={buildingStyle}
-                    setBuildingStyle={setBuildingStyle}
-                    terrainType={terrainType}
-                    setTerrainType={setTerrainType}
+
+            <PropagationController
+                // showLabels={showLabels}
+                showPathLoss={showPathLoss}
+                showDirectPath={showDirectPath}
+                showPaths={showPaths}
+                selectedAntennaId={selectedAntennaId}
+                modelType={modelType}
+                environmentType={environmentType}
+                setModelType={setModelType}
+                setEnvironmentType={setEnvironmentType}
+                setSelectedAntennaId={setSelectedAntennaId}
+                // setShowLabels={setShowLabels}
+                setShowPathLoss={setShowPathLoss}
+                setShowPaths={setShowPaths}
+                setShowDirectPath={setShowDirectPath}
+                antennas={antennas}
+                calculateOkumuraHeightGain={calculateOkumuraHeightGain}
+                calculateCoverageRadius={calculateCoverageRadius}
+                removeAntenna={removeAntenna}
+                setShowAllCoverages={setShowAllCoverages}
+                selectedAntenna={selectedAntenna}
+                updateAntenna={updateAntenna}
+                mobileHeight={mobileHeight}
+                setMobileHeight={setMobileHeight}
+                distance={distance}
+                setDistance={setDistance}
+                calculatedDistances={calculatedDistances}
+                pathLoss={pathLoss}
+                cities={cities}
+                selectedCity={selectedCity}
+                setSelectedCity={setSelectedCity}
+                mapCenter={mapCenter}
+                setMapCenter={setMapCenter}
+                mapZoom={mapZoom}
+                mobileStationPosition={mobileStationPosition}
+                setMobileStationPosition={setMobileStationPosition}
+                setActiveMarker={setActiveMarker}
+                showAllCoverages={showAllCoverages}
+                addAntenna={addAntenna}
+                timeOfDay={timeOfDay}
+                setTimeOfDay={setTimeOfDay}
+                weather={weather}
+                setWeather={setWeather}
+                buildingStyle={buildingStyle}
+                setBuildingStyle={setBuildingStyle}
+                terrainType={terrainType}
+                setTerrainType={setTerrainType}
+            />
+
+
+
+            <Canvas camera={{ position: [0, 50, 200], fov: 45 }} shadows>
+                <color attach="background" args={[timeOfDay === "night" ? "#0a0f1a" : "#0f172a"]} />
+                {/* <fog attach="fog" args={[timeOfDay === "night" ? "#0a0f1a" : "#0f172a", 200, 500]} /> */}
+
+                {/* Lighting based on time of day and weather */}
+                {timeOfDay === "day" ? (
+                    <>
+                        <ambientLight intensity={weather === "clear" ? 0.7 : weather === "cloudy" ? 0.5 : 0.3} />
+                        <directionalLight
+                            position={[50, 100, 50]}
+                            intensity={weather === "clear" ? 1.2 : weather === "cloudy" ? 0.7 : 0.4}
+                            castShadow
+                        />
+                    </>
+                ) : (
+                    <>
+                        <ambientLight intensity={0.2} />
+                        <pointLight position={[0, 100, 0]} intensity={0.5} color="#b4c6ef" />
+                        <spotLight
+                            position={[-50, 50, -30]}
+                            angle={0.3}
+                            penumbra={0.8}
+                            intensity={0.6}
+                            color="#4b6cb7"
+                            castShadow
+                        />
+                    </>
+                )}
+
+                {/* Environment preset based on weather and time */}
+                <Environment
+                    preset={
+                        timeOfDay === "day" ? (weather === "clear" ? "city" : weather === "cloudy" ? "dawn" : "sunset") : "night"
+                    }
                 />
 
-            )}
 
-            {true && (
-                <Canvas camera={{ position: [0, 50, 200], fov: 45 }} shadows>
-                    <color attach="background" args={[timeOfDay === "night" ? "#0a0f1a" : "#0f172a"]} />
-                    {/* <fog attach="fog" args={[timeOfDay === "night" ? "#0a0f1a" : "#0f172a", 200, 500]} /> */}
-
-                    {/* Lighting based on time of day and weather */}
-                    {timeOfDay === "day" ? (
-                        <>
-                            <ambientLight intensity={weather === "clear" ? 0.7 : weather === "cloudy" ? 0.5 : 0.3} />
-                            <directionalLight
-                                position={[50, 100, 50]}
-                                intensity={weather === "clear" ? 1.2 : weather === "cloudy" ? 0.7 : 0.4}
-                                castShadow
-                            />
-                        </>
-                    ) : (
-                        <>
-                            <ambientLight intensity={0.2} />
-                            <pointLight position={[0, 100, 0]} intensity={0.5} color="#b4c6ef" />
-                            <spotLight
-                                position={[-50, 50, -30]}
-                                angle={0.3}
-                                penumbra={0.8}
-                                intensity={0.6}
-                                color="#4b6cb7"
-                                castShadow
-                            />
-                        </>
-                    )}
-
-                    {/* Environment preset based on weather and time */}
-                    <Environment
-                        preset={
-                            timeOfDay === "day" ? (weather === "clear" ? "city" : weather === "cloudy" ? "dawn" : "sunset") : "night"
-                        }
-                    />
-
-
-                    <PropagationModel
-                        showLabels={showLabels}
-                        showDirectPath={showDirectPath}
-                        showDiffractionPaths={showDiffractionPaths}
-                        showReflectionPaths={showReflectionPaths}
-                        showPathLoss={showPathLoss}
-                        frequency={selectedAntenna.frequency}
-                        baseStationHeight={selectedAntenna.height}
-                        mobileHeight={mobileHeight}
-                        distance={distance * 1000} // Convert km to m
-                        environmentType={environmentType}
-                        pathLoss={pathLoss}
-                        modelType={modelType}
-                        calculateOkumuraHeightGain={calculateOkumuraHeightGainMemoized}
-                        timeOfDay={timeOfDay}
-                        weather={weather}
-                        buildingStyle={buildingStyle}
-                        terrainType={terrainType}
-                        selectedAntenna={selectedAntenna}
-                    />
-                </Canvas>
-            )}
+                <PropagationModel
+                    // showLabels={showLabels}
+                    showDirectPath={showDirectPath}
+                    showPaths={showPaths}
+                    showPathLoss={showPathLoss}
+                    frequency={selectedAntenna.frequency}
+                    baseStationHeight={selectedAntenna.height}
+                    mobileHeight={mobileHeight}
+                    distance={distance * 1000} // Convert km to m
+                    environmentType={environmentType}
+                    pathLoss={pathLoss}
+                    modelType={modelType}
+                    calculateOkumuraHeightGain={calculateOkumuraHeightGainMemoized}
+                    timeOfDay={timeOfDay}
+                    weather={weather}
+                    buildingStyle={buildingStyle}
+                    terrainType={terrainType}
+                    selectedAntenna={selectedAntenna}
+                />
+            </Canvas>
         </div>
     )
 }

@@ -22,12 +22,12 @@ export function Hero() {
                     TelecomGenius<br />
                     <span className="font-normal">Ton guide pour devenir un expert en Télécommunications</span>
                 </h1>
-                <p className={cn("text-xl text-muted-foreground max-w-2xl mx-auto transition-all duration-1000 ease-in-out",                     
+                <p className={cn("text-xl text-muted-foreground max-w-2xl mx-auto transition-all duration-1000 ease-in-out",
                     isLoading ? "text-primary" : "text-[#efefef]"
                 )}>
                     Rejoignez notre plateforme pour apprendre auprès d'experts de l'industrie et faire avancer votre carrière en télécommunications.
                 </p>
-                <HomeLink href="/scenarios" text="Démmarer l'apprentissage" />
+                <HomeLink href="/scenarios" text="l'univers de l'apprentissage" />
             </div>
         </section>
     );

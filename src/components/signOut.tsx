@@ -1,4 +1,4 @@
-'use client'; // 👈 Marks this as a client component
+'use client';
 
 import { signOut } from 'next-auth/react';
 
