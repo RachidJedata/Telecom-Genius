@@ -71,7 +71,7 @@ export function PropagationModel() {
     const [popupVisibleAntenta, setPopupVisibleAntenta] = useState(false);
 
     // Model parameters (matching the diagram)
-    const totalDistance = distance // Use the distance from props
+    const totalDistance = distance * 1000; // Use the distance from props
     const urbanLength = totalDistance * 0.7 // 70% of total distance is urban
     const buildingWidth = 20 // w in the diagram
     const buildingSpacing = 10 // s in the diagram
@@ -97,6 +97,9 @@ export function PropagationModel() {
         [urbanLength, buildingWidth, buildingSpacing]
     );
 
+    console.log("urbanLength" + urbanLength);
+    console.log("buildingWidth" + buildingWidth);
+    console.log("buildingSpacing" + buildingSpacing);
 
     // Add this near the beginning of the PropagationModel component
     const [buildings, setBuildings] = useState<Building[]>([]);
@@ -604,20 +607,6 @@ export function PropagationModel() {
             }
         }
 
-        // Create a path loss indicator at the mobile station
-        const pathLossIndicator = new THREE.Mesh(
-            new THREE.SphereGeometry(3, 32, 32),
-            new THREE.MeshBasicMaterial({
-                color: getColorForPathLoss(
-                    modelType === "cost231" ? pathLoss : calculateOkumuraHeightGain(selectedAntenna.height),
-                ),
-                transparent: true,
-                opacity: 0.7,
-            }),
-        )
-        pathLossIndicator.position.set(mobileStationOffset, mobileHeight, 0)
-        pathLossVisualizationRef.current.add(pathLossIndicator)
-
         // Create a signal strength gradient along the path
         const numPoints = 20
         const step = (antennaDistance * 1000) / numPoints
@@ -840,59 +829,7 @@ export function PropagationModel() {
                 {/* Labels */}
                 <Billboard>
                     <Text position={[0, -15, 0]} color="#ffff00" fontSize={5} anchorX="center" anchorY="middle">
-                        d = {(distance / 1000).toFixed(2)} km
-                    </Text>
-
-                    <Text
-                        position={[baseStationOffset + (distance - urbanLength) / 2 + urbanLength / 2, -25, 0]}
-                        color="#ffff00"
-                        fontSize={5}
-                        anchorX="center"
-                        anchorY="middle"
-                    >
-                        l = {(urbanLength / 1000).toFixed(2)} km
-                    </Text>
-
-                    <Text
-                        position={[baseStationOffset + (distance - urbanLength) / 2 + buildingWidth / 2, -35, 0]}
-                        color="#ffff00"
-                        fontSize={5}
-                        anchorX="center"
-                        anchorY="middle"
-                    >
-                        w = {buildingWidth}m
-                    </Text>
-
-                    <Text
-                        position={[baseStationOffset + (distance - urbanLength) / 2 + buildingWidth + buildingSpacing / 2, -35, 0]}
-                        color="#ffff00"
-                        fontSize={5}
-                        anchorX="center"
-                        anchorY="middle"
-                    >
-                        s = {buildingSpacing}m
-                    </Text>
-
-                    <Text
-                        position={[baseStationOffset - 15, baseStationHeight / 2, 0]}
-                        color="#ffff00"
-                        fontSize={5}
-                        anchorX="center"
-                        anchorY="middle"
-                        rotation={[0, 0, -Math.PI / 2]}
-                    >
-                        hb = {baseStationHeight}m
-                    </Text>
-
-                    <Text
-                        position={[mobileStationOffset + 15, mobileHeight / 2, 0]}
-                        color="#ffff00"
-                        fontSize={5}
-                        anchorX="center"
-                        anchorY="middle"
-                        rotation={[0, 0, -Math.PI / 2]}
-                    >
-                        hm = {mobileHeight}m
+                        d = {distance.toFixed(2)} km
                     </Text>
                 </Billboard>
 

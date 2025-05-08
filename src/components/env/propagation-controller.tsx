@@ -123,11 +123,7 @@ export function PropagationController() {
                                 <div className="flex items-center">
                                     <div className="w-3 h-3 bg-green-500 mr-1"></div>
                                     <span>Diffraction/Reflection</span>
-                                </div>
-                                <div className="flex items-center">
-                                    <div className="w-3 h-3 bg-yellow-500 mr-1"></div>
-                                    <span>Measurements</span>
-                                </div>
+                                </div>                             
                             </div>
                         </div>
 
