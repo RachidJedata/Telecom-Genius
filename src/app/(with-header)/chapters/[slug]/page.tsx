@@ -7,6 +7,7 @@ import { ChevronLeft } from "lucide-react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ChapterQuiz } from "@/components/chapters/chapter-quiz"
+import { Toaster } from "@/components/UI/toaster"
 
 
 export default async function ChapterPage({
@@ -27,7 +28,6 @@ export default async function ChapterPage({
 
     const quiz = await getQuiz(chapter.chapterId);
     const simulation = await getSimulation(chapter.simulationId);
-
     return (
         <div className="min-h-screen bg-accent dark:bg-gray-950 transition-colors duration-300">
             <div className="container mx-auto px-4 py-8">
@@ -64,7 +64,6 @@ export default async function ChapterPage({
                             {/* <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Theory</h2> */}
                             <MarkdownContent content={chapter.body} className="bg-white text-black dark:bg-gray-900 dark:text-white/80" />
 
-
                         </section>
 
                         {/* Interactive Simulation Section */}
@@ -81,6 +80,7 @@ export default async function ChapterPage({
                     </main>
                 </div>
             </div>
+            <Toaster />
         </div>
     )
 }

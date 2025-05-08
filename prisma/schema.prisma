@@ -25,7 +25,7 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  // directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -74,6 +74,7 @@ model Simulation {
   name         String
   description  String
   params       String // Parameters of API stored as JSON
+  savedParams  String?
   endPoint     String
   Chapters     Chapters[]
 }

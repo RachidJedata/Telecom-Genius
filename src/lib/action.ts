@@ -90,6 +90,18 @@ export async function getSimulation(simulationId: number | null) {
     });
 }
 
+export async function saveSimulationParameters(simulationId: number | null, params: any) {
+    if (!simulationId) return;
+    await prisma.simulation.update({
+        data: {
+            savedParams: params ? JSON.stringify(params) : null
+        },
+        where: {
+            simulationId: simulationId
+        }
+    })
+}
+
 export async function getQuiz(chapterId: string) {
     return await prisma.quizes.findMany({
         where: {

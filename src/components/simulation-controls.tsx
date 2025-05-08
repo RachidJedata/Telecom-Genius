@@ -9,6 +9,9 @@ import { Card } from "./UI/card"
 import * as d3 from 'd3';
 import { Simulation } from "@prisma/client"
 import { Input } from "./UI/input"
+import { saveSimulationParameters } from "@/lib/action"
+import { useRouter } from "next/navigation"
+import { toast } from "@/hooks/use-toast"
 
 interface SignalData {
   parameters?: Parameters;
@@ -33,7 +36,7 @@ interface Parameters {
 }
 
 export function SimulationControls({ simulation }: { simulation: Simulation }) {
-  const defaultParameters = JSON.parse(simulation.params);
+  const defaultParameters = JSON.parse(simulation.savedParams || simulation.params);
   const [paramValues, setParamValues] = useState<Parameters>(defaultParameters);
 
   const [isRunning, setIsRunning] = useState(false)
@@ -54,7 +57,7 @@ export function SimulationControls({ simulation }: { simulation: Simulation }) {
   useEffect(() => {
     setParamValues(defaultParameters);
     setIsRunning(false);
-    console.log(defaultParameters);
+    // console.log(defaultParameters);
   }, [simulation]);
 
   const [data, setData] = useState<SignalData | null>(null);
@@ -83,13 +86,23 @@ export function SimulationControls({ simulation }: { simulation: Simulation }) {
     }
   }
 
-  const resetSimulation = () => {
-    setParamValues(defaultParameters);
+  const resetSimulation = async () => {
+    setParamValues(JSON.parse(simulation.params));
+    await saveSimulationParameters(simulation.simulationId, null);
     setAutoRun(false);
     setIsRunning(false);
   }
 
   useEffect(() => { if (autoRun) runSimulation() }, [paramValues]);
+
+  const saveSimulation = async () => {
+    await saveSimulationParameters(simulation.simulationId, paramValues);
+    toast({
+      title: "Enregistrer les paramteres",
+      description: `Enregistrer les nouvelles paramteres avec success`,
+      // variant: "destructive",
+    });
+  }
 
   return (
     <div className="space-y-8">
@@ -168,6 +181,14 @@ export function SimulationControls({ simulation }: { simulation: Simulation }) {
           className="ml-auto w-full"
         >
           Réinitialiser les paramètres
+        </Button>
+
+        <Button
+          variant="outline"
+          onClick={saveSimulation}
+          className="ml-auto w-full text-primary dark:bg-black dark:text-accent bg-accent"
+        >
+          Enregistrer les paramètres
         </Button>
       </div>
 
