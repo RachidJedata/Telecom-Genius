@@ -332,7 +332,7 @@ export function PropagationModel() {
                 // 2) Build a smooth “reflection curve” through [source → reflectionPoint → dest]
                 const curve = new THREE.CatmullRomCurve3(
                     [
-                        new THREE.Vector3(baseStationPos.x, baseStationPos.y + 50, baseStationPos.z),
+                        new THREE.Vector3(baseStationPos.x, selectedAntenna.height + 2, baseStationPos.z),
                         reflectionPoint,
                         new THREE.Vector3(mobileStationPos.x, mobileStationPos.y + 15, mobileStationPos.z),
                     ],

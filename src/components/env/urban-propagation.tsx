@@ -544,11 +544,7 @@ export default function Simulation3D() {
             }}
         >
             <div className="w-full h-screen bg-gradient-to-b from-slate-900 to-slate-800 flex">
-
-
                 <PropagationController />
-
-
 
                 <Canvas camera={{ position: [0, 50, 200], fov: 45 }} shadows>
                     <color attach="background" args={[timeOfDay === "night" ? "#0a0f1a" : "#0f172a"]} />
