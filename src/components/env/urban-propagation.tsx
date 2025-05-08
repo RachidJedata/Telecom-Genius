@@ -23,12 +23,10 @@ export interface Antenna {
 
 
 interface City {
-    [key: string]: {
-        name: string;
-        coordinates: [number, number];
-        zoom: number;
-        environment: string;
-    }
+    name: string;
+    coordinates: [number, number];
+    zoom: number;
+    environment: string;
 }
 
 
@@ -54,13 +52,16 @@ export default function Simulation3D() {
     const [environmentType, setEnvironmentType] = useState("urban")
     const [modelType, setModelType] = useState("cost231")
 
-    // City selection
-    const [selectedCity, setSelectedCity] = useState<string>("elJadida");
-    const [mapCenter, setMapCenter] = useState<[number, number]>([33.2347178, -8.5027492]) // Default: El Jadida
-    const [mapZoom, setMapZoom] = useState(13)
+
 
     // Predefined cities with coordinates
-    const cities: City = {
+    const [cities, setCities] = useState<Record<string, City>>({
+        currentLocation: {
+            name: "Current Location",
+            coordinates: [0, 0],
+            zoom: 13,
+            environment: "urban",
+        },
         elJadida: {
             name: "El Jadida, Morocco",
             coordinates: [33.2347178, -8.5027492],
@@ -109,14 +110,18 @@ export default function Simulation3D() {
             zoom: 14,
             environment: "coastal",
         },
-    }
+    });
 
+    // City selection
+    const [selectedCity, setSelectedCity] = useState<string>("currentLocation");
+    const [mapCenter, setMapCenter] = useState<[number, number]>(cities[selectedCity].coordinates) // Default: El Jadida
+    const [mapZoom, setMapZoom] = useState(13);
 
     // Multiple antennas support
     const [antennas, setAntennas] = useState<Antenna[]>([
         {
             id: 1,
-            position: [33.2347178, -8.5027492], // El Jadida coordinates
+            position: cities[selectedCity].coordinates, // El Jadida coordinates
             height: 50, // m
             frequency: 1800, // MHz
             power: 43, // dBm (20W)
@@ -131,7 +136,7 @@ export default function Simulation3D() {
     const selectedAntenna = antennas.find((ant) => ant.id === selectedAntennaId) || antennas[0];
 
     // Map related state
-    const [mobileStationPosition, setMobileStationPosition] = useState<[number, number]>([33.2394423, -8.5211379])
+    const [mobileStationPosition, setMobileStationPosition] = useState<[number, number]>([cities[selectedCity].coordinates[0] + .01, cities[selectedCity].coordinates[1] + .01])
     const [calculatedDistances, setCalculatedDistances] = useState<{ [key: number]: number }>({})
     const [activeMarker, setActiveMarker] = useState<string | null>(null)
     const [showAllCoverages, setShowAllCoverages] = useState(true)
@@ -145,12 +150,38 @@ export default function Simulation3D() {
     const prevEnvironmentRef = useRef(environmentType)
     const prevSelectedCityRef = useRef(selectedCity)
 
+    useEffect(() => {
+        if (!navigator.geolocation) {
+            setSelectedCity("elJadida");
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+
+                setCities((prev) => ({
+                    ...prev,
+                    currentLocation: {
+                        ...prev.currentLocation,
+                        coordinates: [position.coords.latitude, position.coords.longitude],
+                    },
+                }));
+                setSelectedCity("currentLocation");
+            },
+            (err) => {
+                setSelectedCity("elJadida");
+                return;
+            }
+        );
+    }, []);
+
     // Handle city selection change
     useEffect(() => {
         if (selectedCity && cities[selectedCity]) {
             const city = cities[selectedCity]
             setMapCenter(city.coordinates)
             setMapZoom(city.zoom)
+            
 
             // Update environment type based on city
             if (city.environment) {

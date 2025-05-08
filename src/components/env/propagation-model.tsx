@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three'
 import { Antenna } from './urban-propagation';
-import { Grid, Html, OrbitControls, Text, useGLTF } from "@react-three/drei";
+import { Billboard, Grid, Html, OrbitControls, Text, useGLTF } from "@react-three/drei";
 import gsap from 'gsap';
 
 interface Building {
@@ -121,7 +121,6 @@ export function PropagationModel({
         [urbanLength, buildingWidth, buildingSpacing]
     );
 
-    console.log(numBuildings);
 
     // Add this near the beginning of the PropagationModel component
     const [buildings, setBuildings] = useState<Building[]>([]);
@@ -196,7 +195,8 @@ export function PropagationModel({
             }
         };
 
-    }, [terrainType, timeOfDay])
+    }, [terrainType, timeOfDay]);
+
 
 
     // Create weather effects
@@ -294,7 +294,7 @@ export function PropagationModel({
 
         // Direct path
         if (showDirectPath) {
-            const source = new THREE.Vector3(baseStationPos.x, baseStationPos.y + 50, baseStationPos.z);
+            const source = new THREE.Vector3(baseStationPos.x, selectedAntenna.height + 2, baseStationPos.z);
             const destination = new THREE.Vector3(mobileStationPos.x, mobileStationPos.y + 15, mobileStationPos.z);
 
             // Step 1: Add intermediate points between source and destination
@@ -371,7 +371,7 @@ export function PropagationModel({
 
                 // 5) Material & line mesh (use a distinct color)
                 const mat = new THREE.LineBasicMaterial({
-                    color: 0x0000ff,   // red for reflection
+                    color: "#22c55e",   // red for reflection
                     linewidth: 2,
                     transparent: true,
                     opacity: 0.7,
@@ -388,9 +388,6 @@ export function PropagationModel({
                     ease: "power1.inOut",   // smooth in & out
                     onUpdate: () => {
                         geom.setDrawRange(0, Math.floor(params.count));
-                    },
-                    onComplete: () => {
-                        console.log(`Reflection path ${bld.id} drawn`);
                     },
                 });  // GSAP’s onUpdate is called each frame, onComplete once 
             });
@@ -412,6 +409,7 @@ export function PropagationModel({
         baseStationOffset,
         mobileStationOffset,
         buildingHeights,
+        selectedAntenna,
     ])
 
     // Create building based on style
@@ -759,7 +757,7 @@ export function PropagationModel({
 
     return (
         <group>
-            <OrbitControls target={[0, 20, 0]} maxPolarAngle={Math.PI / 2 - 0.1} />
+            <OrbitControls target={[0, 30, 0]} maxPolarAngle={Math.PI / 2 - 0.1} />
             <group>
                 {/* Terrain */}
                 <group ref={terrainRef} />
@@ -864,69 +862,67 @@ export function PropagationModel({
                 <group ref={pathLossVisualizationRef} />
 
                 {/* Labels */}
-                {(true) && (
-                    <>
-                        <Text position={[0, -15, 0]} color="#ffff00" fontSize={5} anchorX="center" anchorY="middle">
-                            d = {(distance / 1000).toFixed(2)} km
-                        </Text>
+                <Billboard>
+                    <Text position={[0, -15, 0]} color="#ffff00" fontSize={5} anchorX="center" anchorY="middle">
+                        d = {(distance / 1000).toFixed(2)} km
+                    </Text>
 
-                        <Text
-                            position={[baseStationOffset + (distance - urbanLength) / 2 + urbanLength / 2, -25, 0]}
-                            color="#ffff00"
-                            fontSize={5}
-                            anchorX="center"
-                            anchorY="middle"
-                        >
-                            l = {(urbanLength / 1000).toFixed(2)} km
-                        </Text>
+                    <Text
+                        position={[baseStationOffset + (distance - urbanLength) / 2 + urbanLength / 2, -25, 0]}
+                        color="#ffff00"
+                        fontSize={5}
+                        anchorX="center"
+                        anchorY="middle"
+                    >
+                        l = {(urbanLength / 1000).toFixed(2)} km
+                    </Text>
 
-                        <Text
-                            position={[baseStationOffset + (distance - urbanLength) / 2 + buildingWidth / 2, -35, 0]}
-                            color="#ffff00"
-                            fontSize={5}
-                            anchorX="center"
-                            anchorY="middle"
-                        >
-                            w = {buildingWidth}m
-                        </Text>
+                    <Text
+                        position={[baseStationOffset + (distance - urbanLength) / 2 + buildingWidth / 2, -35, 0]}
+                        color="#ffff00"
+                        fontSize={5}
+                        anchorX="center"
+                        anchorY="middle"
+                    >
+                        w = {buildingWidth}m
+                    </Text>
 
-                        <Text
-                            position={[baseStationOffset + (distance - urbanLength) / 2 + buildingWidth + buildingSpacing / 2, -35, 0]}
-                            color="#ffff00"
-                            fontSize={5}
-                            anchorX="center"
-                            anchorY="middle"
-                        >
-                            s = {buildingSpacing}m
-                        </Text>
+                    <Text
+                        position={[baseStationOffset + (distance - urbanLength) / 2 + buildingWidth + buildingSpacing / 2, -35, 0]}
+                        color="#ffff00"
+                        fontSize={5}
+                        anchorX="center"
+                        anchorY="middle"
+                    >
+                        s = {buildingSpacing}m
+                    </Text>
 
-                        <Text
-                            position={[baseStationOffset - 15, baseStationHeight / 2, 0]}
-                            color="#ffff00"
-                            fontSize={5}
-                            anchorX="center"
-                            anchorY="middle"
-                            rotation={[0, 0, -Math.PI / 2]}
-                        >
-                            hb = {baseStationHeight}m
-                        </Text>
+                    <Text
+                        position={[baseStationOffset - 15, baseStationHeight / 2, 0]}
+                        color="#ffff00"
+                        fontSize={5}
+                        anchorX="center"
+                        anchorY="middle"
+                        rotation={[0, 0, -Math.PI / 2]}
+                    >
+                        hb = {baseStationHeight}m
+                    </Text>
 
-                        <Text
-                            position={[mobileStationOffset + 15, mobileHeight / 2, 0]}
-                            color="#ffff00"
-                            fontSize={5}
-                            anchorX="center"
-                            anchorY="middle"
-                            rotation={[0, 0, -Math.PI / 2]}
-                        >
-                            hm = {mobileHeight}m
-                        </Text>
-                    </>
-                )}
+                    <Text
+                        position={[mobileStationOffset + 15, mobileHeight / 2, 0]}
+                        color="#ffff00"
+                        fontSize={5}
+                        anchorX="center"
+                        anchorY="middle"
+                        rotation={[0, 0, -Math.PI / 2]}
+                    >
+                        hm = {mobileHeight}m
+                    </Text>
+                </Billboard>
 
                 {/* Model Formula */}
                 {showPathLoss && (
-                    <group position={[0, 60, 0]}>
+                    <Billboard position={[0, 60, 0]} follow={true} lockX={false} lockY={false} lockZ={false}>
                         <Text
                             position={[0, 0, 0]}
                             color="white"
@@ -971,11 +967,10 @@ export function PropagationModel({
                                 ? `Environment: ${environmentType.charAt(0).toUpperCase() + environmentType.slice(1)}`
                                 : `Base Station Height: ${baseStationHeight}m`}
                         </Text>
-                    </group>
+                    </Billboard>
                 )}
 
-                {/* Environment indicators */}
-                <group position={[0, 100, 0]}>
+                <Billboard position={[0, 100, 0]} follow={true} lockX={false} lockY={false} lockZ={false}>
                     <Text
                         position={[0, 0, 0]}
                         color="white"
@@ -1004,7 +999,8 @@ export function PropagationModel({
                         {buildingStyle.charAt(0).toUpperCase() + buildingStyle.slice(1)} Buildings -
                         {terrainType.charAt(0).toUpperCase() + terrainType.slice(1)} Terrain
                     </Text>
-                </group>
+                </Billboard>
+
 
             </group>
         </group>);

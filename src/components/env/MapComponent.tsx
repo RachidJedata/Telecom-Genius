@@ -1,6 +1,6 @@
 'use client';
 
-import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle, useMap } from 'react-leaflet';
 import L, { Marker as LeafletMarker } from 'leaflet'
 import 'leaflet/dist/leaflet.css';
 
@@ -28,9 +28,26 @@ type Props = {
 
 }
 
+
+interface MapCenterUpdaterProps {
+    center: L.LatLngExpression;
+}
+
+function MapCenterUpdater({ center }: MapCenterUpdaterProps) {
+    const map = useMap();
+
+    useEffect(() => {
+        map.setView(center);
+    }, [center, map]);
+
+    return null;
+}
+
+
 export default function MapComponent({ mapZoom, calculateCoverageRadius, showAllCoverages, mobileHeight, mobileStationPosition, setMobileStationPosition, updateAntenna, antennas, selectedAntennaId, mapCenter, setMapCenter, removeAntenna, setActiveMarker, setSelectedAntennaId }: Props) {
 
     const [selectedAntenna, setSelectedAntenna] = useState<Antenna | undefined>(undefined);
+    
 
     // Fix Leaflet icon issues
     useEffect(() => {
@@ -45,16 +62,19 @@ export default function MapComponent({ mapZoom, calculateCoverageRadius, showAll
     useEffect(() => {
         const ant = antennas.find(ant => ant.id === selectedAntennaId);
         setSelectedAntenna(ant);
-        console.log(ant?.name);
+        
     }, [selectedAntennaId]);
 
-    // console.log("show All coverages: " + showAllCoverages);
+
+    
     return (
-        <div className="h-[400px] rounded-lg overflow-hidden">
+        <div className="h-[300px] rounded-lg overflow-hidden">
             <MapContainer center={mapCenter}
                 zoom={mapZoom}
                 style={{ height: "100%", width: "100%" }}
             >
+                <MapCenterUpdater center={mapCenter} />
+
                 <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     attribution="&copy; OpenStreetMap contributors"

@@ -8,7 +8,6 @@ import { Switch } from "@/components/UI/switch"
 import { Label } from "@/components/UI/label"
 import { Slider } from "@/components/UI/slider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/UI/select"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/UI/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/UI/tabs"
 import { RadioGroup, RadioGroupItem } from "@/components/UI/radio-group"
 
@@ -126,7 +125,7 @@ export function PropagationController({
     setShowPaths,
 }: Props) {
     return (
-        <div className="absolute top-4 left-4 z-10 bg-black/70 p-4 rounded-lg text-white max-w-md">
+        <div className="absolute left-4 z-10 bg-black/70 p-4 rounded-lg text-white max-w-md">
             <Tabs defaultValue="visualization" className="w-full">
                 <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="visualization">3D View</TabsTrigger>
@@ -221,186 +220,101 @@ export function PropagationController({
                         </Select>
                     </div>
 
-                    {modelType === "cost231" ? (
-                        <div className="space-y-4">
-                            <div>
-                                <Label htmlFor="environment" className="text-sm block mb-1">
-                                    Environment Type
-                                </Label>
-                                <Select value={environmentType} onValueChange={setEnvironmentType}>
-                                    <SelectTrigger id="environment" className="bg-gray-800 border-gray-700">
-                                        <SelectValue placeholder="Select environment" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="urban">Urban (Medium City)</SelectItem>
-                                        <SelectItem value="urban-large">Urban (Large City)</SelectItem>
-                                        <SelectItem value="suburban">Suburban</SelectItem>
-                                        <SelectItem value="rural">Rural</SelectItem>
-                                        <SelectItem value="coastal">Coastal</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div>
-                                <Label htmlFor="frequency" className="text-sm block mb-1">
-                                    Frequency: {selectedAntenna.frequency} MHz
-                                </Label>
-                                <Slider
-                                    id="frequency"
-                                    value={[selectedAntenna.frequency]}
-                                    min={800}
-                                    max={2600}
-                                    step={100}
-                                    onValueChange={(value) => updateAntenna(selectedAntennaId, { frequency: value[0] })}
-                                    className="mb-4"
-                                />
-                            </div>
-
-                            <div>
-                                <Label htmlFor="base-height" className="text-sm block mb-1">
-                                    Base Station Height (hb): {selectedAntenna.height} m
-                                </Label>
-                                <Slider
-                                    id="base-height"
-                                    value={[selectedAntenna.height]}
-                                    min={30}
-                                    max={200}
-                                    step={5}
-                                    onValueChange={(value) => updateAntenna(selectedAntennaId, { height: value[0] })}
-                                    className="mb-4"
-                                />
-                            </div>
-
-                            <div>
-                                <Label htmlFor="mobile-height" className="text-sm block mb-1">
-                                    Mobile Height (hm): {mobileHeight} m
-                                </Label>
-                                <Slider
-                                    id="mobile-height"
-                                    value={[mobileHeight]}
-                                    min={1}
-                                    max={10}
-                                    step={0.5}
-                                    onValueChange={(value) => setMobileHeight(value[0])}
-                                    className="mb-4"
-                                />
-                            </div>
-
-                            <div>
-                                <Label htmlFor="distance" className="text-sm block mb-1">
-                                    Distance (d): {distance.toFixed(2)} km{" "}
-                                    {calculatedDistances[selectedAntennaId] > 0 &&
-                                        `(Map: ${calculatedDistances[selectedAntennaId].toFixed(2)} km)`}
-                                </Label>
-                                <Slider
-                                    id="distance"
-                                    value={[distance]}
-                                    min={0.1}
-                                    max={5}
-                                    step={0.05}
-                                    onValueChange={(value) => setDistance(value[0])}
-                                    className="mb-4"
-                                />
-                            </div>
-
-                            <Card className="bg-gray-800 border-gray-700">
-                                <CardHeader className="pb-2">
-                                    <CardTitle className="text-lg">Calculated Path Loss</CardTitle>
-                                    <CardDescription>COST 231 Hata Model</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-3xl font-bold text-yellow-400">{pathLoss.toFixed(1)} dB</div>
-                                    <div className="mt-2 text-xs text-gray-400">
-                                        <p>Formula:</p>
-                                        <p className="mt-1">
-                                            L = 46.3 + 33.9·log₁₀(f) - 13.82·log₁₀(hb) - a(hm) + (44.9 - 6.55·log₁₀(hb))·log₁₀(d) + C
-                                        </p>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                    <div className="space-y-4">
+                        <div>
+                            <Label htmlFor="environment" className="text-sm block mb-1">
+                                Environment Type
+                            </Label>
+                            <Select value={environmentType} onValueChange={setEnvironmentType}>
+                                <SelectTrigger id="environment" className="bg-gray-800 border-gray-700">
+                                    <SelectValue placeholder="Select environment" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="urban">Urban (Medium City)</SelectItem>
+                                    <SelectItem value="urban-large">Urban (Large City)</SelectItem>
+                                    <SelectItem value="suburban">Suburban</SelectItem>
+                                    <SelectItem value="rural">Rural</SelectItem>
+                                    <SelectItem value="coastal">Coastal</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
-                    ) : (
-                        <div className="space-y-4">
-                            <div>
-                                <Label htmlFor="base-height-okumura" className="text-sm block mb-1">
-                                    Base Station Effective Height (h_te): {selectedAntenna.height} m
-                                </Label>
-                                <Slider
-                                    id="base-height-okumura"
-                                    value={[selectedAntenna.height]}
-                                    min={30}
-                                    max={1000}
-                                    step={10}
-                                    onValueChange={(value) => updateAntenna(selectedAntennaId, { height: value[0] })}
-                                    className="mb-4"
-                                />
-                            </div>
 
-                            <div>
-                                <Label htmlFor="distance-okumura" className="text-sm block mb-1">
-                                    Distance (d): {distance.toFixed(2)} km {calculatedDistances[selectedAntennaId] > 0 && `( km)`}
-                                </Label>
-                                <Slider
-                                    id="distance-okumura"
-                                    value={[distance]}
-                                    min={0.1}
-                                    max={100}
-                                    step={1}
-                                    onValueChange={(value) => setDistance(value[0])}
-                                    className="mb-4"
-                                />
-                            </div>
-
-                            <Card className="bg-gray-800 border-gray-700">
-                                <CardHeader className="pb-2">
-                                    <CardTitle className="text-lg">Base Station Height Gain</CardTitle>
-                                    <CardDescription>Okumura Model</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-3xl font-bold text-yellow-400">
-                                        {calculateOkumuraHeightGain(selectedAntenna.height).toFixed(1)} dB
-                                    </div>
-                                    <div className="mt-2 text-xs text-gray-400">
-                                        <p>Formula:</p>
-                                        <p className="mt-1">G(h_te) = 20·log₁₀(h_te/200) for 1000m &gt; h_te &gt; 30m</p>
-                                    </div>
-                                </CardContent>
-                            </Card>
-
-                            <div className="mt-4 p-3 bg-gray-800/50 rounded-lg">
-                                <h3 className="font-medium mb-2">Okumura Model Notes:</h3>
-                                <ul className="text-xs space-y-2 list-disc pl-4">
-                                    <li>At the effective height of 200m, no correction gain is required (G(h_te) = 0 dB)</li>
-                                    <li>
-                                        Base station antennas above 200m introduce <span className="text-green-400">positive gain</span>
-                                    </li>
-                                    <li>
-                                        Antennas lower than 200m have <span className="text-red-400">negative gain</span> factor
-                                    </li>
-                                    <li>The parameter of the family of curves is the distance between transmitter and receiver</li>
-                                    <li>G(h_te) varies at a rate of 20 dB/decade for effective heights between 30m and 1000m</li>
-                                </ul>
-                            </div>
+                        <div>
+                            <Label htmlFor="frequency" className="text-sm block mb-1">
+                                Frequency: {selectedAntenna.frequency} MHz
+                            </Label>
+                            <Slider
+                                id="frequency"
+                                value={[selectedAntenna.frequency]}
+                                min={800}
+                                max={2600}
+                                step={100}
+                                onValueChange={(value) => updateAntenna(selectedAntennaId, { frequency: value[0] })}
+                                className="mb-4"
+                            />
                         </div>
-                    )}
+
+                        <div>
+                            <Label htmlFor="base-height" className="text-sm block mb-1">
+                                Base Station Height (hb): {selectedAntenna.height} m
+                            </Label>
+                            <Slider
+                                id="base-height"
+                                value={[selectedAntenna.height]}
+                                min={30}
+                                max={200}
+                                step={5}
+                                onValueChange={(value) => updateAntenna(selectedAntennaId, { height: value[0] })}
+                                className="mb-4"
+                            />
+                        </div>
+
+                        <div>
+                            <Label htmlFor="mobile-height" className="text-sm block mb-1">
+                                Mobile Height (hm): {mobileHeight} m
+                            </Label>
+                            <Slider
+                                id="mobile-height"
+                                value={[mobileHeight]}
+                                min={1}
+                                max={10}
+                                step={0.5}
+                                onValueChange={(value) => setMobileHeight(value[0])}
+                                className="mb-4"
+                            />
+                        </div>
+
+                        <div>
+                            <Label htmlFor="distance" className="text-sm block mb-1">
+                                Distance (d): {distance.toFixed(2)} km{" "}
+                                {calculatedDistances[selectedAntennaId] > 0 &&
+                                    `(Map: ${calculatedDistances[selectedAntennaId].toFixed(2)} km)`}
+                            </Label>
+                            <Slider
+                                id="distance"
+                                value={[distance]}
+                                min={0.1}
+                                max={5}
+                                step={0.05}
+                                onValueChange={(value) => setDistance(value[0])}
+                                className="mb-4"
+                            />
+                        </div>
+                    </div>
+
                 </TabsContent>
 
                 <TabsContent value="map" className="space-y-4">
                     <div className="flex justify-between items-center">
-                        <h2 className="text-xl font-bold">{cities[selectedCity]?.name || "Custom Location"}</h2>
+                        <h2 className="text-xl font-bold">{cities[selectedCity].name}</h2>
                         <Select value={selectedCity} onValueChange={setSelectedCity}>
                             <SelectTrigger className="w-[180px] bg-gray-800 border-gray-700">
                                 <SelectValue placeholder="Select city" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="elJadida">El Jadida</SelectItem>
-                                <SelectItem value="casablanca">Casablanca</SelectItem>
-                                <SelectItem value="marrakech">Marrakech</SelectItem>
-                                <SelectItem value="rabat">Rabat</SelectItem>
-                                <SelectItem value="tangier">Tangier</SelectItem>
-                                <SelectItem value="agadir">Agadir</SelectItem>
-                                <SelectItem value="fez">Fez</SelectItem>
-                                <SelectItem value="essaouira">Essaouira</SelectItem>
+                                {Object.keys(cities).map(city => (
+                                    <SelectItem key={city} value={city}>{cities[city].name}</SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>
@@ -438,7 +352,7 @@ export function PropagationController({
                     </div>
 
                     <div className="mt-4 p-3 bg-gray-800/50 rounded-lg">
-                        <h3 className="font-medium mb-2">Map Instructions:</h3>
+                        {/* <h3 className="font-medium mb-2">Map Instructions:</h3> */}
                         <ul className="text-xs space-y-2 list-disc pl-4">
                             <li>
                                 Drag the <span className="text-red-400">colored markers</span> to position base stations
@@ -447,40 +361,7 @@ export function PropagationController({
                                 Drag the <span className="text-blue-400">blue marker</span> to position the mobile user
                             </li>
                             <li>Click on markers to see their details and select base stations</li>
-                            <li>The colored circles show the coverage radius for each base station</li>
-                            <li>Add multiple base stations to see how they interact</li>
                         </ul>
-                    </div>
-
-                    <div className="mt-4">
-                        <Card className="bg-gray-800 border-gray-700">
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-lg">Selected Base Station</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid grid-cols-2 gap-2 text-sm">
-                                    <div>
-                                        <p className="text-gray-400">Name:</p>
-                                        <p className="font-medium">{selectedAntenna.name}</p>
-                                        <p className="text-gray-400 mt-2">Height:</p>
-                                        <p>{selectedAntenna.height}m</p>
-                                        <p className="text-gray-400 mt-2">Frequency:</p>
-                                        <p>{selectedAntenna.frequency} MHz</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-400">Position:</p>
-                                        <p>
-                                            {selectedAntenna.position[0].toFixed(6)},<br />
-                                            {selectedAntenna.position[1].toFixed(6)}
-                                        </p>
-                                        <p className="text-gray-400 mt-2">Distance to Mobile:</p>
-                                        <p>{calculatedDistances[selectedAntennaId]?.toFixed(3) || "N/A"} km</p>
-                                        <p className="text-gray-400 mt-2">Path Loss:</p>
-                                        <p className="text-yellow-400 font-bold">{pathLoss.toFixed(1)} dB</p>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
                     </div>
                 </TabsContent>
 
@@ -559,31 +440,6 @@ export function PropagationController({
                                 </div>
                             </RadioGroup>
                         </div>
-
-                        <div>
-                            <Label className="text-sm block mb-2">Terrain Type</Label>
-                            <RadioGroup value={terrainType} onValueChange={setTerrainType} className="flex space-x-2">
-                                <div className="flex items-center space-x-1">
-                                    <RadioGroupItem value="flat" id="flat" />
-                                    <Label htmlFor="flat" className="text-sm">
-                                        Flat
-                                    </Label>
-                                </div>
-                                <div className="flex items-center space-x-1">
-                                    <RadioGroupItem value="hilly" id="hilly" />
-                                    <Label htmlFor="hilly" className="text-sm">
-                                        Hilly
-                                    </Label>
-                                </div>
-                                <div className="flex items-center space-x-1">
-                                    <RadioGroupItem value="coastal" id="coastal" />
-                                    <Label htmlFor="coastal" className="text-sm">
-                                        Coastal
-                                    </Label>
-                                </div>
-                            </RadioGroup>
-                        </div>
-
                         <div className="mt-4 p-3 bg-gray-800/50 rounded-lg">
                             <h3 className="font-medium mb-2">Environment Effects:</h3>
                             <ul className="text-xs space-y-2 list-disc pl-4">
@@ -596,10 +452,6 @@ export function PropagationController({
                                 <li>
                                     <span className="font-medium">Building Style:</span> Changes the appearance of buildings in the 3D
                                     view
-                                </li>
-                                <li>
-                                    <span className="font-medium">Terrain:</span> Affects propagation characteristics and visual
-                                    appearance
                                 </li>
                             </ul>
                         </div>
