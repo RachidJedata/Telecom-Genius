@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, useMemo } from "react"
+import { useEffect, useRef, useState, useMemo, createContext, useContext } from "react"
 import { Canvas } from "@react-three/fiber"
 import { Environment } from "@react-three/drei"
 
@@ -10,6 +10,68 @@ import { PropagationModel } from './propagation-model';
 import { PropagationController } from "./propagation-controller"
 
 
+interface ParametersContextType {
+    showDirectPath: boolean;
+    setShowDirectPath: React.Dispatch<React.SetStateAction<boolean>>;
+    showPaths: boolean;
+    setShowPaths: React.Dispatch<React.SetStateAction<boolean>>;
+    showPathLoss: boolean;
+    setShowPathLoss: React.Dispatch<React.SetStateAction<boolean>>;
+
+    timeOfDay: string;
+    setTimeOfDay: React.Dispatch<React.SetStateAction<string>>;
+    weather: string;
+    setWeather: React.Dispatch<React.SetStateAction<string>>;
+    buildingStyle: string;
+    setBuildingStyle: React.Dispatch<React.SetStateAction<string>>;
+    terrainType: string;
+    setTerrainType: React.Dispatch<React.SetStateAction<string>>;
+
+    frequency: number;
+    setFrequency: React.Dispatch<React.SetStateAction<number>>;
+    baseStationHeight: number;
+    setBaseStationHeight: React.Dispatch<React.SetStateAction<number>>;
+    mobileHeight: number;
+    setMobileHeight: React.Dispatch<React.SetStateAction<number>>;
+    distance: number;
+    setDistance: React.Dispatch<React.SetStateAction<number>>;
+    environmentType: string;
+    setEnvironmentType: React.Dispatch<React.SetStateAction<string>>;
+    modelType: string;
+    setModelType: React.Dispatch<React.SetStateAction<string>>;
+
+    cities: Record<string, City>;
+    setCities: React.Dispatch<React.SetStateAction<Record<string, City>>>;
+    selectedCity: string;
+    setSelectedCity: React.Dispatch<React.SetStateAction<string>>;
+    mapCenter: [number, number];
+    setMapCenter: React.Dispatch<React.SetStateAction<[number, number]>>;
+    mapZoom: number;
+    setMapZoom: React.Dispatch<React.SetStateAction<number>>;
+
+    antennas: Antenna[];
+    setAntennas: React.Dispatch<React.SetStateAction<Antenna[]>>;
+    selectedAntennaId: number;
+    setSelectedAntennaId: React.Dispatch<React.SetStateAction<number>>;
+    selectedAntenna: Antenna
+
+    mobileStationPosition: [number, number];
+    setMobileStationPosition: React.Dispatch<React.SetStateAction<[number, number]>>;
+    calculatedDistances: { [key: number]: number };
+    setCalculatedDistances: React.Dispatch<React.SetStateAction<{ [key: number]: number }>>;
+    activeMarker: string | null;
+    setActiveMarker: React.Dispatch<React.SetStateAction<string | null>>;
+    showAllCoverages: boolean;
+    pathLoss: number;
+    setShowAllCoverages: React.Dispatch<React.SetStateAction<boolean>>;
+    calculateOkumuraHeightGain: (baseStationHeight: number) => number;
+    calculateCoverageRadius: (antenna: Antenna) => number;
+    addAntenna: () => void;
+    removeAntenna: (id: number) => void;
+    updateAntenna: (id: number, updates: object) => void;
+}
+
+const ParametersContext = createContext<ParametersContextType | null>(null);
 
 export interface Antenna {
     id: number;
@@ -36,7 +98,6 @@ export default function Simulation3D() {
     const [showDirectPath, setShowDirectPath] = useState(true)
     const [showPaths, setShowPaths] = useState(false)
     const [showPathLoss, setShowPathLoss] = useState(true)
-    // const [showMap, setShowMap] = useState(false)
 
     // Environment settings
     const [timeOfDay, setTimeOfDay] = useState("day") // day, night
@@ -181,7 +242,7 @@ export default function Simulation3D() {
             const city = cities[selectedCity]
             setMapCenter(city.coordinates)
             setMapZoom(city.zoom)
-            
+
 
             // Update environment type based on city
             if (city.environment) {
@@ -447,117 +508,96 @@ export default function Simulation3D() {
 
 
     return (
-        <div className="w-full h-screen bg-gradient-to-b from-slate-900 to-slate-800 flex">
+        <ParametersContext.Provider
+            value={{
+                showDirectPath, setShowDirectPath,
+                showPaths, setShowPaths,
+                showPathLoss, setShowPathLoss,
+
+                timeOfDay, setTimeOfDay,
+                weather, setWeather,
+                buildingStyle, setBuildingStyle,
+                terrainType, setTerrainType,
+
+                frequency, setFrequency,
+                baseStationHeight, setBaseStationHeight,
+                mobileHeight, setMobileHeight,
+                distance, setDistance,
+                environmentType, setEnvironmentType,
+                modelType, setModelType,
+
+                cities, setCities,
+                selectedCity, setSelectedCity,
+                mapCenter, setMapCenter,
+                mapZoom, setMapZoom,
+
+                antennas, setAntennas, selectedAntenna, addAntenna,
+                removeAntenna, updateAntenna,
+                selectedAntennaId, setSelectedAntennaId,
+
+                mobileStationPosition, setMobileStationPosition,
+                calculatedDistances, setCalculatedDistances,
+                activeMarker, setActiveMarker,
+                showAllCoverages, setShowAllCoverages,
+
+                pathLoss, calculateOkumuraHeightGain, calculateCoverageRadius,
+            }}
+        >
+            <div className="w-full h-screen bg-gradient-to-b from-slate-900 to-slate-800 flex">
 
 
-            <PropagationController
-                // showLabels={showLabels}
-                showPathLoss={showPathLoss}
-                showDirectPath={showDirectPath}
-                showPaths={showPaths}
-                selectedAntennaId={selectedAntennaId}
-                modelType={modelType}
-                environmentType={environmentType}
-                setModelType={setModelType}
-                setEnvironmentType={setEnvironmentType}
-                setSelectedAntennaId={setSelectedAntennaId}
-                // setShowLabels={setShowLabels}
-                setShowPathLoss={setShowPathLoss}
-                setShowPaths={setShowPaths}
-                setShowDirectPath={setShowDirectPath}
-                antennas={antennas}
-                calculateOkumuraHeightGain={calculateOkumuraHeightGain}
-                calculateCoverageRadius={calculateCoverageRadius}
-                removeAntenna={removeAntenna}
-                setShowAllCoverages={setShowAllCoverages}
-                selectedAntenna={selectedAntenna}
-                updateAntenna={updateAntenna}
-                mobileHeight={mobileHeight}
-                setMobileHeight={setMobileHeight}
-                distance={distance}
-                setDistance={setDistance}
-                calculatedDistances={calculatedDistances}
-                pathLoss={pathLoss}
-                cities={cities}
-                selectedCity={selectedCity}
-                setSelectedCity={setSelectedCity}
-                mapCenter={mapCenter}
-                setMapCenter={setMapCenter}
-                mapZoom={mapZoom}
-                mobileStationPosition={mobileStationPosition}
-                setMobileStationPosition={setMobileStationPosition}
-                setActiveMarker={setActiveMarker}
-                showAllCoverages={showAllCoverages}
-                addAntenna={addAntenna}
-                timeOfDay={timeOfDay}
-                setTimeOfDay={setTimeOfDay}
-                weather={weather}
-                setWeather={setWeather}
-                buildingStyle={buildingStyle}
-                setBuildingStyle={setBuildingStyle}
-                terrainType={terrainType}
-                setTerrainType={setTerrainType}
-            />
+                <PropagationController />
 
 
 
-            <Canvas camera={{ position: [0, 50, 200], fov: 45 }} shadows>
-                <color attach="background" args={[timeOfDay === "night" ? "#0a0f1a" : "#0f172a"]} />
-                {/* <fog attach="fog" args={[timeOfDay === "night" ? "#0a0f1a" : "#0f172a", 200, 500]} /> */}
+                <Canvas camera={{ position: [0, 50, 200], fov: 45 }} shadows>
+                    <color attach="background" args={[timeOfDay === "night" ? "#0a0f1a" : "#0f172a"]} />
+                    {/* <fog attach="fog" args={[timeOfDay === "night" ? "#0a0f1a" : "#0f172a", 200, 500]} /> */}
 
-                {/* Lighting based on time of day and weather */}
-                {timeOfDay === "day" ? (
-                    <>
-                        <ambientLight intensity={weather === "clear" ? 0.7 : weather === "cloudy" ? 0.5 : 0.3} />
-                        <directionalLight
-                            position={[50, 100, 50]}
-                            intensity={weather === "clear" ? 1.2 : weather === "cloudy" ? 0.7 : 0.4}
-                            castShadow
-                        />
-                    </>
-                ) : (
-                    <>
-                        <ambientLight intensity={0.2} />
-                        <pointLight position={[0, 100, 0]} intensity={0.5} color="#b4c6ef" />
-                        <spotLight
-                            position={[-50, 50, -30]}
-                            angle={0.3}
-                            penumbra={0.8}
-                            intensity={0.6}
-                            color="#4b6cb7"
-                            castShadow
-                        />
-                    </>
-                )}
+                    {/* Lighting based on time of day and weather */}
+                    {timeOfDay === "day" ? (
+                        <>
+                            <ambientLight intensity={weather === "clear" ? 0.7 : weather === "cloudy" ? 0.5 : 0.3} />
+                            <directionalLight
+                                position={[50, 100, 50]}
+                                intensity={weather === "clear" ? 1.2 : weather === "cloudy" ? 0.7 : 0.4}
+                                castShadow
+                            />
+                        </>
+                    ) : (
+                        <>
+                            <ambientLight intensity={0.2} />
+                            <pointLight position={[0, 100, 0]} intensity={0.5} color="#b4c6ef" />
+                            <spotLight
+                                position={[-50, 50, -30]}
+                                angle={0.3}
+                                penumbra={0.8}
+                                intensity={0.6}
+                                color="#4b6cb7"
+                                castShadow
+                            />
+                        </>
+                    )}
 
-                {/* Environment preset based on weather and time */}
-                <Environment
-                    preset={
-                        timeOfDay === "day" ? (weather === "clear" ? "city" : weather === "cloudy" ? "dawn" : "sunset") : "night"
-                    }
-                />
+                    {/* Environment preset based on weather and time */}
+                    <Environment
+                        preset={
+                            timeOfDay === "day" ? (weather === "clear" ? "city" : weather === "cloudy" ? "dawn" : "sunset") : "night"
+                        }
+                    />
 
 
-                <PropagationModel
-                    // showLabels={showLabels}
-                    showDirectPath={showDirectPath}
-                    showPaths={showPaths}
-                    showPathLoss={showPathLoss}
-                    frequency={selectedAntenna.frequency}
-                    baseStationHeight={selectedAntenna.height}
-                    mobileHeight={mobileHeight}
-                    distance={distance * 1000} // Convert km to m
-                    environmentType={environmentType}
-                    pathLoss={pathLoss}
-                    modelType={modelType}
-                    calculateOkumuraHeightGain={calculateOkumuraHeightGainMemoized}
-                    timeOfDay={timeOfDay}
-                    weather={weather}
-                    buildingStyle={buildingStyle}
-                    terrainType={terrainType}
-                    selectedAntenna={selectedAntenna}
-                />
-            </Canvas>
-        </div>
+                    <PropagationModel />
+                </Canvas>
+            </div>
+        </ParametersContext.Provider>
     )
+}
+
+export function useParamtersContext() {
+    const context = useContext(ParametersContext);
+    if (!context) {
+        throw new Error("useParametersContext must be used within a ParametersProvider");
+    }
+    return context;
 }

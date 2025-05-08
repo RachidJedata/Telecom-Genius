@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three'
-import { Antenna } from './urban-propagation';
+import { Antenna, useParamtersContext } from './urban-propagation';
 import { Billboard, Grid, Html, OrbitControls, Text, useGLTF } from "@react-three/drei";
 import gsap from 'gsap';
 
@@ -8,29 +8,6 @@ interface Building {
     id: string,
     position: [number, number, number],
     height: number,
-}
-
-interface PropagrationModelProps {
-
-    // showLabels: boolean,
-    showDirectPath: boolean,
-    showPaths: boolean,
-    showPathLoss: boolean,
-    frequency: number,
-    baseStationHeight: number,
-    mobileHeight: number,
-    distance: number,
-    environmentType: string,
-    pathLoss: number,
-    modelType: string,
-    calculateOkumuraHeightGain: (height: number) => number,
-    timeOfDay: string,
-    weather: string,
-    buildingStyle: string,
-    terrainType: string,
-    selectedAntenna: Antenna,
-    // calculatedDistances: { [key: number]: number },
-
 }
 
 // Add disposal utilities
@@ -51,28 +28,27 @@ const disposeGroup = (group: THREE.Group) => {
 };
 
 // Update the PropagationModel component to support multiple antennas and environment settings
-export function PropagationModel({
-    // showLabels,
-    showDirectPath,
-    showPaths,
-    showPathLoss,
-    frequency,
-    baseStationHeight,
-    mobileHeight,
-    distance,
-    environmentType,
-    pathLoss,
-    modelType,
-    calculateOkumuraHeightGain,
-    timeOfDay,
-    weather,
-    buildingStyle,
-    terrainType,
-    // calculatedDistances,
-    selectedAntenna,
-}: PropagrationModelProps) {
+export function PropagationModel() {
 
-
+    const {
+        // showLabels,
+        showDirectPath,
+        showPaths,
+        showPathLoss,
+        frequency,
+        baseStationHeight,
+        mobileHeight,
+        distance,
+        environmentType,
+        pathLoss,
+        modelType,
+        calculateOkumuraHeightGain,
+        timeOfDay,
+        weather,
+        buildingStyle,
+        terrainType,
+        selectedAntenna,
+    } = useParamtersContext();
 
     const { scene: originalScene } = useGLTF('/person_model/human_on_phone.gltf');
     // 2. Clone + memoize so `scene` ref only changes when originalScene changes
