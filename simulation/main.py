@@ -8,18 +8,6 @@ import math
 from pydantic import BaseModel
 from typing import List
 
-class TowerModel(BaseModel):
-    id: int
-    position: List[float]  # [latitude, longitude]
-    h_bs: float            # Base station height (m)
-    txPower: float         # Transmit power (dBm)
-    frequency: float       # Frequency (MHz)
-
-class SimulationRequest(BaseModel):
-    towers: List[TowerModel]
-    environment: str = "urban"  # Can be "urban", "suburban", or "rural"
-
-
 
 app = FastAPI()
 
@@ -438,13 +426,13 @@ def fading_endpoint(
 
 @app.get("/Cost231/pathLoss")
 def pathLossCost(
-     f: float = 900,
+    f: float = 900,
     h_b: float = 30,
     h_m: float = 1.5,
-    d: float = 0.001,  # 1 meter distance for visible signal
+    distance: float = 0.001,  # 1 meter distance for visible signal
     environment: str = "rural",
 ):
-    attenuation = calculate_cost231(f, h_b, h_m, d, environment)
+    attenuation = calculate_cost231(f, h_b, h_m, distance * 1000, environment)
     return {"value":attenuation}
 
 @app.get("/Cost231/fading")
@@ -505,54 +493,12 @@ def simulate_parameters(
         }
 
 
-@app.post("/simulate/coverage")
-def simulate_coverage(data: SimulationRequest):
-    # Assume mobile height is fixed at 1.5 m and distance for path loss calculation is 1 km (for demo)
-    h_ms = 1.5
-    d = 1  # km
-
-    coverage_results = []
-    for tower in data.towers:
-        # Calculate path loss L using the COST231 model
-        L = calculate_cost231(tower.frequency, tower.h_bs, h_ms, d, data.environment)
-        # Simplified received power calculation
-        received_power = tower.txPower - L  # in dBm
-        # Determine coverage radius based on a threshold
-        # For demo, if received power > -100 dBm, use a radius of 1000 m; otherwise 500 m.
-        coverage_radius = 1000 if received_power > -100 else 500
-
-        coverage_results.append({
-            "towerId": tower.id,
-            "coverageRadius": coverage_radius,
-            "receivedPower": received_power
-        })
-
-    # Simulate interference: check pairwise distances (using a simple Euclidean approximation)
-    interference_zones = []
-    towers_positions = [np.array(tower.position) for tower in data.towers]
-    for i in range(len(data.towers)):
-        for j in range(i+1, len(data.towers)):
-            # This is a rough approximation; for real use, convert lat/lng to meters.
-            dist = np.linalg.norm(towers_positions[i] - towers_positions[j])
-            if dist < 0.005:  # if towers are very close (arbitrary threshold)
-                interference_zones.append({
-                    "tower1": data.towers[i].id,
-                    "tower2": data.towers[j].id,
-                    "distance": dist
-                })
-
-    return {
-        "coverage": coverage_results,
-        "interference": interference_zones
-    }
-
-
 @app.get("/fspl-dbLoss")
 def fsplPathLoss(
     carrier_frequency_GHz: float = 2.4,  # Carrier frequency in GHz for FSPL * 10^9
-    distance_m: float = 1,             # Distance in meters (e.g., 1km) en km               
+    distance: float = 1,             # Distance in meters (e.g., 1km) en km               
 ):
-    fspl_db = fspl(distance_m=distance_m, frequency_hz=carrier_frequency_GHz)    
+    fspl_db = fspl(distance_m=distance * 1000, frequency_hz=carrier_frequency_GHz)    
     return {"value":fspl_db}
 
 @app.get('/fspl')
@@ -598,10 +544,10 @@ def get_fspl(
 def ituPathLoss(
     frequency_MHz: float = 2400,    # Frequency in MHz
     environment: str = "urban",    # Options: urban, suburban, open        
-    distances_km:float = 0.1, #distance en km
+    distance:float = 0.1, #distance en km
 ):
     delta_nlos = {"urban": 20, "suburban": 15, "open": 10}.get(environment, 20)
-    L_dB = nlos_loss(frequency_MHz, distances_km, delta_nlos)            
+    L_dB = nlos_loss(frequency_MHz, distance, delta_nlos)            
     return {"value":L_dB}
 
 @app.get("/itu-r-p1411")
@@ -672,11 +618,11 @@ def hataPathLoss(
     f: float = 900,
     h_b: float = 50,
     h_m: float = 1.5,
-    d: float = 1,
+    distance: float = 1,
     environment: str = 'urban',
     city_size: str = 'petite/meduim',
 ):
-    loss = hata_loss(f, h_b, h_m, d, environment, city_size)
+    loss = hata_loss(f, h_b, h_m, distance, environment, city_size)
     return {"value":loss}
 
 @app.get('/hata')
@@ -721,9 +667,9 @@ def run_two_ray_path_loss(
     frequency_MHz: float = 900,       # Carrier frequency for path loss calculation
     h_b: float = 30,                    # Transmitter height (m)
     h_m: float = 1.5,                   # Receiver height (m)
-    d: float = 100,                  # Distance between antennas (m),
+    distance: float = 100,                  # Distance between antennas (m),
 ):
-    loss_db = two_ray_ground_loss(d=d, ht=h_b, hr=h_m, frequency_MHz=frequency_MHz)
+    loss_db = two_ray_ground_loss(d=distance * 1000, ht=h_b, hr=h_m, frequency_MHz=frequency_MHz)
 
     # Convert to native Python float:
     loss_py = float(loss_db)            # simplest, works if loss_db is scalar
@@ -794,9 +740,9 @@ def run_two_ray_simulation(
 def run_weissberger_pathLoss(
     frequency_MHz: float = 900,
     foliage_depth_km: float = 0.1,
-    distance_km:float = 0.1, #distance en km
+    distance:float = 0.1, #distance en km
 ):
-    losses = weissberger_loss(distance_km, foliage_depth_km, frequency_MHz)
+    losses = weissberger_loss(distance, foliage_depth_km, frequency_MHz)
     return {"value":losses}
 
 @app.get("/weissberger-signal-simulation")
@@ -881,10 +827,10 @@ def longleyRacePathLoss(
     h_b: float = 30,
     h_m: float = 1.5,
     terrain_irregularity: float = 50,
-    d:float = 1,
+    distance:float = 1,
     climate: str = 'Tempéré continental',
 ):
-    loss = calculate_longley_rice_loss(d, frequency_MHz, h_b, h_m, terrain_irregularity, climate)
+    loss = calculate_longley_rice_loss(distance * 1000, frequency_MHz, h_b, h_m, terrain_irregularity, climate)
     return {"value":loss}
 
 @app.get("/longley-rice-signal-simulation")
@@ -1128,7 +1074,7 @@ def simulate_nakagami_fading_signal(
     c = 3e8
     wavelength = c / frequency_hz
     PL0 = 20 * np.log10(4 * np.pi * 1.0 / wavelength)
-    PL_dB = PL0 + 10 * 2.0 * np.log10(distance / 1.0)
+    PL_dB = PL0 + 10 * 2.0 * np.log10(distance *1000 / 1.0)
 
     # 3) Small-scale fading loss in dB
     fading_loss_dB = -20 * np.log10(h)
