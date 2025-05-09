@@ -96,7 +96,7 @@ export function SimulationControls({ simulation }: { simulation: Simulation }) {
   useEffect(() => { if (autoRun) runSimulation() }, [paramValues]);
 
   const saveSimulation = async () => {
-    await saveSimulationParameters(simulation.simulationId, paramValues);
+    await saveSimulationParameters(simulation.simulationId, JSON.stringify(paramValues));
     toast({
       title: "Enregistrer les paramteres",
       description: `Enregistrer les nouvelles paramteres avec success`,

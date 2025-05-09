@@ -90,11 +90,11 @@ export async function getSimulation(simulationId: number | null) {
     });
 }
 
-export async function saveSimulationParameters(simulationId: number | null, params: any) {
+export async function saveSimulationParameters(simulationId: number | null, params: string | null) {
     if (!simulationId) return;
     await prisma.simulation.update({
         data: {
-            savedParams: params ? JSON.stringify(params) : null
+            savedParams: params
         },
         where: {
             simulationId: simulationId
