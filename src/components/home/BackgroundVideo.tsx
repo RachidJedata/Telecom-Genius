@@ -25,7 +25,7 @@ export default function BackgroundVideo({ setIsLoading }: { setIsLoading: (v: bo
         <video
             ref={vidRef}
             className="absolute inset-0 w-full h-full object-cover -z-10 bg-opacity-65"
-            src="intro.mp4"               // place intro.mp4 in your /public folder
+            src="/intro.mp4"               // place intro.mp4 in your /public folder
             autoPlay
             loop
             muted            
