@@ -159,33 +159,6 @@ def db_to_amplitude(db: float) -> float:
     return 10 ** (db / 20) 
 
 
-def calculate_cost231(f: float, h_bs: float, h_ms: float, d: float, environment: str) -> float:
-    """
-    Computes the path loss (L) using the COST231-Hata model.
-
-    Parameters:
-        f (float): Frequency in MHz (should be between 1500 and 2000 MHz).
-        h_bs (float): Base station height in meters.
-        h_ms (float): Mobile station height in meters.
-        d (float): Distance between BS and MS in kilometers.
-        environment (str): 'urban', 'suburban', or 'rural'.
-
-    Returns:
-        float: Path loss (L) in dB.
-    """
-
-    # Correction factor for mobile antenna height a(h_ms)
-    a_hms = (1.1 * math.log10(f) - 0.7) * h_ms - (1.56 * math.log10(f) - 0.8)
-
-    C_values = {"urban": 3, "suburban": 0, "rural": 4.78 * (math.log10(f) ** 2) - 18.33 * math.log10(f) + 40.94}
-    C = C_values.get(environment.lower(), 0)
-    
-    # COST231-Hata path loss formula
-    L = 46.3 + 33.9 * math.log10(f) - 13.82 * math.log10(h_bs) - a_hms + \
-        (44.9 - 6.55 * math.log10(h_bs)) * math.log10(d) + C
-
-    return L
-
 def fspl(distance_m, frequency_hz):
     """Calculate Free Space Path Loss in dB."""
     c = 3e8  # Speed of light (m/s)   
@@ -263,146 +236,159 @@ def nlos_loss(frequency_MHz, distance_km, delta_nlos=20):
     return fspl(distance_m, frequency_hz) + delta_nlos
 
 
+
+# Modèle Two-Ray Ground
+def two_ray_ground_loss(d, ht, hr, frequency_MHz):
+    c = 3e8  # Vitesse de la lumière (m/s)
+    f = frequency_MHz * 1e6  # Conversion MHz → Hz
+    lambda_ = c / f
+    d_c = (4 * ht * hr) / lambda_
+
+    # Pour courte distance : utiliser la perte en espace libre
+    fspl = 20 * np.log10(d) + 20 * np.log10(frequency_MHz) + 32.45
+
+    # Pour longue distance : utiliser modèle two-ray
+    L = np.where(d <= d_c, fspl, 40 * np.log10(d) - 20 * np.log10(ht * hr))
+
+    return L
+
+def rician_path_loss(distance, K=10, path_loss_exp=2.0, freq=900e6, d0=1.0):
+    c = 3e8
+    wavelength = c / freq
+    PL0 = 20 * np.log10(4 * np.pi * d0 / wavelength)
+    PL = PL0 + 10 * path_loss_exp * np.log10(distance / d0)
+
+    sigma = 1.0
+    s = np.sqrt(K / (K + 1))
+    sigma_n = np.sqrt(1 / (2 * (K + 1)))
+    fading = np.random.normal(s, sigma_n) + 1j * np.random.normal(0, sigma_n)
+    fading_gain = np.abs(fading)**2
+    fading_gain_dB = 10 * np.log10(fading_gain)
+
+    return PL - fading_gain_dB  # Effective path loss (dB)
+
+
+def calculate_cost231(f: float, h_bs: float, h_ms: float, d: float, environment: str) -> float:
+    """
+    Computes the path loss (L) using the COST231-Hata model.
+
+    Parameters:
+        f (float): Frequency in MHz (should be between 1500 and 2000 MHz).
+        h_bs (float): Base station height in meters.
+        h_ms (float): Mobile station height in meters.
+        d (float): Distance between BS and MS in kilometers.
+        environment (str): 'urban', 'suburban', or 'rural'.
+
+    Returns:
+        float: Path loss (L) in dB.
+    """
+
+    # Correction factor for mobile antenna height a(h_ms)
+    a_hms = (1.1 * math.log10(f) - 0.7) * h_ms - (1.56 * math.log10(f) - 0.8)
+
+    C_values = {"urban": 3, "suburban": 0, "rural": 4.78 * (math.log10(f) ** 2) - 18.33 * math.log10(f) + 40.94}
+    C = C_values.get(environment.lower(), 0)
+    
+    # COST231-Hata path loss formula
+    L = 46.3 + 33.9 * math.log10(f) - 13.82 * math.log10(h_bs) - a_hms + \
+        (44.9 - 6.55 * math.log10(h_bs)) * math.log10(d) + C
+
+    return L
+
+
+def apply_fading(fading_model, num_paths):
+    """
+    Apply multipath fading to input_samples, but return path-loss (in dB) for each path.
+    
+    fading_model:
+        0  -> No fading.
+        1  -> Uniform profile.
+        11 -> Uniform profile with constant gain (for testing).
+        2  -> Exponential profile.
+        22 -> Exponential profile with constant gain (for testing).
+    Returns:
+        faded_samples: 1D np.array, result of convolving input with linear gains.
+        path_loss_db: 1D np.array of length num_paths, loss per path in dB.
+    """
+    # no fading → zero loss, return original
+    if fading_model == 0:
+         return np.zeros(1), np.ones(1, dtype=complex)
+
+    # build power-profile
+    if fading_model in [1, 11]:
+        variance = np.ones(num_paths) * (1.0 / num_paths)
+    elif fading_model in [2, 22]:
+        variance = np.zeros(num_paths)
+        variance[0] = 1.0
+        idx = np.arange(2, num_paths + 1)
+        variance[1:] = variance[0] * np.exp(-idx / num_paths)
+    variance = variance / np.sum(variance)
+
+    # get *linear* complex gains
+    if fading_model in [11, 22]:
+        gains = np.sqrt(variance)                      # deterministic
+    else:
+        gains = (np.random.randn(num_paths)
+                 + 1j*np.random.randn(num_paths)) \
+                * np.sqrt(variance/2)                 # Rayleigh
+
+    # compute path-loss in dB:  PL = -20·log10(|gain|)
+    path_loss_db = -20 * np.log10(np.abs(gains) + 1e-12)    
+    return path_loss_db , gains
+
+
+def nakagami_fading(m, omega, size):
+    """Generate Nakagami fading samples"""
+    return gamma.rvs(m, scale=np.sqrt(omega / m), size=size)
+
+
+def calculate_longley_rice_loss(distance_km: float, frequency_MHz: float, height_tx: float, height_rx: float, terrain_irregularity: float, climate: str) -> float:
+    """
+    Calculate the Longley-Rice propagation loss in dB (simplified version).
+    
+    Args:
+        distance_km (float): Distance in kilometers
+        frequency_MHz (float): Frequency in MHz
+        height_tx (float): Transmitter height in meters
+        height_rx (float): Receiver height in meters
+        terrain_irregularity (float): Terrain irregularity in meters
+        climate (str): Climate type (e.g., 'Tempéré continental')
+    
+    Returns:
+        float: Loss in dB
+    """
+    # Simplified loss calculation including free-space loss, height, terrain, and climate effects
+    free_space_loss = 20 * np.log10(distance_km) + 20 * np.log10(frequency_MHz) + 20 * np.log10(4 * np.pi / 3e8)
+    height_factor = 10 * np.log10(height_tx * height_rx)
+    terrain_factor = 0.1 * terrain_irregularity  # Simplified terrain impact
+    climate_factor = 0.0  # Placeholder for climate impact
+
+    # Adjust loss based on climate (simplified example)
+    if climate == 'Tempéré continental':
+        climate_factor = 1.0
+    elif climate == 'Tempéré maritime':
+        climate_factor = 2.0
+    # Additional climate types can be added here
+
+    loss = free_space_loss - height_factor + terrain_factor + climate_factor
+    return loss
+
 # --------------------------
 # Signal Generation Endpoints
 # --------------------------
 
-@app.get("/rect")
-async def get_rect(x: float,duration:float=10e-3):
-    try:
-        if x == 0:
-            raise ValueError("x cannot be zero")
-            
-        # Signal parameters
-        fs, T_pulse = 250e3, 1e-3
-       
-        
-        # Time array 
-        t = generate_time_array(duration, 1/fs)        
-        scaled_time = t / (x * T_pulse)                
 
-        return {
-            "x": t.tolist(),            
-            "y": rect(scaled_time).tolist(),
-            "parameters": {
-                "largeur": x,
-                "sampling_frequency": fs,
-                "pulse_width": T_pulse
-            }
-        }
-        
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
-    
-
-@app.get("/sinus")
-async def get_sinus(
-    period: float,
-    amplitude: float = 1.0,
-    phase: float = 0.0,
-    duration:float = 10e-3
+@app.get("/rayleign-path-loss")
+def rayleginPathLoss(
+    fading_model: int = 2,
+    num_paths: int = 500,
 ):
-    Te=1/250e3
-    validate_positive(period=period, duration=duration, Te=Te)
-    t = generate_time_array(duration, Te)
-    freq = 1/period
-    signal = generate_sinus(t=t,amplitude=amplitude,freq=freq,phase=phase)
-    return {
-        "x": t.tolist(),
-        "y": signal.tolist(),
-        "parameters": {
-            "frequency": freq,
-            "amplitude": amplitude,
-            "phase": phase,
-            "duration": duration,
-            "sampling_interval": Te
-        }
-    }
+    path_loss_db , gains = apply_fading(fading_model, num_paths)
+    # Option B: mean of individual losses
+    loss = float(np.mean(path_loss_db))            # :contentReference[oaicite:3]{index=3}
 
-    
-@app.get("/impulse")
-async def get_impulse(
-    Te: float = 0.001,
-    duration: float = 1.0
-):
-    validate_positive(Te=Te, duration=duration)
-    t = generate_time_array(duration, Te)
-    
-    signal = np.zeros(len(t), dtype=int)
-    if len(signal) > 0:
-        signal[len(signal)//2] = 1
-    
-    return {
-        "x": t.tolist(),
-        "y": signal.tolist(),
-        "parameters": {"Te": Te, "duration": duration}
-    }
+    return {"value": loss}
 
-@app.get("/dirac_comb")
-async def get_dirac_comb(
-    Te: float = Query(0.001, gt=0, description="Sampling interval"),
-    duration: float = Query(1.0, gt=0, description="Total time duration"),
-    t_impulse: float = Query(0.1, gt=0, description="Spacing between impulses")
-):
-        
-    signalTime = generate_comb_signal(duration=duration,period=t_impulse,Te=Te)
-
-    parameters = {
-        "Te": Te,
-        "duration": duration,
-        "t_impulse": t_impulse,
-        "impulse_count": len(signalTime["y"])
-    }
-
-    return {
-        "x": signalTime["x"],
-        "y": signalTime["y"],
-        "parameters": parameters
-    }
-
-
-@app.get("/sample_sinus")
-async def get_sample_sinus(
-    sinus_period: float = 0.005,
-    amplitude: float = 1.0,
-    phase: float = 0.0,
-    duration: float = 20e-3,  # Increased duration for better visibility
-    Te: float = 1/250e3,
-    impulse_period: float = 0.002 , # Adjusted for better demonstration    
-):
-    """
-    Generate a sampled sinusoidal signal using Dirac comb sampling
-    """
-    # Validate inputs
-    validate_positive(
-        sinus_period=sinus_period,
-        Te=Te,
-        impulse_period=impulse_period,
-        duration=duration
-    )
-
-      # Generate comb signal with corrected parameter name
-    comb_data = generate_comb_signal(
-        duration=duration,
-        period=impulse_period,  
-        Te=Te
-    )    
-    # Create centered time array
-    t = comb_data["x"]
-    comb_signal= comb_data["y"]
-    # Generate sinusoid
-    frequency = 1 / sinus_period    
-    sinus_signal = generate_sinus(t=np.array(t),amplitude=amplitude,freq=frequency,phase=phase)
-       
-    # Explicit elementwise multiplication using list comprehension
-    sampled_signal = [c * s for c, s in zip(comb_signal, sinus_signal.tolist())]
-
-    return {
-        "x": t,        
-        "y": sampled_signal,           
-    }
 
 @app.get("/fading")
 def fading_endpoint(
@@ -429,8 +415,8 @@ def fading_endpoint(
 
     if showLoss == "Oui":
         # Apply fading (multipath) to the sinusoidal signal.
-        sampled_signal, gain = apply_fading(signal, fading_model, num_paths)    
-            
+        path_loss_db , gains = apply_fading(fading_model, num_paths)    
+        sampled_signal = np.convolve(signal, gains)    
         # In case the sampled signal is complex, we take the real part.
         signal = [float(x.real) for x in sampled_signal.tolist()]
         # signal = np.abs(sampled_signal).tolist()
@@ -450,6 +436,16 @@ def fading_endpoint(
         }
 
 
+@app.get("/Cost231/pathLoss")
+def pathLossCost(
+     f: float = 900,
+    h_b: float = 30,
+    h_m: float = 1.5,
+    d: float = 0.001,  # 1 meter distance for visible signal
+    environment: str = "rural",
+):
+    attenuation = calculate_cost231(f, h_b, h_m, d, environment)
+    return {"value":attenuation}
 
 @app.get("/Cost231/fading")
 def simulate_parameters(
@@ -509,7 +505,6 @@ def simulate_parameters(
         }
 
 
-
 @app.post("/simulate/coverage")
 def simulate_coverage(data: SimulationRequest):
     # Assume mobile height is fixed at 1.5 m and distance for path loss calculation is 1 km (for demo)
@@ -552,10 +547,13 @@ def simulate_coverage(data: SimulationRequest):
     }
 
 
-
-
-
-
+@app.get("/fspl-dbLoss")
+def fsplPathLoss(
+    carrier_frequency_GHz: float = 2.4,  # Carrier frequency in GHz for FSPL * 10^9
+    distance_m: float = 1,             # Distance in meters (e.g., 1km) en km               
+):
+    fspl_db = fspl(distance_m=distance_m, frequency_hz=carrier_frequency_GHz)    
+    return {"value":fspl_db}
 
 @app.get('/fspl')
 def get_fspl(
@@ -596,7 +594,15 @@ def get_fspl(
         }
 
 
-
+@app.get("/itu-r-p1411-pathLoss")
+def ituPathLoss(
+    frequency_MHz: float = 2400,    # Frequency in MHz
+    environment: str = "urban",    # Options: urban, suburban, open        
+    distances_km:float = 0.1, #distance en km
+):
+    delta_nlos = {"urban": 20, "suburban": 15, "open": 10}.get(environment, 20)
+    L_dB = nlos_loss(frequency_MHz, distances_km, delta_nlos)            
+    return {"value":L_dB}
 
 @app.get("/itu-r-p1411")
 def run_itu_r_p1411_simulation(
@@ -661,6 +667,17 @@ def run_itu_r_p1411_simulation(
             "y":         signal.tolist(),            
         }
 
+@app.get("/hata-path-loss")
+def hataPathLoss(
+    f: float = 900,
+    h_b: float = 50,
+    h_m: float = 1.5,
+    d: float = 1,
+    environment: str = 'urban',
+    city_size: str = 'petite/meduim',
+):
+    loss = hata_loss(f, h_b, h_m, d, environment, city_size)
+    return {"value":loss}
 
 @app.get('/hata')
 def generate_hata_signal(
@@ -698,20 +715,23 @@ def generate_hata_signal(
     }
 
 
-# Modèle Two-Ray Ground
-def two_ray_ground_loss(d, ht, hr, frequency_MHz):
-    c = 3e8  # Vitesse de la lumière (m/s)
-    f = frequency_MHz * 1e6  # Conversion MHz → Hz
-    lambda_ = c / f
-    d_c = (4 * ht * hr) / lambda_
 
-    # Pour courte distance : utiliser la perte en espace libre
-    fspl = 20 * np.log10(d) + 20 * np.log10(frequency_MHz) + 32.45
+@app.get("/two-ray-ground-path-loss")
+def run_two_ray_path_loss(
+    frequency_MHz: float = 900,       # Carrier frequency for path loss calculation
+    h_b: float = 30,                    # Transmitter height (m)
+    h_m: float = 1.5,                   # Receiver height (m)
+    d: float = 100,                  # Distance between antennas (m),
+):
+    loss_db = two_ray_ground_loss(d=d, ht=h_b, hr=h_m, frequency_MHz=frequency_MHz)
 
-    # Pour longue distance : utiliser modèle two-ray
-    L = np.where(d <= d_c, fspl, 40 * np.log10(d) - 20 * np.log10(ht * hr))
+    # Convert to native Python float:
+    loss_py = float(loss_db)            # simplest, works if loss_db is scalar
+    # —or— 
+    # loss_py = np.array(loss_db).item()  # robust for scalar or 1-element array
 
-    return L
+    return {"value": loss_py}
+
 
 @app.get("/two-ray-ground-with-signal")
 def run_two_ray_simulation_with_sinus(
@@ -750,7 +770,6 @@ def run_two_ray_simulation_with_sinus(
     }
 
 
-
 @app.get("/two-ray-ground")
 def run_two_ray_simulation(
     frequency_MHz: float = 900, 
@@ -771,7 +790,14 @@ def run_two_ray_simulation(
     }
 
 
-
+@app.get("/weissberger-path-loss")
+def run_weissberger_pathLoss(
+    frequency_MHz: float = 900,
+    foliage_depth_km: float = 0.1,
+    distance_km:float = 0.1, #distance en km
+):
+    losses = weissberger_loss(distance_km, foliage_depth_km, frequency_MHz)
+    return {"value":losses}
 
 @app.get("/weissberger-signal-simulation")
 def run_weissberger_simulation_with_sinus(
@@ -849,37 +875,17 @@ def run_weissberger_simulation(
         "y_label":'Perte en db',        
     }
 
-
-def calculate_longley_rice_loss(distance_km: float, frequency_MHz: float, height_tx: float, height_rx: float, terrain_irregularity: float, climate: str) -> float:
-    """
-    Calculate the Longley-Rice propagation loss in dB (simplified version).
-    
-    Args:
-        distance_km (float): Distance in kilometers
-        frequency_MHz (float): Frequency in MHz
-        height_tx (float): Transmitter height in meters
-        height_rx (float): Receiver height in meters
-        terrain_irregularity (float): Terrain irregularity in meters
-        climate (str): Climate type (e.g., 'Tempéré continental')
-    
-    Returns:
-        float: Loss in dB
-    """
-    # Simplified loss calculation including free-space loss, height, terrain, and climate effects
-    free_space_loss = 20 * np.log10(distance_km) + 20 * np.log10(frequency_MHz) + 20 * np.log10(4 * np.pi / 3e8)
-    height_factor = 10 * np.log10(height_tx * height_rx)
-    terrain_factor = 0.1 * terrain_irregularity  # Simplified terrain impact
-    climate_factor = 0.0  # Placeholder for climate impact
-
-    # Adjust loss based on climate (simplified example)
-    if climate == 'Tempéré continental':
-        climate_factor = 1.0
-    elif climate == 'Tempéré maritime':
-        climate_factor = 2.0
-    # Additional climate types can be added here
-
-    loss = free_space_loss - height_factor + terrain_factor + climate_factor
-    return loss
+@app.get("/longley-rice-path-loss")
+def longleyRacePathLoss(
+    frequency_MHz: float = 900,
+    h_b: float = 30,
+    h_m: float = 1.5,
+    terrain_irregularity: float = 50,
+    d:float = 1,
+    climate: str = 'Tempéré continental',
+):
+    loss = calculate_longley_rice_loss(d, frequency_MHz, h_b, h_m, terrain_irregularity, climate)
+    return {"value":loss}
 
 @app.get("/longley-rice-signal-simulation")
 def simulate_longley_rice_signal(
@@ -1038,6 +1044,14 @@ async def ofdm_on_sine(
         f,signal = generate_frequency(signal=final_signal,Te=sampling_interval)
         return {"x":f.tolist(),"y":signal.tolist(),"x_label":"Fréquence (Hz)"}
         
+@app.get("/rician-path-loss")
+def run_rician_pathLoss(
+    distance:float = 10.0, 
+    k_db: int = 10,
+    frequency_hz: float = 900.0,      # Frequency of the sine wave in Hz
+):
+    path_loss_dB = rician_path_loss(distance=distance, K=k_db, freq=frequency_hz * 1e6)  # distance in meters
+    return {"value":path_loss_dB}
 
 
 @app.get("/rician")
@@ -1048,7 +1062,8 @@ async def run_rician_model(
     duration: float = 1.0,             # Duration in seconds    
     sampling_interval: float = 0.001,  # Sampling interval in seconds        
     frequency_hz: float = 900.0,      # Frequency of the sine wave in Hz
-    showLoss:str = "Oui",   
+    showLoss:str = "Oui",  
+    distance:float = 10.0, 
     showDomain:str = "domaine fréquentiel" #domaine temporel || domaine fréquentiel
 ):
     # Generate sinusoidal waveform
@@ -1066,7 +1081,7 @@ async def run_rician_model(
     h = (sigma * np.random.randn(N) + mu) + 1j * (sigma * np.random.randn(N) + mu)
     h_mag = np.abs(h)        
     
-
+    obj = {}
     signal_type = ["rician_channel","ricianchannel_db","convol_sign"]
     if show_signal_type == signal_type[0]:        
         signal = h_mag
@@ -1077,10 +1092,14 @@ async def run_rician_model(
     elif show_signal_type == signal_type[2]:
         if showLoss == "Oui":
             # Convolve the Rician channel response with the sinusoidal waveform
-            Y4 = np.convolve(h, signal)
-            signal = np.abs(Y4)                            
+            # Path loss applied to signal amplitude
+            path_loss_dB = rician_path_loss(distance=distance, K=K, freq=frequency_hz * 1e6)  # distance in meters
+            gain_linear = db_to_amplitude(-path_loss_dB)
+            signal *= gain_linear  # Apply path loss
+            Y = np.convolve(h, signal, mode='same')
+            signal = np.abs(Y)                           
 
-    obj = {}
+    
     if showDomain == "domaine temporel":
         obj["x"] = t.tolist()
     else:
@@ -1094,6 +1113,30 @@ async def run_rician_model(
     return obj
 
 
+@app.get("/nakagami-fading-path-loss")
+def simulate_nakagami_fading_signal(
+    m: float = 1.0,                    # Nakagami m parameter
+    omega: float = 1.0,                # Nakagami ω parameter
+    distance: float = 10.0,            # Distance in meters
+    frequency_hz: float = 900e6,       # Carrier frequency in Hz    
+):    
+   # 1) Small-scale fading envelope (linear gain)
+    fading_power = nakagami_fading(m=m, omega=omega, size=1)[0]
+    h = np.sqrt(fading_power)         # amplitude envelope
+
+    # 2) Large-scale path loss (dB) at d0=1m, n=2.0
+    c = 3e8
+    wavelength = c / frequency_hz
+    PL0 = 20 * np.log10(4 * np.pi * 1.0 / wavelength)
+    PL_dB = PL0 + 10 * 2.0 * np.log10(distance / 1.0)
+
+    # 3) Small-scale fading loss in dB
+    fading_loss_dB = -20 * np.log10(h)
+
+    # 4) Total path loss + fading
+    total_loss_dB = PL_dB + fading_loss_dB
+
+    return {"value": float(total_loss_dB)}
 
 @app.get("/nakagami-fading-signal")
 def simulate_nakagami_fading_signal(
@@ -1131,9 +1174,10 @@ def simulate_nakagami_fading_signal(
     
     if showLoss == "Oui":
         # Generate Nakagami fading envelope
-        # h^2 follows Gamma(m, omega/m), so h = sqrt(Gamma(m, omega/m))
-        Y = gamma.rvs(a=m, scale=omega / m, size=len(t))
-        h = np.sqrt(Y)
+        # h^2 follows Gamma(m, omega/m), so h = sqrt(Gamma(m, omega/m))        
+        # Nakagami fading envelope
+        fading = nakagami_fading(m=m, omega=omega, size=len(t))
+        h = np.sqrt(fading)
         # Apply fading to the signal
         signal *= h    
 

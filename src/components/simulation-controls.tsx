@@ -10,7 +10,6 @@ import * as d3 from 'd3';
 import { Simulation } from "@prisma/client"
 import { Input } from "./UI/input"
 import { saveSimulationParameters } from "@/lib/action"
-import { useRouter } from "next/navigation"
 import { toast } from "@/hooks/use-toast"
 
 interface SignalData {

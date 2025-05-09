@@ -719,7 +719,7 @@ Sa capacité à modéliser diverses conditions de fading en fait un outil préci
                     carrier_frequency_MHz: { name: "Fréquence du canal", value: 2.4, step: 0.5, min: 1, max: 6 },
                     baseband_frequency_Hz: { name: "Fréquence du signal", value: 1000, unit: "Hz", step: 50, min: 100, max: 100000 },
                     distance_m: { name: "Distance entre Tx et Rx", value: 1, unit: "Km", step: 50, min: 1, max: 10000 },
-
+                    
                     showLoss: { name: "Afficher l'atténuation", value: "Oui", options: ["Oui", "Non"] },
                     duration: { name: "Durée", value: 1.0, unit: "s", step: 0.1, min: 0.1, max: 10 },
                     sampling_interval: { name: "Intervalle d'échantillonnage", value: 1, unit: "ms", step: 1, min: 1, max: 100, convertedToMili: true },
