@@ -50,12 +50,12 @@ export default function SignIn() {
         <div className="bg-white  dark:bg-gray-900 rounded-2xl shadow-lg px-8 pt-5 space-y-6">
           <div className="space-y-2 text-center">
             <h1 className="text-2xl font-normal text-primary">Sign In</h1>
-            <p className="text-base dark:text-primary/80 text-semiGray">pour continuer vers la plateforme</p>
+            <p className="text-base dark:text-accent text-semiGray">pour continuer vers la plateforme</p>
           </div>
 
           {errorMessage && <p className="bg-red-400 text-accent py-2 rounded-lg pl-3 text-sm mb-4">{errorMessage}</p>}
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 justify-center">
             <GoogleButton />
             <GithubButton />
           </div>

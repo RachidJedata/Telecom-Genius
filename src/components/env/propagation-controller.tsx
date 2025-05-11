@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/UI/tabs"
 import { RadioGroup, RadioGroupItem } from "@/components/UI/radio-group"
 
 import dynamic from "next/dynamic";
-import { Antenna, useParamtersContext } from "./urban-propagation"
+import { Antenna, City, useParamtersContext } from "./urban-propagation"
 
 // Dynamically import the component that uses Leaflet
 const MapComponent = dynamic(() => import('./MapComponent'), {
@@ -26,39 +26,19 @@ export function PropagationController() {
         showDirectPath,
         showPaths,
         selectedAntennaId,
-        modelType,
-        environmentType,
-        setModelType,
-        setEnvironmentType,
+        changeModelType,
         setSelectedAntennaId,
         // setShowLabels,
         setShowPathLoss,
         setShowDirectPath,
         antennas,
-        calculateOkumuraHeightGain,
-        calculateCoverageRadius,
-        removeAntenna,
+
         setShowAllCoverages,
 
-
-        // Additional props
-        selectedAntenna,
-        updateAntenna,
-        mobileHeight,
-        setMobileHeight,
-        distance,
-        setDistance,
-        calculatedDistances,
-        pathLoss,
         cities,
         selectedCity,
-        setSelectedCity,
-        mapCenter,
-        setMapCenter,
-        mapZoom,
-        mobileStationPosition,
-        setMobileStationPosition,
-        setActiveMarker,
+        changeSelectedCity,
+
         showAllCoverages,
         addAntenna,
         timeOfDay,
@@ -70,7 +50,13 @@ export function PropagationController() {
         terrainType,
         setTerrainType,
         setShowPaths,
+        models,
+        params,
+        selectedAntenna,
+        handleParamChange
     } = useParamtersContext();
+
+    const modelType = selectedAntenna.modelType;
     return (
         <div className="absolute left-4 z-10 bg-black/70 p-4 rounded-lg text-white max-w-md">
             <Tabs defaultValue="visualization" className="w-full">
@@ -152,138 +138,80 @@ export function PropagationController() {
                     <p className="text-sm mb-4">Select a model for path loss prediction</p>
 
                     <div className="mb-4">
-                        <Select value={modelType} onValueChange={setModelType}>
+                        <Select value={modelType} onValueChange={changeModelType}>
                             <SelectTrigger className="bg-gray-800 border-gray-700">
                                 <SelectValue placeholder="Select model type" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="cost231">COST 231 Hata Model</SelectItem>
-                                <SelectItem value="okumura">Okumura Model</SelectItem>
+                                {models.map(model => (
+                                    <SelectItem key={model.id} value={model.endPoint}>{model.name}</SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>
 
                     <div className="space-y-4">
-                        <div>
-                            <Label htmlFor="environment" className="text-sm block mb-1">
-                                Environment Type
-                            </Label>
-                            <Select value={environmentType} onValueChange={setEnvironmentType}>
-                                <SelectTrigger id="environment" className="bg-gray-800 border-gray-700">
-                                    <SelectValue placeholder="Select environment" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="urban">Urban (Medium City)</SelectItem>
-                                    <SelectItem value="urban-large">Urban (Large City)</SelectItem>
-                                    <SelectItem value="suburban">Suburban</SelectItem>
-                                    <SelectItem value="rural">Rural</SelectItem>
-                                    <SelectItem value="coastal">Coastal</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        {Object.entries(params).map(([param, value], index) => (
+                            <div key={index} className="space-y-2">
+                                <Label htmlFor="frequency" className="text-sm block mb-1">
+                                    {value.name}: {isNaN(Number(value.value)) ? value.value.toString() : Number(value.value).toFixed(2)} {value.unit && ` ${value.unit}`}
+                                </Label>
 
-                        <div>
-                            <Label htmlFor="frequency" className="text-sm block mb-1">
-                                Frequency: {selectedAntenna.frequency} MHz
-                            </Label>
-                            <Slider
-                                id="frequency"
-                                value={[selectedAntenna.frequency]}
-                                min={800}
-                                max={2600}
-                                step={100}
-                                onValueChange={(value) => updateAntenna(selectedAntennaId, { frequency: value[0] })}
-                                className="mb-4"
-                            />
-                        </div>
-
-                        <div>
-                            <Label htmlFor="base-height" className="text-sm block mb-1">
-                                Base Station Height (hb): {selectedAntenna.height} m
-                            </Label>
-                            <Slider
-                                id="base-height"
-                                value={[selectedAntenna.height]}
-                                min={30}
-                                max={200}
-                                step={5}
-                                onValueChange={(value) => updateAntenna(selectedAntennaId, { height: value[0] })}
-                                className="mb-4"
-                            />
-                        </div>
-
-                        <div>
-                            <Label htmlFor="mobile-height" className="text-sm block mb-1">
-                                Mobile Height (hm): {mobileHeight} m
-                            </Label>
-                            <Slider
-                                id="mobile-height"
-                                value={[mobileHeight]}
-                                min={1}
-                                max={10}
-                                step={0.5}
-                                onValueChange={(value) => setMobileHeight(value[0])}
-                                className="mb-4"
-                            />
-                        </div>
-
-                        <div>
-                            <Label htmlFor="distance" className="text-sm block mb-1">
-                                Distance (d): {distance.toFixed(2)} km{" "}
-                                {calculatedDistances[selectedAntennaId] > 0 &&
-                                    `(Map: ${calculatedDistances[selectedAntennaId].toFixed(2)} km)`}
-                            </Label>
-                            <Slider
-                                id="distance"
-                                value={[distance]}
-                                min={0.1}
-                                max={5}
-                                step={0.05}
-                                onValueChange={(value) => setDistance(value[0])}
-                                className="mb-4"
-                            />
-                        </div>
+                                {!value.options ? (
+                                    <Slider
+                                        id={value.name}
+                                        min={value.min}
+                                        max={value.max}
+                                        step={1}
+                                        value={[parseFloat(Number(value.value).toFixed(4)) as number]}
+                                        onValueChange={([value]) => handleParamChange(param, value)}
+                                        className="mb-4"
+                                    />
+                                ) : (
+                                    <Select value={value.value.toString()} onValueChange={(val) => handleParamChange(param, val)}>
+                                        <SelectTrigger id="environment" className="bg-gray-800 border-gray-700">
+                                            <SelectValue placeholder="Select environment" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {value.options.map((val, idx) => (
+                                                <SelectItem key={idx} value={val}>
+                                                    {val}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            </div>
+                        ))}
                     </div>
 
                 </TabsContent>
 
                 <TabsContent value="map" className="space-y-4">
                     <div className="flex justify-between items-center">
-                        <h2 className="text-xl font-bold">{cities[selectedCity].name}</h2>
-                        <Select value={selectedCity} onValueChange={setSelectedCity}>
+                        <h2 className="text-xl font-bold">{cities[selectedCity]?.name}</h2>
+                        <Select value={selectedCity} onValueChange={changeSelectedCity}>
                             <SelectTrigger className="w-[180px] bg-gray-800 border-gray-700">
                                 <SelectValue placeholder="Select city" />
                             </SelectTrigger>
                             <SelectContent>
-                                {Object.keys(cities).map(city => (
-                                    <SelectItem key={city} value={city}>{cities[city].name}</SelectItem>
+                                {Object.keys(cities).map((key) => (
+                                    <SelectItem key={key} value={key}>
+                                        {cities[key]?.name ?? key}
+                                    </SelectItem>
                                 ))}
                             </SelectContent>
+
                         </Select>
                     </div>
                     <p className="text-sm mb-4">Position base stations and mobile user on the map</p>
 
-                    <MapComponent
-                        mapCenter={mapCenter}
-                        setMapCenter={setMapCenter}
-                        antennas={antennas}
-                        calculateCoverageRadius={calculateCoverageRadius}
-                        mapZoom={mapZoom}
-                        mobileHeight={mobileHeight}
-                        mobileStationPosition={mobileStationPosition}
-                        removeAntenna={removeAntenna}
-                        selectedAntennaId={selectedAntennaId}
-                        setActiveMarker={setActiveMarker}
-                        setMobileStationPosition={setMobileStationPosition}
-                        setSelectedAntennaId={setSelectedAntennaId}
-                        updateAntenna={updateAntenna}
-                        showAllCoverages={showAllCoverages}
-                    />
+                    <MapComponent />
 
                     <div className="flex justify-between mt-4">
                         <Button variant="outline" size="sm" onClick={addAntenna} className="flex items-center gap-1 bg-pink-100 text-black">
                             <PlusCircle size={16} />
-                            Add Base Station
+                            Station de Base
                         </Button>
 
                         <div className="flex items-center gap-2">
@@ -383,6 +311,32 @@ export function PropagationController() {
                                 </div>
                             </RadioGroup>
                         </div>
+
+                        <div>
+                            <Label className="text-sm block mb-2">Terrain Type</Label>
+                            <RadioGroup value={terrainType} onValueChange={setTerrainType} className="flex space-x-2">
+                                <div className="flex items-center space-x-1">
+                                    <RadioGroupItem value="flat" id="flat" />
+                                    <Label htmlFor="flat" className="text-sm">
+                                        Flat
+                                    </Label>
+                                </div>
+                                <div className="flex items-center space-x-1">
+                                    <RadioGroupItem value="hilly" id="hilly" />
+                                    <Label htmlFor="hilly" className="text-sm">
+                                        Hilly
+                                    </Label>
+                                </div>
+                                <div className="flex items-center space-x-1">
+                                    <RadioGroupItem value="coastal" id="coastal" />
+                                    <Label htmlFor="coastal" className="text-sm">
+                                        Coastal
+                                    </Label>
+                                </div>
+                            </RadioGroup>
+                        </div>
+
+
                         <div className="mt-4 p-3 bg-gray-800/50 rounded-lg">
                             <h3 className="font-medium mb-2">Environment Effects:</h3>
                             <ul className="text-xs space-y-2 list-disc pl-4">
@@ -398,6 +352,7 @@ export function PropagationController() {
                                 </li>
                             </ul>
                         </div>
+
                     </div>
                 </TabsContent>
             </Tabs>

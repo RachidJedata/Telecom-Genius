@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three'
-import { Antenna, useParamtersContext } from './urban-propagation';
+import { useParamtersContext } from './urban-propagation';
 import { Billboard, Grid, Html, OrbitControls, Text, useGLTF } from "@react-three/drei";
 import gsap from 'gsap';
 
@@ -35,20 +35,20 @@ export function PropagationModel() {
         showDirectPath,
         showPaths,
         showPathLoss,
-        frequency,
-        baseStationHeight,
-        mobileHeight,
-        distance,
-        environmentType,
-        pathLoss,
-        modelType,
+        loss,
         calculateOkumuraHeightGain,
         timeOfDay,
         weather,
         buildingStyle,
-        terrainType,
         selectedAntenna,
+        params,
+        terrainType,
     } = useParamtersContext();
+
+    const distance = Number(params["distance"]?.value) || 1;
+    const mobileHeight = Number(params["h_m"]?.value) || 1.5;
+    const environmentType = params["environment"]?.value.toString() || "urban";
+    
 
     const { scene: originalScene } = useGLTF('/person_model/human_on_phone.gltf');
     // 2. Clone + memoize so `scene` ref only changes when originalScene changes
@@ -71,12 +71,24 @@ export function PropagationModel() {
     const [popupVisibleAntenta, setPopupVisibleAntenta] = useState(false);
 
     // Model parameters (matching the diagram)
-    const totalDistance = distance * 1000; // Use the distance from props
-    const urbanLength = totalDistance * 0.7 // 70% of total distance is urban
+    const totalDistance = distance * 1000; // Use the distance from props    
     const buildingWidth = 20 // w in the diagram
     const buildingSpacing = 10 // s in the diagram
     const baseStationOffset = -totalDistance / 2
-    const mobileStationOffset = totalDistance / 2
+    const mobileStationOffset = totalDistance / 2;
+
+    const urbanRatio = useMemo(() => {
+        switch (environmentType) {
+            case "urban":
+                return 0.7;
+            case "suburban":
+                return 0.4;
+            case "rural":
+            default:
+                return 0.2;
+        }
+    }, [environmentType]);
+    const urbanLength = totalDistance * urbanRatio;
 
 
     const buildingHeights = useMemo(() => {
@@ -97,9 +109,6 @@ export function PropagationModel() {
         [urbanLength, buildingWidth, buildingSpacing]
     );
 
-    console.log("urbanLength" + urbanLength);
-    console.log("buildingWidth" + buildingWidth);
-    console.log("buildingSpacing" + buildingSpacing);
 
     // Add this near the beginning of the PropagationModel component
     const [buildings, setBuildings] = useState<Building[]>([]);
@@ -596,15 +605,15 @@ export function PropagationModel() {
 
         // Create a color gradient based on path loss or height gain
         const getColorForPathLoss = (loss: number) => {
-            if (modelType === "okumura") {
-                // For Okumura, color based on height gain (-30 to +30 dB range)
-                const normalizedGain = Math.max(0, Math.min(1, (loss + 30) / 60))
-                return new THREE.Color(1 - normalizedGain, normalizedGain, 0)
-            } else {
-                // For COST 231, color based on path loss (80-150 dB range)
-                const normalizedLoss = Math.max(0, Math.min(1, (loss - 80) / 70))
-                return new THREE.Color(normalizedLoss, 1 - normalizedLoss, 0)
-            }
+            // if (modelType === "okumura") {
+            // For Okumura, color based on height gain (-30 to +30 dB range)
+            const normalizedGain = Math.max(0, Math.min(1, (loss + 30) / 60))
+            return new THREE.Color(1 - normalizedGain, normalizedGain, 0)
+            // } else {
+            // For COST 231, color based on path loss (80-150 dB range)
+            // const normalizedLoss = Math.max(0, Math.min(1, (loss - 80) / 70))
+            // return new THREE.Color(normalizedLoss, 1 - normalizedLoss, 0)
+            // }
         }
 
         // Create a signal strength gradient along the path
@@ -631,15 +640,6 @@ export function PropagationModel() {
 
             const C = environmentType === "urban-large" ? 3 : 0
 
-            const pointLoss =
-                46.3 +
-                33.9 * Math.log10(selectedAntenna.frequency) -
-                13.82 * Math.log10(selectedAntenna.height) -
-                aHm +
-                (44.9 - 6.55 * Math.log10(selectedAntenna.height)) * Math.log10(distanceKm) +
-                C
-
-
         }
 
         // Add a legend for path loss
@@ -665,7 +665,8 @@ export function PropagationModel() {
                 new THREE.BoxGeometry(segmentWidth, gradientHeight, gradientDepth),
                 new THREE.MeshBasicMaterial({
                     color: getColorForPathLoss(
-                        modelType === "cost231" ? segmentLoss : calculateOkumuraHeightGain(selectedAntenna.height),
+                        // modelType === "cost231" ? segmentLoss : calculateOkumuraHeightGain(selectedAntenna.height),
+                        calculateOkumuraHeightGain(selectedAntenna.height)
                     ),
                     transparent: false,
                 }),
@@ -703,13 +704,13 @@ export function PropagationModel() {
         // calculatedDistances,
         selectedAntenna,
         showPathLoss,
-        pathLoss,
+        loss,
         mobileHeight,
         distance,
-        frequency,
+        // frequency,
         environmentType,
         // showLabels,
-        modelType,
+        selectedAntenna.modelType,
         calculateOkumuraHeightGain,
         // calculatedDistances,
     ]);
@@ -805,13 +806,13 @@ export function PropagationModel() {
                         <primitive object={personScene} />
                     </mesh>;
 
-                    {popupVisibleMobile && (
+                    {(popupVisibleMobile && loss > 0) && (
                         <Html position={[0, mobileHeight + 5, 0]}>
                             <div className="bg-black/80 text-white px-2 py-1 rounded text-sm whitespace-nowrap">
                                 Mobile User (EM)
                                 <br />
                                 Height: {mobileHeight}m<br />
-                                Path Loss: {pathLoss.toFixed(1)} dB
+                                Path Loss: {loss.toFixed(1)} dB
                             </div>
                         </Html>
                     )}
@@ -848,7 +849,7 @@ export function PropagationModel() {
                             outlineWidth={0.5}
                             outlineColor="#000000"
                         >
-                            {modelType === "cost231" ? "COST 231 Hata Model" : "Okumura Model"}
+                            {selectedAntenna.modelType || ""}
                         </Text>
 
                         <Text
@@ -861,25 +862,23 @@ export function PropagationModel() {
                             anchorX="center"
                             anchorY="middle"
                         >
-                            {modelType === "cost231"
-                                ? `Path Loss: ${pathLoss.toFixed(1)} dB`
-                                : `Height Gain: ${calculateOkumuraHeightGain(baseStationHeight).toFixed(1)} dB`}
+                            {`Path Loss: ${loss.toFixed(1)} dB`}
                         </Text>
 
-                        <Text
-                            position={[0, -20, 0]}
-                            color="#a0a0a0"
-                            fontSize={3.5}
-                            maxWidth={300}
-                            lineHeight={1.5}
-                            textAlign="center"
-                            anchorX="center"
-                            anchorY="middle"
-                        >
-                            {modelType === "cost231"
-                                ? `Environment: ${environmentType.charAt(0).toUpperCase() + environmentType.slice(1)}`
-                                : `Base Station Height: ${baseStationHeight}m`}
-                        </Text>
+                        {params["environment"] && (
+                            <Text
+                                position={[0, -20, 0]}
+                                color="#a0a0a0"
+                                fontSize={3.5}
+                                maxWidth={300}
+                                lineHeight={1.5}
+                                textAlign="center"
+                                anchorX="center"
+                                anchorY="middle"
+                            >
+                                {`Environment: ${environmentType.charAt(0).toUpperCase() + environmentType.slice(1)}`}
+                            </Text>
+                        )}
                     </Billboard>
                 )}
 

@@ -41,14 +41,14 @@ export const generatePagination = (currentPage: number, totalPages: number) => {
 };
 
 export function turnToUrl(value: string): string {
-    // Step 1: Remove accents (equivalent to PostgreSQL unaccent)
-    const unaccented = removeDiacritics(value);
+  // Step 1: Remove accents (equivalent to PostgreSQL unaccent)
+  const unaccented = removeDiacritics(value);
 
-    // Step 2: Replace all non-alphanumeric characters with hyphens
-    const slugified = unaccented.replace(/[^a-zA-Z0-9]+/g, '-');
-  
-    // Step 3: Convert to lowercase
-    return slugified.toLowerCase();
+  // Step 2: Replace all non-alphanumeric characters with hyphens
+  const slugified = unaccented.replace(/[^a-zA-Z0-9]+/g, '-');
+
+  // Step 3: Convert to lowercase
+  return slugified.toLowerCase();
 }
 
 export type FormState = {
@@ -56,3 +56,17 @@ export type FormState = {
   errors?: Record<string, string>;
   fields?: Record<string, string>;
 };
+
+
+export interface Parameters {
+  [key: string]: {
+    name: string;
+    step?: number;
+    min?: number;
+    max?: number;
+    value: number | string;
+    unit?: string;
+    convertedToMili?: boolean
+    options?: string[];
+  };
+}

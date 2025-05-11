@@ -225,20 +225,38 @@ def nlos_loss(frequency_MHz, distance_km, delta_nlos=20):
 
 
 
-# Modèle Two-Ray Ground
+# Modèle Two-Ray Ground (d en mètres)
 def two_ray_ground_loss(d, ht, hr, frequency_MHz):
-    c = 3e8  # Vitesse de la lumière (m/s)
-    f = frequency_MHz * 1e6  # Conversion MHz → Hz
-    lambda_ = c / f
+    """
+    Calcule la perte de chemin selon le modèle Two-Ray Ground.
+
+    Paramètres:
+        d (float ou array): distance entre émetteur et récepteur en mètres
+        ht (float): hauteur de l'antenne émettrice en mètres
+        hr (float): hauteur de l'antenne réceptrice en mètres
+        frequency_MHz (float): fréquence en MHz
+
+    Retour:
+        L (float ou array): perte de chemin en dB
+    """
+    c   = 3e8                          # vitesse de la lumière en m/s
+    f_Hz = frequency_MHz * 1e6        # conversion MHz → Hz
+    lambda_ = c / f_Hz                # longueur d'onde en mètres
+
+    # distance critique (mètres)
     d_c = (4 * ht * hr) / lambda_
 
-    # Pour courte distance : utiliser la perte en espace libre
-    fspl = 20 * np.log10(d) + 20 * np.log10(frequency_MHz) + 32.45
+    # FSPL pour d <= d_c (d en m, f en MHz)  — notez le "-27.55"
+    # FSPL(dB) = 20·log10(d_m) + 20·log10(f_MHz) − 27.55 :contentReference[oaicite:0]{index=0}
+    fspl = 20 * np.log10(d) + 20 * np.log10(frequency_MHz) - 27.55
 
-    # Pour longue distance : utiliser modèle two-ray
-    L = np.where(d <= d_c, fspl, 40 * np.log10(d) - 20 * np.log10(ht * hr))
+    # Two-Ray pour d > d_c
+    two_ray = 40 * np.log10(d) - 20 * np.log10(ht * hr)
 
+    # choix du modèle selon la distance
+    L = np.where(d <= d_c, fspl, two_ray)
     return L
+
 
 def rician_path_loss(distance, K=10, path_loss_exp=2.0, freq=900e6, d0=1.0):
     c = 3e8
@@ -429,10 +447,10 @@ def pathLossCost(
     f: float = 900,
     h_b: float = 30,
     h_m: float = 1.5,
-    distance: float = 0.001,  # 1 meter distance for visible signal
+    distance: float = 1,  # en km
     environment: str = "rural",
 ):
-    attenuation = calculate_cost231(f, h_b, h_m, distance * 1000, environment)
+    attenuation = calculate_cost231(f, h_b, h_m, distance, environment)
     return {"value":attenuation}
 
 @app.get("/Cost231/fading")
@@ -667,14 +685,14 @@ def run_two_ray_path_loss(
     frequency_MHz: float = 900,       # Carrier frequency for path loss calculation
     h_b: float = 30,                    # Transmitter height (m)
     h_m: float = 1.5,                   # Receiver height (m)
-    distance: float = 100,                  # Distance between antennas (m),
+    distance: float = 1,                  # en km
 ):
     loss_db = two_ray_ground_loss(d=distance * 1000, ht=h_b, hr=h_m, frequency_MHz=frequency_MHz)
 
     # Convert to native Python float:
-    loss_py = float(loss_db)            # simplest, works if loss_db is scalar
+    # loss_py = float(loss_db)            # simplest, works if loss_db is scalar
     # —or— 
-    # loss_py = np.array(loss_db).item()  # robust for scalar or 1-element array
+    loss_py = np.array(loss_db).item()  # robust for scalar or 1-element array
 
     return {"value": loss_py}
 

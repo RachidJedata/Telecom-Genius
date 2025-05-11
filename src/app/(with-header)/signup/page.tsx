@@ -61,7 +61,7 @@ export default function SignUp() {
           </div>
 
           {errorMessage && <p className="bg-red-400  text-accent py-2 rounded-lg pl-3 text-sm mb-4">{errorMessage}</p>}
-          <div className="flex gap-2">
+          <div className="flex gap-2 justify-center">
             <GoogleButton />
             <GithubButton />
           </div>

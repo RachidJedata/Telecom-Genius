@@ -7,26 +7,8 @@ import 'leaflet/dist/leaflet.css';
 
 
 import { useEffect, useRef, useMemo, useState } from 'react';
-import { Antenna } from './urban-propagation';
+import { Antenna, useParamtersContext } from './urban-propagation';
 import { Button } from '@/components/UI/button';
-
-type Props = {
-    mapZoom: number,
-    setSelectedAntennaId: (id: number) => void,
-    removeAntenna: (id: number) => void,
-    setActiveMarker: (val: string) => void,
-    selectedAntennaId: number,
-    mobileHeight: number,
-    mobileStationPosition: [number, number],
-    mapCenter: [number, number],
-    calculateCoverageRadius: (antenna: Antenna) => number,
-    setMobileStationPosition: (pos: [number, number]) => void,
-    setMapCenter: (pos: [number, number]) => void,
-    antennas: Antenna[],
-    updateAntenna: (id: number, updates: object) => void,
-    showAllCoverages: boolean
-
-}
 
 
 interface MapCenterUpdaterProps {
@@ -44,10 +26,27 @@ function MapCenterUpdater({ center }: MapCenterUpdaterProps) {
 }
 
 
-export default function MapComponent({ mapZoom, calculateCoverageRadius, showAllCoverages, mobileHeight, mobileStationPosition, setMobileStationPosition, updateAntenna, antennas, selectedAntennaId, mapCenter, setMapCenter, removeAntenna, setActiveMarker, setSelectedAntennaId }: Props) {
+export default function MapComponent() {
 
-    const [selectedAntenna, setSelectedAntenna] = useState<Antenna | undefined>(undefined);
-    
+    const {
+        mapZoom,
+        calculateCoverageRadius,
+        showAllCoverages,
+        mobileStationPosition,
+        setMobileStationPosition,
+        updateAntenna,
+        antennas,
+        selectedAntennaId,
+        mapCenter,
+        removeAntenna,
+        setActiveMarker,
+        setSelectedAntennaId,
+        selectedAntenna,
+        params
+    } = useParamtersContext();
+
+    const mobileHeight = Number(params["h_m"]?.value) || 1.5;
+
 
     // Fix Leaflet icon issues
     useEffect(() => {
@@ -59,14 +58,8 @@ export default function MapComponent({ mapZoom, calculateCoverageRadius, showAll
             shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
         })
     }, []);
-    useEffect(() => {
-        const ant = antennas.find(ant => ant.id === selectedAntennaId);
-        setSelectedAntenna(ant);
-        
-    }, [selectedAntennaId]);
 
 
-    
     return (
         <div className="h-[300px] rounded-lg overflow-hidden">
             <MapContainer center={mapCenter}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, useMemo, createContext, useContext } from "react"
+import { useEffect, useRef, useState, createContext, useContext } from "react"
 import { Canvas } from "@react-three/fiber"
 import { Environment } from "@react-three/drei"
 
@@ -8,6 +8,9 @@ import { Environment } from "@react-three/drei"
 import { toast } from "@/hooks/use-toast"
 import { PropagationModel } from './propagation-model';
 import { PropagationController } from "./propagation-controller"
+import { getModels3D } from "@/lib/action"
+import { simulation3D } from "@prisma/client"
+import { Parameters } from "@/lib/utils"
 
 
 interface ParametersContextType {
@@ -24,26 +27,16 @@ interface ParametersContextType {
     setWeather: React.Dispatch<React.SetStateAction<string>>;
     buildingStyle: string;
     setBuildingStyle: React.Dispatch<React.SetStateAction<string>>;
-    terrainType: string;
-    setTerrainType: React.Dispatch<React.SetStateAction<string>>;
 
-    frequency: number;
-    setFrequency: React.Dispatch<React.SetStateAction<number>>;
-    baseStationHeight: number;
-    setBaseStationHeight: React.Dispatch<React.SetStateAction<number>>;
-    mobileHeight: number;
-    setMobileHeight: React.Dispatch<React.SetStateAction<number>>;
-    distance: number;
-    setDistance: React.Dispatch<React.SetStateAction<number>>;
-    environmentType: string;
-    setEnvironmentType: React.Dispatch<React.SetStateAction<string>>;
-    modelType: string;
-    setModelType: React.Dispatch<React.SetStateAction<string>>;
+    // distance: number;
+    // setDistance: React.Dispatch<React.SetStateAction<number>>;
 
-    cities: Record<string, City>;
-    setCities: React.Dispatch<React.SetStateAction<Record<string, City>>>;
+
+
+    cities: Record<string, City | null>;
+    setCities: React.Dispatch<React.SetStateAction<Record<string, City | null>>>;
     selectedCity: string;
-    setSelectedCity: React.Dispatch<React.SetStateAction<string>>;
+    changeSelectedCity: (city: string) => void;
     mapCenter: [number, number];
     setMapCenter: React.Dispatch<React.SetStateAction<[number, number]>>;
     mapZoom: number;
@@ -61,14 +54,21 @@ interface ParametersContextType {
     setCalculatedDistances: React.Dispatch<React.SetStateAction<{ [key: number]: number }>>;
     activeMarker: string | null;
     setActiveMarker: React.Dispatch<React.SetStateAction<string | null>>;
+    terrainType: string;
+    setTerrainType: React.Dispatch<React.SetStateAction<string>>;
     showAllCoverages: boolean;
-    pathLoss: number;
+    loss: number;
     setShowAllCoverages: React.Dispatch<React.SetStateAction<boolean>>;
     calculateOkumuraHeightGain: (baseStationHeight: number) => number;
+    changeModelType: (modelType: string) => void;
     calculateCoverageRadius: (antenna: Antenna) => number;
     addAntenna: () => void;
     removeAntenna: (id: number) => void;
     updateAntenna: (id: number, updates: object) => void;
+    models: simulation3D[];
+
+    params: Parameters;
+    handleParamChange: (param: string, value: number | string) => void;
 }
 
 const ParametersContext = createContext<ParametersContextType | null>(null);
@@ -81,10 +81,11 @@ export interface Antenna {
     power: number;
     name: string;
     color: string;
+    modelType?: string
 }[];
 
 
-interface City {
+export interface City {
     name: string;
     coordinates: [number, number];
     zoom: number;
@@ -94,35 +95,40 @@ interface City {
 
 export default function Simulation3D() {
 
+    useEffect(() => {
+        const getModels = async () => {
+            const data = await getModels3D();
+            setModels(data);
+            // selectedAntenna.modelType = data[0].endPoint;
+            changeModelType(data[1].endPoint);
+        };
+        getModels();
+    }, []);
+
     // const [showLabels, setShowLabels] = useState<boolean>(true)
     const [showDirectPath, setShowDirectPath] = useState(true)
     const [showPaths, setShowPaths] = useState(false)
-    const [showPathLoss, setShowPathLoss] = useState(true)
+    const [showPathLoss, setShowPathLoss] = useState(true);
+    const [loss, setLoss] = useState<number>(0);
+    const [terrainType, setTerrainType] = useState<string>("flat");
+
+    const [models, setModels] = useState<simulation3D[]>([]);
+    const [params, setParams] = useState<Parameters>({});
 
     // Environment settings
     const [timeOfDay, setTimeOfDay] = useState("day") // day, night
     const [weather, setWeather] = useState("clear") // clear, cloudy, rainy
     const [buildingStyle, setBuildingStyle] = useState("historic") // modern, historic, industrial
-    const [terrainType, setTerrainType] = useState("flat") // flat, hilly, coastal
 
-    // COST 231 Hata model parameters
-    const [frequency, setFrequency] = useState(1800) // MHz
-    const [baseStationHeight, setBaseStationHeight] = useState(50) // m
-    const [mobileHeight, setMobileHeight] = useState(1.5) // m
-    const [distance, setDistance] = useState(0.1) // km (300m)
-    const [environmentType, setEnvironmentType] = useState("urban")
-    const [modelType, setModelType] = useState("cost231")
+    // const [distance, setDistance] = useState(1); // km        
 
 
+
+    const [mapZoom, setMapZoom] = useState(13);
 
     // Predefined cities with coordinates
-    const [cities, setCities] = useState<Record<string, City>>({
-        currentLocation: {
-            name: "Current Location",
-            coordinates: [0, 0],
-            zoom: 13,
-            environment: "urban",
-        },
+    const [cities, setCities] = useState<Record<string, City | null>>({
+        currentLocation: null,
         elJadida: {
             name: "El Jadida, Morocco",
             coordinates: [33.2347178, -8.5027492],
@@ -175,66 +181,144 @@ export default function Simulation3D() {
 
     // City selection
     const [selectedCity, setSelectedCity] = useState<string>("currentLocation");
-    const [mapCenter, setMapCenter] = useState<[number, number]>(cities[selectedCity].coordinates) // Default: El Jadida
-    const [mapZoom, setMapZoom] = useState(13);
 
-    // Multiple antennas support
+    const initialPos: [number, number] =
+        cities[selectedCity]?.coordinates     // if this is non‐null…
+        ?? cities["elJadida"]!.coordinates;    // …otherwise fall back
+
+    // Multiple antennas support    
+    const [mapCenter, setMapCenter] = useState<[number, number]>(initialPos);
+
+
     const [antennas, setAntennas] = useState<Antenna[]>([
         {
             id: 1,
-            position: cities[selectedCity].coordinates, // El Jadida coordinates
+            position: initialPos,
             height: 50, // m
             frequency: 1800, // MHz
             power: 43, // dBm (20W)
             name: "Base Station 1",
-            color: "#ef4444", // red-500
+            color: "#ef4444", // red-500            
         },
     ])
 
     const [selectedAntennaId, setSelectedAntennaId] = useState<number>(1);
 
     // Get the currently selected antenna
-    const selectedAntenna = antennas.find((ant) => ant.id === selectedAntennaId) || antennas[0];
+    const [selectedAntenna, setSelectedAntenna] = useState<Antenna>(antennas[0]);
+    useEffect(() => {
+        const antenna = antennas.find((ant) => ant.id === selectedAntennaId) || antennas[0];
+
+        setSelectedAntenna(antenna);
+
+
+    }, [selectedAntennaId]);
+
+    const getCurrentLocation = () => {
+        if (!navigator.geolocation) {
+            setSelectedCity(prev => {
+                if (prev === "currentLocation") return "elJadida";
+                return prev;
+            });
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            ({ coords }) => {
+                const newPos: [number, number] = [coords.latitude, coords.longitude];
+                setCities(prev => ({
+                    ...prev,
+                    currentLocation: {
+                        name: "Current Location",
+                        coordinates: newPos,
+                        zoom: 13,
+                        environment: "urban",
+                    },
+                }));
+                setSelectedCity("currentLocation");
+
+                // Now that newPos is real, update your antenna(s):                               
+                updateAntenna(selectedAntenna.id, { position: newPos });
+
+                setMapCenter(newPos);
+            },
+            //in case of an error
+            (err) => {
+                setSelectedCity(prev => {
+                    if (prev === "currentLocation") return "elJadida";
+                    return prev;
+                });
+            }
+        );
+    }
+    //ask for location of the user
+    useEffect(() => {
+        getCurrentLocation();
+    }, []);
+
+    const changeSelectedCity = (city: string) => {
+        if (city !== "currentLocation") {
+            setSelectedCity(city);
+            return;
+        }
+        getCurrentLocation();
+    }
+
 
     // Map related state
-    const [mobileStationPosition, setMobileStationPosition] = useState<[number, number]>([cities[selectedCity].coordinates[0] + .01, cities[selectedCity].coordinates[1] + .01])
+    const [mobileStationPosition, setMobileStationPosition] = useState<[number, number]>([initialPos[0] + .01, initialPos[1] + .01])
     const [calculatedDistances, setCalculatedDistances] = useState<{ [key: number]: number }>({})
     const [activeMarker, setActiveMarker] = useState<string | null>(null)
     const [showAllCoverages, setShowAllCoverages] = useState(true)
 
 
-    // Track previous values for change detection
-    const prevFrequencyRef = useRef(frequency)
-    const prevBaseHeightRef = useRef(baseStationHeight)
-    const prevMobileHeightRef = useRef(mobileHeight)
-    const prevDistanceRef = useRef(distance)
-    const prevEnvironmentRef = useRef(environmentType)
-    const prevSelectedCityRef = useRef(selectedCity)
 
-    useEffect(() => {
-        if (!navigator.geolocation) {
-            setSelectedCity("elJadida");
-            return;
+    // const prevDistanceRef = useRef(distance);
+    const prevSelectedCityRef = useRef(selectedCity);
+
+
+    const handleParamChange = (param: string, value: number | string) => {
+        if (!params[param]) return;
+
+        // if (param === "distance") setDistance(Number(value));
+        if (param === "h_b") {
+            setSelectedAntenna(prev => ({
+                ...prev,
+                height: Number(params["h_b"].value),
+            }))
         }
 
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-
-                setCities((prev) => ({
-                    ...prev,
-                    currentLocation: {
-                        ...prev.currentLocation,
-                        coordinates: [position.coords.latitude, position.coords.longitude],
-                    },
-                }));
-                setSelectedCity("currentLocation");
-            },
-            (err) => {
-                setSelectedCity("elJadida");
-                return;
+        setParams(prev => ({
+            ...prev,
+            [param]: {
+                ...prev[param],
+                value: value,
             }
-        );
-    }, []);
+        }));
+    }
+
+
+    // useEffect(() => {
+    //     handleParamChange("distance", distance);
+    // }, [distance]);
+
+
+    useEffect(() => {
+        const model = models.find(m => m.endPoint === selectedAntenna.modelType) || models[0];
+        if (model) {
+            setParams(JSON.parse(model.params));
+            // setDistance(Number(params["distance"]?.value) || 1);
+        }
+        // setSelectedModel(model);
+    }, [selectedAntenna.modelType]);
+
+
+    const changeModelType = (modelType: string) => {
+        updateAntenna(selectedAntenna.id, { modelType: modelType });
+        setSelectedAntenna(prev => ({
+            ...prev,
+            modelType: modelType
+        }));
+    }
 
     // Handle city selection change
     useEffect(() => {
@@ -246,7 +330,8 @@ export default function Simulation3D() {
 
             // Update environment type based on city
             if (city.environment) {
-                setEnvironmentType(city.environment)
+                // setEnvironmentType(city.environment)
+                handleParamChange("environment", city.environment);
             }
 
             // If city changed, move the first antenna to the new city center
@@ -270,43 +355,35 @@ export default function Simulation3D() {
         }
     }, [selectedCity]);
 
-    // Calculate path loss using COST 231 Hata model
-    const calculatePathLoss = (antennaHeight: number, mobileHeight: number, distance: number, frequency: number, environmentType: string) => {
-        // Calculate a(hm) based on environment
-        let aHm = 0
-        if (environmentType === "urban" || environmentType === "urban-large") {
-            // Urban environment (frequencies > 400 MHz)
-            aHm = 3.2 * Math.pow(Math.log10(11.75 * mobileHeight), 2) - 4.97
-        } else {
-            // Suburban/rural environment
-            aHm = (1.1 * Math.log10(frequency) - 0.7) * mobileHeight - (1.56 * Math.log10(frequency) - 0.8)
-        }
-
-        // Environment correction factor
-        const C = environmentType === "urban-large" ? 3 : 0
-
-        // COST 231 Hata formula
-        const L =
-            46.3 +
-            33.9 * Math.log10(frequency) -
-            13.82 * Math.log10(antennaHeight) -
-            aHm +
-            (44.9 - 6.55 * Math.log10(antennaHeight)) * Math.log10(distance) +
-            C
-
-        return L
-    }
 
     // Calculate path loss for the selected antenna
-    const pathLoss = useMemo(() => {
-        return calculatePathLoss(
-            selectedAntenna.height,
-            mobileHeight,
-            calculatedDistances[selectedAntennaId] || distance,
-            selectedAntenna.frequency,
-            environmentType,
-        )
-    }, [selectedAntenna, mobileHeight, calculatedDistances, distance, environmentType])
+    useEffect(() => {
+        const fetchLoss = async () => {
+            if (!selectedAntenna.modelType) return;
+            try {
+                const queryParams = new URLSearchParams(
+                    Object.entries(params).map(([k, v]) => [
+                        k,
+                        v.value.toString(),
+                    ])
+                );
+
+                const response = await fetch(
+                    `${process.env.NEXT_PUBLIC_PYTHON_END_POINT}${selectedAntenna.modelType}?${queryParams}`
+                );
+                if (!response.ok)
+                    throw new Error(`HTTP error! status: ${response.status}`);
+
+                const value = (await response.json()).value;
+                setLoss(Number(value.toFixed(2)));
+            } catch (error) {
+                setLoss(0);
+            }
+        };
+
+        fetchLoss();
+    }, [params]);
+    // }, [selectedAntenna, calculatedDistances, distance])
 
     // Calculate Okumura model base station height gain
     const calculateOkumuraHeightGain = (height: number) => {
@@ -318,17 +395,6 @@ export default function Simulation3D() {
         return 0
     }
 
-    const calculateOkumuraHeightGainMemoized = useMemo(() => {
-        return (height: number) => {
-            // G(h_te) = 20log(h_te/200) for 1000m > h_te > 30m
-            if (height >= 30 && height <= 1000) {
-                return 20 * Math.log10(height / 200)
-            }
-            // Outside the valid range
-            return 0
-        }
-    }, [])
-
 
     // Add a new antenna
     const addAntenna = () => {
@@ -336,7 +402,7 @@ export default function Simulation3D() {
         const newId = Math.max(...antennas.map((a) => a.id), 0) + 1
 
         // Create a new antenna with slightly offset position
-        const newAntenna = {
+        const newAntenna: Antenna = {
             id: newId,
             position: [
                 mobileStationPosition[0] + (Math.random() * 0.01 - 0.005),
@@ -348,10 +414,10 @@ export default function Simulation3D() {
             name: `Base Station ${newId}`,
             // Generate a unique color
             color: `hsl(${Math.floor(Math.random() * 360)}, 70%, 50%)`,
+            modelType: selectedAntenna.modelType,
         }
-
-        setAntennas([...antennas, newAntenna])
-        setSelectedAntennaId(newId)
+        setAntennas([...antennas, newAntenna]);
+        setSelectedAntennaId(newId);
 
         toast({
             title: "Antenna Added",
@@ -393,6 +459,7 @@ export default function Simulation3D() {
 
     // Calculate distance between markers in kilometers
     useEffect(() => {
+        if (antennas.length < 2) return;
         // Calculate distance for each antenna to the mobile station
         const distances: { [key: number]: number } = {}
 
@@ -415,72 +482,16 @@ export default function Simulation3D() {
             distances[antenna.id] = calculatedDist
         })
 
-        setCalculatedDistances(distances)
+        setCalculatedDistances(distances);
 
         // Update the main distance parameter based on the selected antenna
         if (distances[selectedAntennaId]) {
-            setDistance(distances[selectedAntennaId])
+            {
+                // setDistance(distances[selectedAntennaId]);                
+                handleParamChange("distance", distances[selectedAntennaId]);
+            }
         }
     }, [antennas, mobileStationPosition, selectedAntennaId])
-
-    // Detect parameter changes and send notifications to the chatbot
-    useEffect(() => {
-        const changes = []
-
-        if (prevFrequencyRef.current !== selectedAntenna.frequency) {
-            const direction = selectedAntenna.frequency > prevFrequencyRef.current ? "increased" : "decreased"
-            changes.push(
-                `You ${direction} the frequency from ${prevFrequencyRef.current} MHz to ${selectedAntenna.frequency} MHz.`,
-            )
-            prevFrequencyRef.current = selectedAntenna.frequency
-        }
-
-        if (prevBaseHeightRef.current !== selectedAntenna.height) {
-            const direction = selectedAntenna.height > prevBaseHeightRef.current ? "increased" : "decreased"
-            changes.push(
-                `You ${direction} the base station height from ${prevBaseHeightRef.current}m to ${selectedAntenna.height}m.`,
-            )
-            prevBaseHeightRef.current = selectedAntenna.height
-        }
-
-        if (prevMobileHeightRef.current !== mobileHeight) {
-            const direction = mobileHeight > prevMobileHeightRef.current ? "increased" : "decreased"
-            changes.push(`You ${direction} the mobile height from ${prevMobileHeightRef.current}m to ${mobileHeight}m.`)
-            prevMobileHeightRef.current = mobileHeight
-        }
-
-        if (prevDistanceRef.current !== distance) {
-            const direction = distance > prevDistanceRef.current ? "increased" : "decreased"
-            changes.push(
-                `You ${direction} the distance from ${prevDistanceRef.current.toFixed(2)}km to ${distance.toFixed(2)}km.`,
-            )
-            prevDistanceRef.current = distance
-        }
-
-        if (prevEnvironmentRef.current !== environmentType) {
-            changes.push(`You changed the environment from ${prevEnvironmentRef.current} to ${environmentType}.`)
-            prevEnvironmentRef.current = environmentType
-        }
-
-        if (prevBaseHeightRef.current !== selectedAntenna.height && modelType === "okumura") {
-            const heightGain = calculateOkumuraHeightGain(selectedAntenna.height)
-            const direction = selectedAntenna.height > prevBaseHeightRef.current ? "increased" : "decreased"
-            const gainType = heightGain > 0 ? "positive" : "negative"
-            changes.push(`You ${direction} the base station height from ${prevBaseHeightRef.current}m to ${selectedAntenna.height}m. 
-  This results in a ${gainType} height gain of ${heightGain.toFixed(1)} dB (Okumura model).`)
-            prevBaseHeightRef.current = selectedAntenna.height
-        }
-
-
-    }, [
-        selectedAntenna.frequency,
-        selectedAntenna.height,
-        mobileHeight,
-        distance,
-        environmentType,
-        pathLoss,
-        modelType,
-    ])
 
 
 
@@ -498,14 +509,13 @@ export default function Simulation3D() {
                 46.3 -
                 33.9 * Math.log10(antenna.frequency) +
                 13.82 * Math.log10(antenna.height) -
-                (environmentType === "urban-large" ? 3 : 0)) /
+                (params["environment"]?.value === "urban-large" ? 3 : 0)) /
             (44.9 - 6.55 * Math.log10(antenna.height)),
         )
 
         // Convert to meters for the circle radius
         return maxDistance * 1000;
     }
-
 
     return (
         <ParametersContext.Provider
@@ -517,17 +527,12 @@ export default function Simulation3D() {
                 timeOfDay, setTimeOfDay,
                 weather, setWeather,
                 buildingStyle, setBuildingStyle,
-                terrainType, setTerrainType,
 
-                frequency, setFrequency,
-                baseStationHeight, setBaseStationHeight,
-                mobileHeight, setMobileHeight,
-                distance, setDistance,
-                environmentType, setEnvironmentType,
-                modelType, setModelType,
+                // distance, setDistance,
+                changeModelType, setTerrainType, terrainType,
 
                 cities, setCities,
-                selectedCity, setSelectedCity,
+                selectedCity, changeSelectedCity,
                 mapCenter, setMapCenter,
                 mapZoom, setMapZoom,
 
@@ -540,7 +545,9 @@ export default function Simulation3D() {
                 activeMarker, setActiveMarker,
                 showAllCoverages, setShowAllCoverages,
 
-                pathLoss, calculateOkumuraHeightGain, calculateCoverageRadius,
+                loss, calculateOkumuraHeightGain, calculateCoverageRadius,
+
+                models, params, handleParamChange,
             }}
         >
             <div className="w-full h-screen bg-gradient-to-b from-slate-900 to-slate-800 flex">

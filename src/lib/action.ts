@@ -163,3 +163,7 @@ export async function getScenarioDetails(scenarioId: string) {
         }
     })
 }
+
+export async function getModels3D() {
+    return await prisma.simulation3D.findMany();
+}

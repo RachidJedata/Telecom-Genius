@@ -11,6 +11,7 @@ import { Simulation } from "@prisma/client"
 import { Input } from "./UI/input"
 import { saveSimulationParameters } from "@/lib/action"
 import { toast } from "@/hooks/use-toast"
+import { Parameters } from "@/lib/utils"
 
 interface SignalData {
   parameters?: Parameters;
@@ -21,18 +22,7 @@ interface SignalData {
   y_label?: string;
 }
 
-interface Parameters {
-  [key: string]: {
-    name: string;
-    step?: number;
-    min?: number;
-    max?: number;
-    value: number | string;
-    unit?: string;
-    convertedToMili?: boolean
-    options?: string[];
-  };
-}
+
 
 export function SimulationControls({ simulation }: { simulation: Simulation }) {
   const defaultParameters = JSON.parse(simulation.savedParams || simulation.params);
@@ -69,8 +59,7 @@ export function SimulationControls({ simulation }: { simulation: Simulation }) {
         ]
         ));
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_PYTHON_END_POINT}${simulation.endPoint}?${queryParams}`);
-      console.log(`${process.env.NEXT_PUBLIC_PYTHON_END_POINT}${simulation.endPoint}?${queryParams}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_PYTHON_END_POINT}${simulation.endPoint}?${queryParams}`);      
       // const response = await fetch(`http://127.0.0.1:8000${simulation.endPoint}?${queryParams}`);
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const jsonData: SignalData = await response.json();
@@ -107,7 +96,6 @@ export function SimulationControls({ simulation }: { simulation: Simulation }) {
     <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {Object.entries(paramValues).map(([param, value], index) => {
-          console.log("inside map :" + param);
           if (value.options && value.options.length <= 0) return null;
           return (
             <div key={index} className="space-y-2">
