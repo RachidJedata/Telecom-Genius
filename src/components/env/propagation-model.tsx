@@ -36,7 +36,6 @@ export function PropagationModel() {
         showPaths,
         showPathLoss,
         loss,
-        calculateOkumuraHeightGain,
         timeOfDay,
         weather,
         buildingStyle,
@@ -48,7 +47,7 @@ export function PropagationModel() {
     const distance = Number(params["distance"]?.value) || 1;
     const mobileHeight = Number(params["h_m"]?.value) || 1.5;
     const environmentType = params["environment"]?.value.toString() || "urban";
-    
+
 
     const { scene: originalScene } = useGLTF('/person_model/human_on_phone.gltf');
     // 2. Clone + memoize so `scene` ref only changes when originalScene changes
@@ -588,133 +587,6 @@ export function PropagationModel() {
         // calculatedDistances,
         selectedAntenna,
     ])
-
-
-
-    // Create path loss visualization
-    useEffect(() => {
-        if (!pathLossVisualizationRef.current) return
-
-        // Clear previous visualization
-        while (pathLossVisualizationRef.current.children.length) {
-            pathLossVisualizationRef.current.remove(pathLossVisualizationRef.current.children[0])
-        }
-
-        if (!showPathLoss) return
-
-
-        // Create a color gradient based on path loss or height gain
-        const getColorForPathLoss = (loss: number) => {
-            // if (modelType === "okumura") {
-            // For Okumura, color based on height gain (-30 to +30 dB range)
-            const normalizedGain = Math.max(0, Math.min(1, (loss + 30) / 60))
-            return new THREE.Color(1 - normalizedGain, normalizedGain, 0)
-            // } else {
-            // For COST 231, color based on path loss (80-150 dB range)
-            // const normalizedLoss = Math.max(0, Math.min(1, (loss - 80) / 70))
-            // return new THREE.Color(normalizedLoss, 1 - normalizedLoss, 0)
-            // }
-        }
-
-        // Create a signal strength gradient along the path
-        const numPoints = 20
-        const step = (antennaDistance * 1000) / numPoints
-
-        for (let i = 0; i <= numPoints; i++) {
-            const x = baseStationOffset + i * step
-            const distanceKm = (i * step) / 1000 // Convert to km
-
-            // Skip if distance is 0 (to avoid log10(0))
-            if (distanceKm === 0) continue
-
-            // Calculate path loss at this point
-            // Simplified calculation - just for visualization
-            let aHm = 0
-            if (environmentType === "urban" || environmentType === "urban-large") {
-                aHm = 3.2 * Math.pow(Math.log10(11.75 * mobileHeight), 2) - 4.97
-            } else {
-                aHm =
-                    (1.1 * Math.log10(selectedAntenna.frequency) - 0.7) * mobileHeight -
-                    (1.56 * Math.log10(selectedAntenna.frequency) - 0.8)
-            }
-
-            const C = environmentType === "urban-large" ? 3 : 0
-
-        }
-
-        // Add a legend for path loss
-
-        // Create a gradient bar
-        const gradientWidth = 50
-        const gradientHeight = 5
-        const gradientDepth = 1
-        const segments = 10
-
-        const gradientGroup = new THREE.Group()
-        gradientGroup.position.set(0, 80, 0)
-
-        for (let i = 0; i < segments; i++) {
-            const segmentWidth = gradientWidth / segments
-            const x = -gradientWidth / 2 + i * segmentWidth + segmentWidth / 2
-
-            // Calculate path loss for this segment (linear interpolation between 80-150 dB)
-            const segmentLoss = 80 + (i / segments) * 70
-
-            // Create a colored box for this segment
-            const segmentMesh = new THREE.Mesh(
-                new THREE.BoxGeometry(segmentWidth, gradientHeight, gradientDepth),
-                new THREE.MeshBasicMaterial({
-                    color: getColorForPathLoss(
-                        // modelType === "cost231" ? segmentLoss : calculateOkumuraHeightGain(selectedAntenna.height),
-                        calculateOkumuraHeightGain(selectedAntenna.height)
-                    ),
-                    transparent: false,
-                }),
-            )
-            segmentMesh.position.set(x, 0, 0)
-            gradientGroup.add(segmentMesh)
-        }
-
-        pathLossVisualizationRef.current.add(gradientGroup)
-
-        // Add labels for the gradient
-        const lowLossLabel = new THREE.Group()
-        lowLossLabel.position.set(-gradientWidth / 2 - 10, 0, 0)
-        gradientGroup.add(lowLossLabel)
-
-        const highLossLabel = new THREE.Group()
-        highLossLabel.position.set(gradientWidth / 2 + 10, 0, 0)
-        gradientGroup.add(highLossLabel)
-
-
-        return () => {
-            if (pathLossVisualizationRef.current) {
-                disposeGroup(pathLossVisualizationRef.current);
-            }
-        };
-    }, [
-        buildingStyle,
-        timeOfDay,
-        urbanLength,
-        numBuildings,
-        buildingWidth,
-        buildingSpacing,
-        buildingHeights,
-        // buildings,
-        // calculatedDistances,
-        selectedAntenna,
-        showPathLoss,
-        loss,
-        mobileHeight,
-        distance,
-        // frequency,
-        environmentType,
-        // showLabels,
-        selectedAntenna.modelType,
-        calculateOkumuraHeightGain,
-        // calculatedDistances,
-    ]);
-
 
     // Calculate position for this antenna
     // const antennaDistance = calculatedDistances[selectedAntenna.id] || distance / 1000

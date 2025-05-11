@@ -58,8 +58,7 @@ interface ParametersContextType {
     setTerrainType: React.Dispatch<React.SetStateAction<string>>;
     showAllCoverages: boolean;
     loss: number;
-    setShowAllCoverages: React.Dispatch<React.SetStateAction<boolean>>;
-    calculateOkumuraHeightGain: (baseStationHeight: number) => number;
+    setShowAllCoverages: React.Dispatch<React.SetStateAction<boolean>>;    
     changeModelType: (modelType: string) => void;
     calculateCoverageRadius: (antenna: Antenna) => number;
     addAntenna: () => void;
@@ -385,16 +384,6 @@ export default function Simulation3D() {
     }, [params]);
     // }, [selectedAntenna, calculatedDistances, distance])
 
-    // Calculate Okumura model base station height gain
-    const calculateOkumuraHeightGain = (height: number) => {
-        // G(h_te) = 20log(h_te/200) for 1000m > h_te > 30m
-        if (height >= 30 && height <= 1000) {
-            return 20 * Math.log10(height / 200)
-        }
-        // Outside the valid range
-        return 0
-    }
-
 
     // Add a new antenna
     const addAntenna = () => {
@@ -545,7 +534,7 @@ export default function Simulation3D() {
                 activeMarker, setActiveMarker,
                 showAllCoverages, setShowAllCoverages,
 
-                loss, calculateOkumuraHeightGain, calculateCoverageRadius,
+                loss, calculateCoverageRadius,
 
                 models, params, handleParamChange,
             }}
