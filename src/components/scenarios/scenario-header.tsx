@@ -5,9 +5,7 @@ import { motion } from 'framer-motion';
 import Link from "next/link";
 import { Suspense } from "react";
 import Globe from './Globe';
-// import dynamic from "next/dynamic";
-
-// const Globe = dynamic(() => import("@/components/scenarios/Globe"), { ssr: false })
+import Image from 'next/image';
 
 export default function ScenarioHeader() {
     return (
@@ -41,9 +39,26 @@ export default function ScenarioHeader() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.8, delay: 0.3 }}
             >
-                <Suspense fallback={<div>Loading...</div>}>
-                    <Globe />
-                </Suspense>
+                <div className="hidden md:block min-h-screen bg-black">
+                    <Suspense fallback={<Image
+                        src="/sc-laptop.jpg"
+                        alt="AI visualization showing neural network connections"
+                        fill
+                        className="object-cover object-top"
+                        priority
+                    />}>
+                        <Globe />
+                    </Suspense>
+                </div>
+                <Image
+                    src="/sc-mobile.jpg"
+                    alt="AI visualization showing neural network connections"
+                    fill
+                    className="object-cover object-top block md:hidden"
+                    priority
+                />
+                <div className="block md:hidden absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+
             </motion.div>
         </div>
     );
