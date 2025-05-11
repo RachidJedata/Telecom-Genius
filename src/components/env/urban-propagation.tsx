@@ -58,7 +58,7 @@ interface ParametersContextType {
     setTerrainType: React.Dispatch<React.SetStateAction<string>>;
     showAllCoverages: boolean;
     loss: number;
-    setShowAllCoverages: React.Dispatch<React.SetStateAction<boolean>>;    
+    setShowAllCoverages: React.Dispatch<React.SetStateAction<boolean>>;
     changeModelType: (modelType: string) => void;
     calculateCoverageRadius: (antenna: Antenna) => number;
     addAntenna: () => void;
@@ -486,24 +486,30 @@ export default function Simulation3D() {
 
     // Calculate maximum coverage radius based on path loss
     const calculateCoverageRadius = (antenna: Antenna) => {
-        // Simplified calculation - this would be more complex in a real system
-        // Assume we want coverage until path loss reaches 140 dB
-        const maxPathLoss = 140
+        // // 2) Find an upper‐bound where path loss exceeds threshold
+        // let lo = 0;
+        // let hi = 1;  // start at 1 km
+        // while (loss < threshold) {
+        //     hi *= 2;    // double until we're above the threshold
+        //     if (hi > 1e3) break; // stop at 1 000 km just in case
+        // }
 
-        // Rearrange the COST 231 Hata formula to solve for distance
-        // This is a simplification and not exact
-        const maxDistance = Math.pow(
-            10,
-            (maxPathLoss -
-                46.3 -
-                33.9 * Math.log10(antenna.frequency) +
-                13.82 * Math.log10(antenna.height) -
-                (params["environment"]?.value === "urban-large" ? 3 : 0)) /
-            (44.9 - 6.55 * Math.log10(antenna.height)),
-        )
+        // // 3) Binary‐search between [lo, hi] for d where loss(d) ≈ threshold
+        // for (let i = 0; i < maxIter; i++) {
+        //     const mid = 0.5 * (lo + hi);
+        //     const L = computePathLoss(mid);
+        //     if (L < threshold) {
+        //         lo = mid;
+        //     } else {
+        //         hi = mid;
+        //     }
+        //     if (hi - lo < tol) break;
+        // }
 
-        // Convert to meters for the circle radius
-        return maxDistance * 1000;
+        // // 4) Return metres
+        // const d_km = 0.5 * (lo + hi);
+        // return d_km * 1000;
+        return loss * 1000;
     }
 
     return (

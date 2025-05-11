@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
+  resolve: {
+    extensions: ['.js', '.ts'], // Allow importing .js in TypeScript
+  },
   serverComponentsExternalPackages: ['@prisma/client', 'bcrypt'],
   images: {
     unoptimized: true, // Disable all image optimization

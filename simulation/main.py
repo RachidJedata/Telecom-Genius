@@ -100,7 +100,7 @@ def rect(x: np.ndarray) -> np.ndarray:
     """Vectorized rectangular function"""
     return np.where(np.abs(x) <= 0.5, 1, 0).astype(int)
 
-def apply_fading(input_samples, fading_model, num_paths):
+def apply_fading_with_input(input_samples, fading_model, num_paths):
     """
     Apply fading to the input_samples.
     
@@ -982,11 +982,11 @@ async def ofdm_on_sine(
     # Apply fading if enabled
     if showAtten.lower() == "oui":
         num_paths = 3  # Example value, adjust as needed
-        faded_complex, gain = apply_fading(complex_signal, fading_model=1, num_paths=num_paths)
+        faded_complex, gain = apply_fading_with_input(complex_signal,fading_model=1, num_paths=num_paths)
         mean_chh_sq = np.mean(np.abs(gain)**2)
     else:
         faded_complex = complex_signal
-        mean_chh_sq = 1.0  # No fading → unity gain
+        mean_chh_sq = 1.0  
 
     # Calculate noise standard deviation using data_sc and esn0
     noise_std = np.sqrt(

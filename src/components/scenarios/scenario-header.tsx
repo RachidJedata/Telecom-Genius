@@ -1,9 +1,13 @@
 "use client"
 
-import Image from "next/image"
 import { motion } from 'framer-motion';
 
 import Link from "next/link";
+import { Suspense } from "react";
+import Globe from './Globe';
+// import dynamic from "next/dynamic";
+
+// const Globe = dynamic(() => import("@/components/scenarios/Globe"), { ssr: false })
 
 export default function ScenarioHeader() {
     return (
@@ -32,26 +36,14 @@ export default function ScenarioHeader() {
             </motion.div>
 
             <motion.div
-                className="relative h-64 md:h-[490px] rounded-2xl overflow-hidden border border-gray-800 shadow-lg"
+                className="relative h-64 md:h-[490px] border-pink-500 bg-black rounded-2xl overflow-hidden shadow-lg"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.8, delay: 0.3 }}
             >
-                <Image
-                    src="/sc-laptop.jpg"
-                    alt="AI visualization showing neural network connections"
-                    fill
-                    className="object-cover object-top hidden md:block"
-                    priority
-                />
-                <Image
-                    src="/sc-mobile.jpg"
-                    alt="AI visualization showing neural network connections"
-                    fill
-                    className="object-cover object-top block md:hidden"
-                    priority
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                <Suspense fallback={<div>Loading...</div>}>
+                    <Globe />
+                </Suspense>
             </motion.div>
         </div>
     );
