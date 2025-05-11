@@ -36,7 +36,7 @@ export default function ScenarioHeader() {
             </motion.div>
 
             <motion.div
-                className="relative h-64 md:h-[490px] border-pink-500 bg-black rounded-2xl overflow-hidden shadow-lg"
+                className="relative h-64 md:h-[490px] bg-black rounded-2xl overflow-hidden shadow-lg"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.8, delay: 0.3 }}
