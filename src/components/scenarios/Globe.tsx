@@ -206,7 +206,7 @@ export default function Globe() {
     <div ref={mountRef} className="absolute top-0 left-0 w-full h-full z-0">
       {showHint && (
         <div className="absolute bottom-4 left-4 bg-black bg-opacity-30 text-white text-sm px-3 py-1 rounded-full transition-opacity duration-1000 opacity-80 hover:opacity-100">
-          Drag to explore
+          Glissez pour explorer
         </div>
       )}
     </div>
