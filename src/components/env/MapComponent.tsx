@@ -3,12 +3,14 @@
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle, useMap } from 'react-leaflet';
 import L, { Marker as LeafletMarker } from 'leaflet'
 import 'leaflet/dist/leaflet.css';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 
 
 import { useEffect, useRef, useMemo, useState } from 'react';
 import { Antenna, useParamtersContext } from './urban-propagation';
 import { Button } from '@/components/UI/button';
+import LocationDot from './location-dot';
 
 
 interface MapCenterUpdaterProps {
@@ -204,11 +206,15 @@ function DraggableMarker({ position, removeAntenna, setActiveMarker, setPosition
         // For base stations, use the antenna's color
         const iconColor = markerType === "base" && antenna ? antenna.color : "#3b82f6"
 
+        const svgString = renderToStaticMarkup(
+            LocationDot({ color: iconColor })
+        );
+
+        // Convert SVG to data URL
+        const svgUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`;
+
         return new L.Icon({
-            iconUrl:
-                markerType === "base"
-                    ? "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png"
-                    : "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png",
+            iconUrl: svgUrl,
             shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
             iconSize: [25, 41],
             iconAnchor: [12, 41],

@@ -678,7 +678,7 @@ export function PropagationModel() {
                         <primitive object={personScene} />
                     </mesh>;
 
-                    {(popupVisibleMobile && loss > 0) && (
+                    {popupVisibleMobile && (
                         <Html position={[0, mobileHeight + 5, 0]}>
                             <div className="bg-black/80 text-white px-2 py-1 rounded text-sm whitespace-nowrap">
                                 Mobile User (EM)
@@ -707,7 +707,7 @@ export function PropagationModel() {
                 </Billboard>
 
                 {/* Model Formula */}
-                {showPathLoss && (
+                {(showPathLoss && loss > 0) && (
                     <Billboard position={[0, 60, 0]} follow={true} lockX={false} lockY={false} lockZ={false}>
                         <Text
                             position={[0, 0, 0]}
@@ -754,37 +754,38 @@ export function PropagationModel() {
                     </Billboard>
                 )}
 
-                <Billboard position={[0, 100, 0]} follow={true} lockX={false} lockY={false} lockZ={false}>
-                    <Text
-                        position={[0, 0, 0]}
-                        color="white"
-                        fontSize={8}
-                        maxWidth={300}
-                        lineHeight={1.5}
-                        textAlign="center"
-                        anchorX="center"
-                        anchorY="middle"
-                        outlineWidth={0.5}
-                        outlineColor="#000000"
-                    >
-                        {timeOfDay === "day" ? "Daytime" : "Nighttime"} - {weather.charAt(0).toUpperCase() + weather.slice(1)}
-                    </Text>
+                {showPathLoss && (
+                    <Billboard position={[0, 100, 0]} follow={true} lockX={false} lockY={false} lockZ={false}>
+                        <Text
+                            position={[0, 0, 0]}
+                            color="white"
+                            fontSize={8}
+                            maxWidth={300}
+                            lineHeight={1.5}
+                            textAlign="center"
+                            anchorX="center"
+                            anchorY="middle"
+                            outlineWidth={0.5}
+                            outlineColor="#000000"
+                        >
+                            {timeOfDay === "day" ? "Daytime" : "Nighttime"} - {weather.charAt(0).toUpperCase() + weather.slice(1)}
+                        </Text>
 
-                    <Text
-                        position={[0, -10, 0]}
-                        color="#a0a0a0"
-                        fontSize={5}
-                        maxWidth={300}
-                        lineHeight={1.5}
-                        textAlign="center"
-                        anchorX="center"
-                        anchorY="middle"
-                    >
-                        {buildingStyle.charAt(0).toUpperCase() + buildingStyle.slice(1)} Buildings -
-                        {terrainType.charAt(0).toUpperCase() + terrainType.slice(1)} Terrain
-                    </Text>
-                </Billboard>
-
+                        <Text
+                            position={[0, -10, 0]}
+                            color="#a0a0a0"
+                            fontSize={5}
+                            maxWidth={300}
+                            lineHeight={1.5}
+                            textAlign="center"
+                            anchorX="center"
+                            anchorY="middle"
+                        >
+                            {buildingStyle.charAt(0).toUpperCase() + buildingStyle.slice(1)} Buildings -
+                            {terrainType.charAt(0).toUpperCase() + terrainType.slice(1)} Terrain
+                        </Text>
+                    </Billboard>
+                )}
 
             </group>
         </group>);

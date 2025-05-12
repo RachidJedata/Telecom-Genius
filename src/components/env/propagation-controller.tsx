@@ -13,6 +13,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/UI/radio-group"
 
 import dynamic from "next/dynamic";
 import { Antenna, City, useParamtersContext } from "./urban-propagation"
+import Image from "next/image"
 
 // Dynamically import the component that uses Leaflet
 const MapComponent = dynamic(() => import('./MapComponent'), {
@@ -103,7 +104,9 @@ export function PropagationController() {
                             <p className="font-bold mb-1">Legend:</p>
                             <div className="grid grid-cols-2 gap-x-2 gap-y-1">
                                 <div className="flex items-center">
-                                    <div className="w-3 h-3 bg-red-500 mr-1"></div>
+                                    <div className={`w-3 h-3 mr-1`}
+                                        style={{ backgroundColor: selectedAntenna.color }}
+                                    ></div>
                                     <span>Direct Path</span>
                                 </div>
                                 <div className="flex items-center">

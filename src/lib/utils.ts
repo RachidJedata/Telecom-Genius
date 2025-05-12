@@ -70,5 +70,3 @@ export interface Parameters {
     options?: string[];
   };
 }
-
-
