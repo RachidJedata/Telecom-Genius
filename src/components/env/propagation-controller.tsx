@@ -28,7 +28,7 @@ export function PropagationController() {
         showPaths,
         selectedAntennaId,
         changeModelType,
-        setSelectedAntennaId,
+        setSelectedAntennaIdChange,
         // setShowLabels,
         setShowPathLoss,
         setShowDirectPath,
@@ -125,7 +125,7 @@ export function PropagationController() {
                                         variant={antenna.id === selectedAntennaId ? "default" : "outline"}
                                         size="sm"
                                         className="text-xs text-black"
-                                        onClick={() => setSelectedAntennaId(antenna.id)}
+                                        onClick={() => setSelectedAntennaIdChange(antenna.id)}
                                     >
                                         <div className="w-2 h-2 rounded-full mr-1.5" style={{ backgroundColor: antenna.color }}></div>
                                         {antenna.name}

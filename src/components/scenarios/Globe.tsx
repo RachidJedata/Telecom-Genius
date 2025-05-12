@@ -150,35 +150,35 @@ export default function Globe() {
     animate()
 
     // High-res textures
-    const loader = new THREE.TextureLoader()
-    Promise.all([
-      loader.loadAsync('/earth-texture-compressed.jpg'),
-      loader.loadAsync('/earth-bump-compressed.jpg'),
-      loader.loadAsync('/earth-specular-compressed.jpg'),
-    ]).then(([tex, bump, spec]) => {
-      const highResMat = new THREE.MeshPhongMaterial({
-        map: tex,
-        bumpMap: bump,
-        bumpScale: 0.05,
-        specularMap: spec,
-        specular: new THREE.Color('grey'),
-      })
-      const start = Date.now()
-      const duration = 1000
-      const transition = () => {
-        const progress = Math.min((Date.now() - start) / duration, 1)
-        solidGlobe.material = highResMat,
-          (solidGlobe.material as THREE.MeshPhongMaterial).opacity = progress
-        wireframeMaterial.opacity = 0.5 * (1 - progress)
-        if (progress < 1) requestAnimationFrame(transition)
-        else {
-          setIsHighResLoaded(true)
-          scene.remove(wireframeGlobe)
-        }
-        renderer.render(scene, camera)
-      }
-      transition()
-    })
+    // const loader = new THREE.TextureLoader()
+    // Promise.all([
+    //   loader.loadAsync('/earth-texture-compressed.jpg'),
+    //   loader.loadAsync('/earth-bump-compressed.jpg'),
+    //   loader.loadAsync('/earth-specular-compressed.jpg'),
+    // ]).then(([tex, bump, spec]) => {
+    //   const highResMat = new THREE.MeshPhongMaterial({
+    //     map: tex,
+    //     bumpMap: bump,
+    //     bumpScale: 0.05,
+    //     specularMap: spec,
+    //     specular: new THREE.Color('grey'),
+    //   })
+    //   const start = Date.now()
+    //   const duration = 1000
+    //   const transition = () => {
+    //     const progress = Math.min((Date.now() - start) / duration, 1)
+    //     solidGlobe.material = highResMat,
+    //       (solidGlobe.material as THREE.MeshPhongMaterial).opacity = progress
+    //     wireframeMaterial.opacity = 0.5 * (1 - progress)
+    //     if (progress < 1) requestAnimationFrame(transition)
+    //     else {
+    //       setIsHighResLoaded(true)
+    //       scene.remove(wireframeGlobe)
+    //     }
+    //     renderer.render(scene, camera)
+    //   }
+    //   transition()
+    // })
 
     // Resize handler
     const onResize = () => {

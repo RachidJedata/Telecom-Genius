@@ -42,7 +42,7 @@ export default function MapComponent() {
         mapCenter,
         removeAntenna,
         setActiveMarker,
-        setSelectedAntennaId,
+        setSelectedAntennaIdChange,
         selectedAntenna,
         params
     } = useParamtersContext();
@@ -86,7 +86,7 @@ export default function MapComponent() {
                         markerType="base"
                         antenna={antenna}
                         height={antenna.height}
-                        setSelectedAntennaId={setSelectedAntennaId}
+                        setSelectedAntennaIdChange={setSelectedAntennaIdChange}
                         removeAntenna={removeAntenna}
                         setActiveMarker={setActiveMarker}
 
@@ -167,20 +167,20 @@ type DraggableMarkerProps =
     | ({
         markerType: "base";
     } & CommonProps & {
-        setSelectedAntennaId: (id: number) => void;
+        setSelectedAntennaIdChange: (id: number) => void;
         removeAntenna: (id: number) => void;
     })
     | ({
         markerType: "mobile";
     } & CommonProps & {
-        setSelectedAntennaId?: never;
+        setSelectedAntennaIdChange?: never;
         removeAntenna?: never;
     });
 
 
 
 // Map marker component with drag functionality
-function DraggableMarker({ position, removeAntenna, setActiveMarker, setPosition, markerType, antenna, height, setSelectedAntennaId }: DraggableMarkerProps) {
+function DraggableMarker({ position, removeAntenna, setActiveMarker, setPosition, markerType, antenna, height, setSelectedAntennaIdChange }: DraggableMarkerProps) {
     const markerRef = useRef<LeafletMarker | null>(null);
     const eventHandlers = useMemo(
         () => ({
@@ -192,7 +192,7 @@ function DraggableMarker({ position, removeAntenna, setActiveMarker, setPosition
             },
             click() {
                 if (markerType === "base" && antenna) {
-                    setSelectedAntennaId(antenna.id)
+                    setSelectedAntennaIdChange(antenna.id)
                     setActiveMarker(`antenna-${antenna.id}`)
                 } else {
                     setActiveMarker("mobile")
@@ -250,7 +250,7 @@ function DraggableMarker({ position, removeAntenna, setActiveMarker, setPosition
                                 </span>
                             </div>
                             <div className="mt-3 gap-1 flex justify-between">
-                                <Button size="sm" variant="outline" onClick={() => setSelectedAntennaId(antenna.id)}>
+                                <Button size="sm" variant="outline" onClick={() => setSelectedAntennaIdChange(antenna.id)}>
                                     Select
                                 </Button>
                                 <Button size="sm" variant="destructive" onClick={() => removeAntenna(antenna.id)}>
@@ -273,4 +273,3 @@ function DraggableMarker({ position, removeAntenna, setActiveMarker, setPosition
         </Marker>
     )
 }
-

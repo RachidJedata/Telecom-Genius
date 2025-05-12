@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, createContext, useContext } from "react"
+import { useEffect, useRef, useState, createContext, useContext, useMemo } from "react"
 import { Canvas } from "@react-three/fiber"
 import { Environment } from "@react-three/drei"
 
@@ -45,7 +45,7 @@ interface ParametersContextType {
     antennas: Antenna[];
     setAntennas: React.Dispatch<React.SetStateAction<Antenna[]>>;
     selectedAntennaId: number;
-    setSelectedAntennaId: React.Dispatch<React.SetStateAction<number>>;
+    setSelectedAntennaIdChange: (id: number) => void;
     selectedAntenna: Antenna
 
     mobileStationPosition: [number, number];
@@ -66,6 +66,8 @@ interface ParametersContextType {
     updateAntenna: (id: number, updates: object) => void;
     models: simulation3D[];
 
+
+    modelName: string;
     params: Parameters;
     handleParamChange: (param: string, value: number | string) => void;
 }
@@ -80,7 +82,8 @@ export interface Antenna {
     power: number;
     name: string;
     color: string;
-    modelType?: string
+    modelType?: string;
+    params?: string;
 }[];
 
 
@@ -113,6 +116,7 @@ export default function Simulation3D() {
 
     const [models, setModels] = useState<simulation3D[]>([]);
     const [params, setParams] = useState<Parameters>({});
+    const [modelName, setModelName] = useState("");
 
     // Environment settings
     const [timeOfDay, setTimeOfDay] = useState("day") // day, night
@@ -205,12 +209,23 @@ export default function Simulation3D() {
 
     // Get the currently selected antenna
     const [selectedAntenna, setSelectedAntenna] = useState<Antenna>(antennas[0]);
+
+    const setSelectedAntennaIdChange = (id: number) => {
+        if (params) {
+            updateAntenna(selectedAntennaId, { params: JSON.stringify(params) });
+        }
+
+        setSelectedAntennaId(id);
+    }
+
     useEffect(() => {
         const antenna = antennas.find((ant) => ant.id === selectedAntennaId) || antennas[0];
-
         setSelectedAntenna(antenna);
-
-
+        if (models.length) {
+            const model = models.find(m => m.endPoint === selectedAntenna.modelType) || models[0];
+            const parameters = antenna.params || model.params;
+            setParams(JSON.parse(parameters));
+        }
     }, [selectedAntennaId]);
 
     const getCurrentLocation = () => {
@@ -305,6 +320,7 @@ export default function Simulation3D() {
         const model = models.find(m => m.endPoint === selectedAntenna.modelType) || models[0];
         if (model) {
             setParams(JSON.parse(model.params));
+            setModelName(model.name);
             // setDistance(Number(params["distance"]?.value) || 1);
         }
         // setSelectedModel(model);
@@ -404,9 +420,12 @@ export default function Simulation3D() {
             // Generate a unique color
             color: `hsl(${Math.floor(Math.random() * 360)}, 70%, 50%)`,
             modelType: selectedAntenna.modelType,
+            params: selectedAntenna.params,
         }
-        setAntennas([...antennas, newAntenna]);
-        setSelectedAntennaId(newId);
+        // setAntennas([...antennas, newAntenna]);
+        setAntennas(prev => [...prev, newAntenna]);
+        console.log("here is antennas" + antennas.map(a => a.id + " "));
+        setSelectedAntennaIdChange(newId);
 
         toast({
             title: "Antenna Added",
@@ -431,7 +450,7 @@ export default function Simulation3D() {
 
         // If we're removing the selected antenna, select the first one
         if (id === selectedAntennaId) {
-            setSelectedAntennaId(updatedAntennas[0].id)
+            setSelectedAntennaIdChange(updatedAntennas[0].id)
         }
 
         toast({
@@ -442,8 +461,9 @@ export default function Simulation3D() {
 
     // Update an antenna's properties
     const updateAntenna = (id: number, updates: object) => {
-        const updatedAntennas = antennas.map((antenna) => (antenna.id === id ? { ...antenna, ...updates } : antenna))
-        setAntennas(updatedAntennas)
+        setAntennas(prev => {
+            return prev.map((antenna) => (antenna.id === id ? { ...antenna, ...updates } : antenna));
+        });
     }
 
     // Calculate distance between markers in kilometers
@@ -512,38 +532,102 @@ export default function Simulation3D() {
         return loss * 1000;
     }
 
+
+    const contextValue = useMemo(() => ({
+        showDirectPath,
+        setShowDirectPath,
+
+        showPaths,
+        setShowPaths,
+
+        showPathLoss,
+        setShowPathLoss,
+
+        timeOfDay,
+        setTimeOfDay,
+
+        weather,
+        setWeather,
+
+        buildingStyle,
+        setBuildingStyle,
+
+        changeModelType,
+        setTerrainType,
+        terrainType,
+
+        cities,
+        setCities,
+
+        selectedCity,
+        changeSelectedCity,
+
+        mapCenter,
+        setMapCenter,
+
+        mapZoom,
+        setMapZoom,
+
+        antennas,
+        setAntennas,
+
+        selectedAntenna,
+        addAntenna,
+        removeAntenna,
+        updateAntenna,
+
+        selectedAntennaId,
+        setSelectedAntennaIdChange,
+
+        mobileStationPosition,
+        setMobileStationPosition,
+
+        calculatedDistances,
+        setCalculatedDistances,
+
+        activeMarker,
+        setActiveMarker,
+
+        showAllCoverages,
+        setShowAllCoverages,
+
+        loss,
+        calculateCoverageRadius,
+
+        models, modelName,
+        params,
+        handleParamChange,
+    }), [
+        // list every _value_ that can change:
+        showDirectPath,
+        showPaths,
+        showPathLoss,
+        timeOfDay,
+        weather,
+        buildingStyle,
+        terrainType,
+        cities,
+        selectedCity,
+        mapCenter,
+        mapZoom,
+        antennas,
+        selectedAntenna,
+        selectedAntennaId,
+        mobileStationPosition,
+        calculatedDistances,
+        activeMarker,
+        showAllCoverages,
+        loss,
+        models,
+        params,
+        // you don’t need to include setter functions (they’re stable)
+        // or callbacks created with useCallback (if you wrap those too)
+    ]);
+
+
     return (
         <ParametersContext.Provider
-            value={{
-                showDirectPath, setShowDirectPath,
-                showPaths, setShowPaths,
-                showPathLoss, setShowPathLoss,
-
-                timeOfDay, setTimeOfDay,
-                weather, setWeather,
-                buildingStyle, setBuildingStyle,
-
-                // distance, setDistance,
-                changeModelType, setTerrainType, terrainType,
-
-                cities, setCities,
-                selectedCity, changeSelectedCity,
-                mapCenter, setMapCenter,
-                mapZoom, setMapZoom,
-
-                antennas, setAntennas, selectedAntenna, addAntenna,
-                removeAntenna, updateAntenna,
-                selectedAntennaId, setSelectedAntennaId,
-
-                mobileStationPosition, setMobileStationPosition,
-                calculatedDistances, setCalculatedDistances,
-                activeMarker, setActiveMarker,
-                showAllCoverages, setShowAllCoverages,
-
-                loss, calculateCoverageRadius,
-
-                models, params, handleParamChange,
-            }}
+            value={contextValue}
         >
             <div className="w-full h-screen bg-gradient-to-b from-slate-900 to-slate-800 flex">
                 <PropagationController />

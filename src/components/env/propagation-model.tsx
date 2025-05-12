@@ -41,6 +41,7 @@ export function PropagationModel() {
         buildingStyle,
         selectedAntenna,
         params,
+        modelName,
         terrainType,
     } = useParamtersContext();
 
@@ -721,7 +722,7 @@ export function PropagationModel() {
                             outlineWidth={0.5}
                             outlineColor="#000000"
                         >
-                            {selectedAntenna.modelType || ""}
+                            {modelName}
                         </Text>
 
                         <Text
