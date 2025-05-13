@@ -102,7 +102,7 @@ export default function Simulation3D() {
             const data = await getModels3D();
             setModels(data);
             // selectedAntenna.modelType = data[0].endPoint;
-            changeModelType(data[1].endPoint);
+            changeModelType(data[1].endPoint, data[1]);
         };
         getModels();
     }, []);
@@ -137,43 +137,43 @@ export default function Simulation3D() {
         elJadida: {
             name: "El Jadida, Morocco",
             coordinates: [33.2347178, -8.5027492],
-            zoom: 13,
+            zoom: 10,
             environment: "urban",
         },
         casablanca: {
             name: "Casablanca, Morocco",
             coordinates: [33.5731, -7.5898],
-            zoom: 12,
+            zoom: 10,
             environment: "urban-large",
         },
         marrakech: {
             name: "Marrakech, Morocco",
             coordinates: [31.6295, -7.9811],
-            zoom: 13,
+            zoom: 10,
             environment: "urban",
         },
         rabat: {
             name: "Rabat, Morocco",
             coordinates: [34.0209, -6.8416],
-            zoom: 13,
+            zoom: 10,
             environment: "urban",
         },
         tangier: {
             name: "Tangier, Morocco",
             coordinates: [35.7595, -5.834],
-            zoom: 13,
+            zoom: 10,
             environment: "urban",
         },
         agadir: {
             name: "Agadir, Morocco",
             coordinates: [30.4278, -9.5981],
-            zoom: 13,
+            zoom: 10,
             environment: "coastal",
         },
         fez: {
             name: "Fez, Morocco",
             coordinates: [34.0181, -5.0078],
-            zoom: 13,
+            zoom: 10,
             environment: "urban",
         },
         essaouira: {
@@ -246,7 +246,7 @@ export default function Simulation3D() {
                     currentLocation: {
                         name: "Current Location",
                         coordinates: newPos,
-                        zoom: 13,
+                        zoom: 10,
                         environment: "urban",
                     },
                 }));
@@ -312,7 +312,7 @@ export default function Simulation3D() {
     }
 
 
-    const changeModelType = (modelType: string) => {
+    const changeModelType = (modelType: string, modelSelected: simulation3D | null = null) => {
 
         updateAntenna(selectedAntenna.id, { modelType: modelType });
         setSelectedAntenna(prev => ({
@@ -320,12 +320,14 @@ export default function Simulation3D() {
             modelType: modelType
         }));
 
-        const model = models.find(m => m.endPoint === modelType) || models[0];
-        if (model) {
+        if (models.length > 0) {
+            const model = models.find(m => m.endPoint === modelType) || models[0];
             setParams(JSON.parse(model.params));
             setModelName(model.name);
             // setDistance(Number(params["distance"]?.value) || 1);
         }
+        else if (modelSelected)
+            setParams(JSON.parse(modelSelected.params));
     }
 
     // Handle city selection change
@@ -383,11 +385,13 @@ export default function Simulation3D() {
                     throw new Error(`HTTP error! status: ${response.status}`);
 
                 const { value, coverageRadius } = (await response.json());
-                setLoss(Number(value.toFixed(2)));
-                setCoverage(Number(coverageRadius.toFixed(2)));
+                console.log("here is " + coverageRadius);
+                setLoss(Number(value));
+                setCoverage(Number(coverageRadius));
             } catch (error) {
                 setLoss(0);
                 setCoverage(0);
+                console.log("here is ", error);
             }
         };
 
@@ -581,7 +585,7 @@ export default function Simulation3D() {
         calculatedDistances,
         activeMarker,
         showAllCoverages,
-        loss,
+        loss, coverage,
         models,
         params,
         // you don’t need to include setter functions (they’re stable)
