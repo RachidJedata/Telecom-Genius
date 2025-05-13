@@ -65,7 +65,7 @@ export default function MapComponent() {
     const [coverages, setCoverages] = useState<number[]>([]);
 
     useEffect(() => {
-        if (!showAllCoverages) return;
+        if (!showAllCoverages || !antennas.length) return;
 
         const fetchCoverages = async () => {
             const results = await Promise.all(
