@@ -410,7 +410,7 @@ def rayleginPathLoss(
     path_loss_db , gains,distances = apply_fading(fading_model, num_paths)
     # Option B: mean of individual losses
     loss = float(np.mean(path_loss_db))            
-    coverageRadius = calculate_coverage_radius(distances, path_loss_db, threshold_db) * 1000
+    coverageRadius = calculate_coverage_radius(distances, path_loss_db, threshold_db)
 
     return {
         "value": loss,
@@ -477,7 +477,7 @@ def pathLossCost(
 ):
     attenuation = calculate_cost231(f, h_b, h_m, distance, environment)
     # 2) Compute path loss at each distance
-    min_d = 1  # 1 m
+    min_d = 1e-4  # 1 m
     distances = np.linspace(min_d, max_distance_km, steps)
     losses = np.array([
         calculate_cost231(f, h_b, h_m, d, environment)
@@ -619,7 +619,7 @@ def ituPathLoss(
     L_dB = nlos_loss(frequency_MHz, distance, delta_nlos)            
 
      # 2) Sweep distances from ~0 up to max_distance_km
-    min_d = 1  # avoid log(0) or zero-distance artifacts
+    min_d = 1e-4  # avoid log(0) or zero-distance artifacts
     distances = np.linspace(min_d, max_distance_km, steps)
     losses    = np.array([
         nlos_loss(frequency_MHz, d, delta_nlos)
@@ -695,7 +695,7 @@ def run_itu_r_p1411_simulation(
 @app.get("/hata-path-loss")
 def hataPathLoss(
     f: float = 900,
-    h_b: float = 50,
+    h_b: float = 30,
     h_m: float = 1.5,
     distance: float = 1,
     environment: str = 'urban',
@@ -707,7 +707,7 @@ def hataPathLoss(
     loss = hata_loss(f, h_b, h_m, distance, environment, city_size)
 
     # 2) Sweep distances (avoid zero to prevent log10(0))
-    min_d = 1  # km (~1 m)
+    min_d = 1e-4  # km (~1 m)
     distances = np.linspace(min_d, max_distance_km, steps)
     losses    = np.array([
         hata_loss(f, h_b, h_m, d, environment, city_size)
@@ -773,7 +773,7 @@ def run_two_ray_path_loss(
     loss_py = np.array(loss_db).item()  # robust for scalar or 1-element array
 
     # 2) Sweep from a tiny min_d up to max_distance_km
-    min_d = 1  # km (~1 m) to avoid singularities
+    min_d = 1e-4  # km (~1 m) to avoid singularities
     distances = np.linspace(min_d, max_distance_km, steps)
     losses    = np.array([
         two_ray_ground_loss(d=d*1000, ht=h_b, hr=h_m, frequency_MHz=frequency_MHz)
@@ -855,7 +855,7 @@ def run_weissberger_pathLoss(
     ref_loss = weissberger_loss(distance, foliage_depth_km, frequency_MHz)
     
     # 2) Sweep distances [min_d … max_distance_km]
-    min_d = 1  # km (~0.1 m) to avoid log10(0)
+    min_d = 1e-4  # km (~0.1 m) to avoid log10(0)
     distances = np.linspace(min_d, max_distance_km, steps)
     losses    = np.array([
         weissberger_loss(d, foliage_depth_km, frequency_MHz)
@@ -959,7 +959,7 @@ def longleyRacePathLoss(
     steps:          int   = 1000     # Resolution of sweep
 ):
     
-    min_d = 1  # km (~0.1 m) to avoid log10(0)
+    min_d = 1e-4  # km (~0.1 m) to avoid log10(0)
     distances = np.linspace(min_d, max_distance_km, steps)
     losses    = np.array([
         calculate_longley_rice_loss(d, frequency_MHz, h_b, h_m, terrain_irregularity, climate)
@@ -1141,7 +1141,7 @@ def run_rician_pathLoss(
     max_distance_km:float = 5.0,     # Sweep out to this distance (km)
     steps:          int   = 1000     # Resolution of sweep
 ):
-    min_d = 1  # km (~0.1 m) to avoid log10(0)
+    min_d = 1e-4  # km (~0.1 m) to avoid log10(0)
     distances = np.linspace(min_d, max_distance_km, steps)
     losses    = np.array([
         rician_path_loss(distance=d* 1000, K=k_db, freq=frequency_hz * 1e6)  # distance in meters
