@@ -78,11 +78,7 @@ export default function MapComponent() {
         fetchCoverages();
     }, [showAllCoverages, antennas]);
 
-    console.log("hello is : " + coverages.length);
-    if (coverages.length < 1) {
-        return (<div>Loading...</div>);
-    }
-
+    console.log("hello is : " + coverages.length);  
     return (
         <div className="h-[300px] rounded-lg overflow-hidden">
             <MapContainer center={mapCenter}
@@ -129,7 +125,7 @@ export default function MapComponent() {
                     <Circle
                         key={`coverage-${antenna.id}`}
                         center={antenna.position}
-                        radius={Number.isNaN(coverages[index]) ? 0 : coverages[index]}
+                        radius={!Number.isFinite(coverages[index]) ? coverage : coverages[index]}
                         pathOptions={{
                             color: antenna.color,
                             fillColor: antenna.color,

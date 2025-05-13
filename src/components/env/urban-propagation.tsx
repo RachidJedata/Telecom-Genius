@@ -475,7 +475,7 @@ export default function Simulation3D() {
         if (id === selectedAntennaId) {
             // setSelectedAntennaIdChange(updatedAntennas[0].id)
             setSelectedAntennaId(updatedAntennas[0].id);
-            
+
         }
 
         toast({
