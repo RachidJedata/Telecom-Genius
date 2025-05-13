@@ -410,7 +410,7 @@ def rayleginPathLoss(
     path_loss_db , gains,distances = apply_fading(fading_model, num_paths)
     # Option B: mean of individual losses
     loss = float(np.mean(path_loss_db))            
-    coverageRadius = calculate_coverage_radius(distances, path_loss_db, threshold_db)
+    coverageRadius = calculate_coverage_radius(distances, path_loss_db, threshold_db) * 1000
 
     return {
         "value": loss,
@@ -1249,7 +1249,7 @@ def simulate_nakagami_fading_signal(
     PLs_db = 20 * np.log10(4 * np.pi * d_m / wavelength) + 20 * np.log10(d_m / d0_m)
 
     # 4) Coverage radius under threshold_db
-    coverageRadius = calculate_coverage_radius(distances_km, PLs_db, threshold_db)
+    coverageRadius = calculate_coverage_radius(distances_km, PLs_db, threshold_db) * 1000
 
     return {
         "value_dB":           float(total_ref_dB),
