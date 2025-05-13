@@ -32,6 +32,7 @@ export default function MapComponent() {
 
     const {
         mapZoom,
+        getCoverageForAntenna,
         coverage,
         showAllCoverages,
         mobileStationPosition,
@@ -60,6 +61,21 @@ export default function MapComponent() {
             shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
         })
     }, []);
+
+    const [coverages, setCoverages] = useState<number[]>([]);
+
+    useEffect(() => {
+        if (!showAllCoverages) return;
+
+        const fetchCoverages = async () => {
+            const results = await Promise.all(
+                antennas.map((antenna) => getCoverageForAntenna(antenna))
+            );
+            setCoverages(results);
+        };
+
+        fetchCoverages();
+    }, [showAllCoverages, antennas]);
 
 
     return (
@@ -104,7 +120,7 @@ export default function MapComponent() {
                 />
 
                 {/* Coverage radius visualization for all antennas */}
-                {showAllCoverages ? antennas.map((antenna) => (
+                {showAllCoverages ? antennas.map((antenna, index) => (
                     <Circle
                         key={`coverage-${antenna.id}`}
                         center={antenna.position}
@@ -122,7 +138,7 @@ export default function MapComponent() {
                     <>
                         <Circle
                             center={selectedAntenna.position}
-                            radius={coverage}
+                            radius={coverages[selectedAntennaId]}
                             pathOptions={{
                                 color: selectedAntenna.color,
                                 fillColor: selectedAntenna.color,

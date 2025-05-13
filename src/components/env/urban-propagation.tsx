@@ -59,6 +59,7 @@ interface ParametersContextType {
     showAllCoverages: boolean;
     loss: number;
     coverage: number;
+    getCoverageForAntenna: (antenna: Antenna) => Promise<number>;
     setShowAllCoverages: React.Dispatch<React.SetStateAction<boolean>>;
     changeModelType: (modelType: string) => void;
     addAntenna: () => void;
@@ -366,39 +367,63 @@ export default function Simulation3D() {
     }, [selectedCity]);
 
 
+    const fetchDataLoss = async (antenna: Antenna, params: Parameters): Promise<{ loss: number, coverageRadius: number; }> => {
+        if (!antenna.modelType)
+            return {
+                loss: 0,
+                coverageRadius: 0,
+            };
+
+        try {
+            const queryParams = new URLSearchParams(
+                Object.entries(params).map(([k, v]) => [
+                    k,
+                    v.value.toString(),
+                ])
+            );
+
+            const response = await fetch(
+                `${process.env.NEXT_PUBLIC_PYTHON_END_POINT}${antenna.modelType}?${queryParams}`
+            );
+            if (!response.ok)
+                throw new Error(`HTTP error! status: ${response.status}`);
+
+            const { value, coverageRadius } = (await response.json());
+            return {
+                loss: Number(value),
+                coverageRadius: Number(coverageRadius),
+            };
+            // console.log("here is " + coverageRadius);
+            // setLoss(Number(value));
+            // setCoverage(Number(coverageRadius));
+        } catch (error) {
+            return {
+                loss: 0,
+                coverageRadius: 0,
+            };
+            // setLoss(0);
+            // setCoverage(0);
+            // console.log("here is ", error);
+        }
+    };
     // Calculate path loss for the selected antenna
     useEffect(() => {
-        const fetchLoss = async () => {
-            if (!selectedAntenna.modelType) return;
-            try {
-                const queryParams = new URLSearchParams(
-                    Object.entries(params).map(([k, v]) => [
-                        k,
-                        v.value.toString(),
-                    ])
-                );
 
-                const response = await fetch(
-                    `${process.env.NEXT_PUBLIC_PYTHON_END_POINT}${selectedAntenna.modelType}?${queryParams}`
-                );
-                if (!response.ok)
-                    throw new Error(`HTTP error! status: ${response.status}`);
-
-                const { value, coverageRadius } = (await response.json());
-                console.log("here is " + coverageRadius);
-                setLoss(Number(value));
-                setCoverage(Number(coverageRadius));
-            } catch (error) {
-                setLoss(0);
-                setCoverage(0);
-                console.log("here is ", error);
-            }
-        };
-
-        fetchLoss();
+        const getData = async () => {
+            const { loss, coverageRadius } = await fetchDataLoss(selectedAntenna, params);
+            setLoss(loss);
+            setCoverage(coverageRadius);
+        }
+        getData();
     }, [params]);
     // }, [selectedAntenna, calculatedDistances, distance])
 
+    const getCoverageForAntenna = async (antenna: Antenna): Promise<number> => {
+        if (antenna.id === selectedAntennaId) return coverage;
+
+        const result = await fetchDataLoss(antenna, JSON.parse(antenna.params ?? ""));
+        return result.coverageRadius;
+    };
 
     // Add a new antenna
     const addAntenna = () => {
@@ -560,7 +585,7 @@ export default function Simulation3D() {
         showAllCoverages,
         setShowAllCoverages,
 
-        loss, coverage,
+        loss, getCoverageForAntenna, coverage,
 
         models, modelName,
         params,
