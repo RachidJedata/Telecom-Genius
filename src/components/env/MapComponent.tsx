@@ -124,7 +124,7 @@ export default function MapComponent() {
                     <Circle
                         key={`coverage-${antenna.id}`}
                         center={antenna.position}
-                        radius={coverage}
+                        radius={coverages[index]}
                         pathOptions={{
                             color: antenna.color,
                             fillColor: antenna.color,
@@ -138,7 +138,7 @@ export default function MapComponent() {
                     <>
                         <Circle
                             center={selectedAntenna.position}
-                            radius={coverages[selectedAntennaId]}
+                            radius={coverage}
                             pathOptions={{
                                 color: selectedAntenna.color,
                                 fillColor: selectedAntenna.color,
