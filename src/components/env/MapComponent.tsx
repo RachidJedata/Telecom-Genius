@@ -129,7 +129,7 @@ export default function MapComponent() {
                     <Circle
                         key={`coverage-${antenna.id}`}
                         center={antenna.position}
-                        radius={Number.isNaN(coverages[index]) ? coverage : coverages[index]}
+                        radius={Number.isNaN(coverages[index]) || coverages[index] < 1 ? coverage : coverages[index]}
                         pathOptions={{
                             color: antenna.color,
                             fillColor: antenna.color,
