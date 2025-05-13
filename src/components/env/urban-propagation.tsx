@@ -292,7 +292,6 @@ export default function Simulation3D() {
 
     const handleParamChange = (param: string, value: number | string) => {
         if (!params[param]) return;
-
         // if (param === "distance") setDistance(Number(value));
         if (param === "h_b") {
             setSelectedAntenna(prev => ({
@@ -311,28 +310,20 @@ export default function Simulation3D() {
     }
 
 
-    // useEffect(() => {
-    //     handleParamChange("distance", distance);
-    // }, [distance]);
-
-
-    useEffect(() => {
-        const model = models.find(m => m.endPoint === selectedAntenna.modelType) || models[0];
-        if (model) {
-            setParams(JSON.parse(model.params));
-            setModelName(model.name);
-            // setDistance(Number(params["distance"]?.value) || 1);
-        }
-        // setSelectedModel(model);
-    }, [selectedAntenna.modelType]);
-
-
     const changeModelType = (modelType: string) => {
+
         updateAntenna(selectedAntenna.id, { modelType: modelType });
         setSelectedAntenna(prev => ({
             ...prev,
             modelType: modelType
         }));
+
+        const model = models.find(m => m.endPoint === modelType) || models[0];
+        if (model) {
+            setParams(JSON.parse(model.params));
+            setModelName(model.name);
+            // setDistance(Number(params["distance"]?.value) || 1);
+        }
     }
 
     // Handle city selection change
@@ -424,7 +415,6 @@ export default function Simulation3D() {
         }
         // setAntennas([...antennas, newAntenna]);
         setAntennas(prev => [...prev, newAntenna]);
-        console.log("here is antennas" + antennas.map(a => a.id + " "));
         setSelectedAntennaIdChange(newId);
 
         toast({
