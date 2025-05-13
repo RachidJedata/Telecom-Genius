@@ -78,6 +78,10 @@ export default function MapComponent() {
     }, [showAllCoverages, antennas]);
 
 
+    if (!coverages.length) {
+        return (<div>Loading...</div>);
+    }
+
     return (
         <div className="h-[300px] rounded-lg overflow-hidden">
             <MapContainer center={mapCenter}

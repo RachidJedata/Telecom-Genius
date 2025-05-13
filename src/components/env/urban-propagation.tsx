@@ -613,8 +613,6 @@ export default function Simulation3D() {
         loss, coverage,
         models,
         params,
-        // you don’t need to include setter functions (they’re stable)
-        // or callbacks created with useCallback (if you wrap those too)
     ]);
 
 
