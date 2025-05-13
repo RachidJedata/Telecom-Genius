@@ -72,13 +72,14 @@ export default function MapComponent() {
                 antennas.map((antenna) => getCoverageForAntenna(antenna))
             );
             setCoverages(results);
+            console.log("here is " + results.map(t => t + " "));
         };
 
         fetchCoverages();
     }, [showAllCoverages, antennas]);
 
-
-    if (!coverages.length) {
+    console.log("hello is : " + coverages.length);
+    if (coverages.length < 1) {
         return (<div>Loading...</div>);
     }
 
@@ -128,7 +129,7 @@ export default function MapComponent() {
                     <Circle
                         key={`coverage-${antenna.id}`}
                         center={antenna.position}
-                        radius={coverages[index]}
+                        radius={Number.isNaN(coverages[index]) ? coverage : coverages[index]}
                         pathOptions={{
                             color: antenna.color,
                             fillColor: antenna.color,

@@ -473,7 +473,9 @@ export default function Simulation3D() {
 
         // If we're removing the selected antenna, select the first one
         if (id === selectedAntennaId) {
-            setSelectedAntennaIdChange(updatedAntennas[0].id)
+            // setSelectedAntennaIdChange(updatedAntennas[0].id)
+            setSelectedAntennaId(updatedAntennas[0].id);
+            
         }
 
         toast({
