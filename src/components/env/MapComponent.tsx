@@ -32,7 +32,7 @@ export default function MapComponent() {
 
     const {
         mapZoom,
-        calculateCoverageRadius,
+        coverage,
         showAllCoverages,
         mobileStationPosition,
         setMobileStationPosition,
@@ -108,7 +108,7 @@ export default function MapComponent() {
                     <Circle
                         key={`coverage-${antenna.id}`}
                         center={antenna.position}
-                        radius={calculateCoverageRadius(antenna)}
+                        radius={coverage}
                         pathOptions={{
                             color: antenna.color,
                             fillColor: antenna.color,
@@ -122,7 +122,7 @@ export default function MapComponent() {
                     <>
                         <Circle
                             center={selectedAntenna.position}
-                            radius={calculateCoverageRadius(selectedAntenna)}
+                            radius={coverage}
                             pathOptions={{
                                 color: selectedAntenna.color,
                                 fillColor: selectedAntenna.color,

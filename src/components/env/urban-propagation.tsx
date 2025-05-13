@@ -58,9 +58,9 @@ interface ParametersContextType {
     setTerrainType: React.Dispatch<React.SetStateAction<string>>;
     showAllCoverages: boolean;
     loss: number;
+    coverage: number;
     setShowAllCoverages: React.Dispatch<React.SetStateAction<boolean>>;
     changeModelType: (modelType: string) => void;
-    calculateCoverageRadius: (antenna: Antenna) => number;
     addAntenna: () => void;
     removeAntenna: (id: number) => void;
     updateAntenna: (id: number, updates: object) => void;
@@ -112,6 +112,8 @@ export default function Simulation3D() {
     const [showPaths, setShowPaths] = useState(false)
     const [showPathLoss, setShowPathLoss] = useState(true);
     const [loss, setLoss] = useState<number>(0);
+    const [coverage, setCoverage] = useState<number>(0);
+
     const [terrainType, setTerrainType] = useState<string>("flat");
 
     const [models, setModels] = useState<simulation3D[]>([]);
@@ -380,10 +382,12 @@ export default function Simulation3D() {
                 if (!response.ok)
                     throw new Error(`HTTP error! status: ${response.status}`);
 
-                const value = (await response.json()).value;
+                const { value, coverageRadius } = (await response.json());
                 setLoss(Number(value.toFixed(2)));
+                setCoverage(Number(coverageRadius.toFixed(2)));
             } catch (error) {
                 setLoss(0);
+                setCoverage(0);
             }
         };
 
@@ -494,35 +498,6 @@ export default function Simulation3D() {
 
 
 
-    // Calculate maximum coverage radius based on path loss
-    const calculateCoverageRadius = (antenna: Antenna) => {
-        // // 2) Find an upper‐bound where path loss exceeds threshold
-        // let lo = 0;
-        // let hi = 1;  // start at 1 km
-        // while (loss < threshold) {
-        //     hi *= 2;    // double until we're above the threshold
-        //     if (hi > 1e3) break; // stop at 1 000 km just in case
-        // }
-
-        // // 3) Binary‐search between [lo, hi] for d where loss(d) ≈ threshold
-        // for (let i = 0; i < maxIter; i++) {
-        //     const mid = 0.5 * (lo + hi);
-        //     const L = computePathLoss(mid);
-        //     if (L < threshold) {
-        //         lo = mid;
-        //     } else {
-        //         hi = mid;
-        //     }
-        //     if (hi - lo < tol) break;
-        // }
-
-        // // 4) Return metres
-        // const d_km = 0.5 * (lo + hi);
-        // return d_km * 1000;
-        return loss * 1000;
-    }
-
-
     const contextValue = useMemo(() => ({
         showDirectPath,
         setShowDirectPath,
@@ -581,8 +556,7 @@ export default function Simulation3D() {
         showAllCoverages,
         setShowAllCoverages,
 
-        loss,
-        calculateCoverageRadius,
+        loss, coverage,
 
         models, modelName,
         params,
