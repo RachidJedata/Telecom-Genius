@@ -4,11 +4,6 @@ import numpy as np # type: ignore
 from scipy.stats import gamma
 import math
 
-
-from pydantic import BaseModel
-from typing import List
-
-
 app = FastAPI()
 
 # Add CORS middleware  <-- This is the critical part
@@ -149,10 +144,13 @@ def db_to_amplitude(db: float) -> float:
 
 def fspl(distance_m, frequency_hz):
     """Calculate Free Space Path Loss in dB."""
-    c = 3e8  # Speed of light (m/s)   
-    distance_m *= 1e3
-    frequency_hz *= 1e9 
-    return 20 * np.log10(distance_m) + 20 * np.log10(frequency_hz) + 20 * np.log10(4 * np.pi / c)
+    c = 3e8  # Speed of light (m/s)          
+    # no extra scaling here!
+    return (
+        20 * np.log10(distance_m)
+      + 20 * np.log10(frequency_hz)
+      + 20 * np.log10(4 * np.pi / c)
+    ) 
 
 def weissberger_loss(distances_km, foliage_depth_km, frequency_MHz):
     """
@@ -182,11 +180,11 @@ def hata_loss(f, h_b, h_m, d, environment='urban', city_size='Grande'):
     :param city_size: Taille de la ville ('Grande', 'Moyenne/Petite')
     :return: Atténuation en dB
     """
-    if not (150 <= f <= 1500 and 30 <= h_b <= 200 and 1 <= h_m <= 10 and 1 <= d <= 20):
-        raise ValueError("Les paramètres sont hors des plages valides.")
+    # if not (150 <= f <= 1500 and 30 <= h_b <= 200 and 1 <= h_m <= 10 and 1 <= d <= 20):
+        # raise ValueError("Les paramètres sont hors des plages valides.")
 
-    f *= 10e6       
-    d *= 1000 
+    # f *= 10e6       
+    # d *= 1000 
     # Correction selon la hauteur de l'antenne mobile et la taille de la ville
     if city_size == 'Grande':  
         if f >= 400*10e6:
@@ -302,7 +300,7 @@ def calculate_cost231(f: float, h_bs: float, h_ms: float, d: float, environment:
     return L
 
 
-def apply_fading(fading_model, num_paths):
+def apply_fading(fading_model, num_paths,max_distance: float = 1000.0):
     """
     Apply multipath fading to input_samples, but return path-loss (in dB) for each path.
     
@@ -316,6 +314,8 @@ def apply_fading(fading_model, num_paths):
         faded_samples: 1D np.array, result of convolving input with linear gains.
         path_loss_db: 1D np.array of length num_paths, loss per path in dB.
     """
+
+    distances = np.linspace(1.0, max_distance, num_paths)
     # no fading → zero loss, return original
     if fading_model == 0:
          return np.zeros(1), np.ones(1, dtype=complex)
@@ -340,7 +340,7 @@ def apply_fading(fading_model, num_paths):
 
     # compute path-loss in dB:  PL = -20·log10(|gain|)
     path_loss_db = -20 * np.log10(np.abs(gains) + 1e-12)    
-    return path_loss_db , gains
+    return path_loss_db , gains , distances
 
 
 def nakagami_fading(m, omega, size):
@@ -363,21 +363,38 @@ def calculate_longley_rice_loss(distance_km: float, frequency_MHz: float, height
     Returns:
         float: Loss in dB
     """
-    # Simplified loss calculation including free-space loss, height, terrain, and climate effects
-    free_space_loss = 20 * np.log10(distance_km) + 20 * np.log10(frequency_MHz) + 20 * np.log10(4 * np.pi / 3e8)
-    height_factor = 10 * np.log10(height_tx * height_rx)
-    terrain_factor = 0.1 * terrain_irregularity  # Simplified terrain impact
-    climate_factor = 0.0  # Placeholder for climate impact
+    # 1) Convert to SI
+    d_m  = distance_km * 1e3       # km → m
+    f_hz = frequency_MHz * 1e6     # MHz → Hz
+    c    = 3e8                      # m/s
 
-    # Adjust loss based on climate (simplified example)
-    if climate == 'Tempéré continental':
-        climate_factor = 1.0
-    elif climate == 'Tempéré maritime':
-        climate_factor = 2.0
-    # Additional climate types can be added here
+    # 2) Free-space path loss (always positive)
+    fspl_dB = 20 * np.log10(4 * np.pi * d_m * f_hz / c)
 
-    loss = free_space_loss - height_factor + terrain_factor + climate_factor
-    return loss
+    # 3) Height “gain” (antennas higher → less loss)
+    #    we subtract this from total loss:
+    height_gain_dB = 10 * np.log10(height_tx * height_rx)
+
+    # 4) Terrain irregularity penalty
+    terrain_dB = 0.1 * terrain_irregularity
+
+    # 5) Climate correction (example values)
+    climate_dB = {
+        'Tempéré continental': 1.0,
+        'Tempéré maritime':   2.0
+    }.get(climate, 0.0)
+
+    # 6) Total loss
+    total_loss = fspl_dB + terrain_dB + climate_dB - height_gain_dB
+    return total_loss
+
+def calculate_coverage_radius(distances: np.ndarray, path_loss_db: np.ndarray, threshold_db: float) -> float:
+    """
+    Finds the maximum distance at which the path loss is still ≤ threshold_db.
+    If no path meets the threshold, returns 0.0.
+    """
+    valid = distances[path_loss_db <= threshold_db]
+    return float(valid.max()) if valid.size else 0.0
 
 # --------------------------
 # Signal Generation Endpoints
@@ -388,12 +405,17 @@ def calculate_longley_rice_loss(distance_km: float, frequency_MHz: float, height
 def rayleginPathLoss(
     fading_model: int = 2,
     num_paths: int = 500,
+    threshold_db: float = 120.0,
 ):
-    path_loss_db , gains = apply_fading(fading_model, num_paths)
+    path_loss_db , gains,distances = apply_fading(fading_model, num_paths)
     # Option B: mean of individual losses
-    loss = float(np.mean(path_loss_db))            # :contentReference[oaicite:3]{index=3}
+    loss = float(np.mean(path_loss_db))            
+    coverageRadius = calculate_coverage_radius(distances, path_loss_db, threshold_db)
 
-    return {"value": loss}
+    return {
+        "value": loss,
+        "coverageRadius":  coverageRadius
+        }
 
 
 @app.get("/fading")
@@ -448,10 +470,24 @@ def pathLossCost(
     h_b: float = 30,
     h_m: float = 1.5,
     distance: float = 1,  # en km
+    steps: int = 1000,
+    max_distance_km:float = 5.0,        # sweep out to this (km)
+    threshold_db:float=120,#max acceptable path loss
     environment: str = "rural",
 ):
     attenuation = calculate_cost231(f, h_b, h_m, distance, environment)
-    return {"value":attenuation}
+    # 2) Compute path loss at each distance
+    min_d = 1  # 1 m
+    distances = np.linspace(min_d, max_distance_km, steps)
+    losses = np.array([
+        calculate_cost231(f, h_b, h_m, d, environment)
+        for d in distances
+    ])
+    coverageRadius = calculate_coverage_radius(distances=distances,path_loss_db=losses,threshold_db=threshold_db) * 1000
+    return {
+        "value":attenuation,
+        "coverageRadius":  coverageRadius
+        }
 
 @app.get("/Cost231/fading")
 def simulate_parameters(
@@ -515,9 +551,21 @@ def simulate_parameters(
 def fsplPathLoss(
     carrier_frequency_GHz: float = 2.4,  # Carrier frequency in GHz for FSPL * 10^9
     distance: float = 1,             # Distance in meters (e.g., 1km) en km               
+    threshold_db:            float = 120.0 # max acceptable loss in dB
 ):
     fspl_db = fspl(distance_m=distance * 1000, frequency_hz=carrier_frequency_GHz)    
-    return {"value":fspl_db}
+    
+    # 2) Analytic coverage radius (km) for FSPL ≤ threshold_db
+    #    d_max = 10^((threshold - 20·log10(f_GHz) - 92.45) / 20)
+    coverageRadius = float(
+        10 ** ((threshold_db
+                - 20 * np.log10(carrier_frequency_GHz)
+                - 92.45) / 20) * 1000
+    )
+    return {
+        "value":fspl_db,
+        "coverageRadius":  coverageRadius
+        }
 
 @app.get('/fspl')
 def get_fspl(
@@ -563,10 +611,23 @@ def ituPathLoss(
     frequency_MHz: float = 2400,    # Frequency in MHz
     environment: str = "urban",    # Options: urban, suburban, open        
     distance:float = 0.1, #distance en km
+    threshold_db:    float = 120.0,     # max acceptable PL in dB    
+    max_distance_km: float = 5.0,       # how far to search (km)
+    steps:           int   = 1000,      # sweep resolution
 ):
     delta_nlos = {"urban": 20, "suburban": 15, "open": 10}.get(environment, 20)
     L_dB = nlos_loss(frequency_MHz, distance, delta_nlos)            
-    return {"value":L_dB}
+
+     # 2) Sweep distances from ~0 up to max_distance_km
+    min_d = 1  # avoid log(0) or zero-distance artifacts
+    distances = np.linspace(min_d, max_distance_km, steps)
+    losses    = np.array([
+        nlos_loss(frequency_MHz, d, delta_nlos)
+        for d in distances
+    ])
+    coverageRadius = calculate_coverage_radius(distances, losses, threshold_db)*1000
+
+    return {"value":L_dB,"coverageRadius":coverageRadius}
 
 @app.get("/itu-r-p1411")
 def run_itu_r_p1411_simulation(
@@ -639,9 +700,23 @@ def hataPathLoss(
     distance: float = 1,
     environment: str = 'urban',
     city_size: str = 'petite/meduim',
+    threshold_db:   float = 120.0,       # max acceptable path loss (dB)
+    max_distance_km:float = 5.0,        # sweep out to this (km)
+    steps:          int   = 1000         # sampling resolution
 ):
     loss = hata_loss(f, h_b, h_m, distance, environment, city_size)
-    return {"value":loss}
+
+    # 2) Sweep distances (avoid zero to prevent log10(0))
+    min_d = 1  # km (~1 m)
+    distances = np.linspace(min_d, max_distance_km, steps)
+    losses    = np.array([
+        hata_loss(f, h_b, h_m, d, environment, city_size)
+        for d in distances
+    ])
+
+    # 3) Find coverage radius under threshold_db
+    coverageRadius = calculate_coverage_radius(distances, losses, threshold_db) * 1000
+    return {"value":loss,"coverageRadius":coverageRadius}
 
 @app.get('/hata')
 def generate_hata_signal(
@@ -686,6 +761,9 @@ def run_two_ray_path_loss(
     h_b: float = 30,                    # Transmitter height (m)
     h_m: float = 1.5,                   # Receiver height (m)
     distance: float = 1,                  # en km
+    threshold_db:   float = 120.0,   # Max acceptable path loss (dB)
+    max_distance_km:float = 5.0,     # Sweep out to this distance (km)
+    steps:          int   = 1000     # Resolution of sweep
 ):
     loss_db = two_ray_ground_loss(d=distance * 1000, ht=h_b, hr=h_m, frequency_MHz=frequency_MHz)
 
@@ -694,7 +772,17 @@ def run_two_ray_path_loss(
     # —or— 
     loss_py = np.array(loss_db).item()  # robust for scalar or 1-element array
 
-    return {"value": loss_py}
+    # 2) Sweep from a tiny min_d up to max_distance_km
+    min_d = 1  # km (~1 m) to avoid singularities
+    distances = np.linspace(min_d, max_distance_km, steps)
+    losses    = np.array([
+        two_ray_ground_loss(d=d*1000, ht=h_b, hr=h_m, frequency_MHz=frequency_MHz)
+        for d in distances
+    ])
+    # 3) Compute coverage radius (km) under threshold_db
+    coverageRadius = calculate_coverage_radius(distances, losses, threshold_db) * 1000
+
+    return {"value": loss_py,"coverageRadius":coverageRadius}
 
 
 @app.get("/two-ray-ground-with-signal")
@@ -759,9 +847,26 @@ def run_weissberger_pathLoss(
     frequency_MHz: float = 900,
     foliage_depth_km: float = 0.1,
     distance:float = 0.1, #distance en km
+     
+    threshold_db:   float = 120.0,   # Max acceptable path loss (dB)
+    max_distance_km:float = 5.0,     # Sweep out to this distance (km)
+    steps:          int   = 1000     # Resolution of sweep
 ):
-    losses = weissberger_loss(distance, foliage_depth_km, frequency_MHz)
-    return {"value":losses}
+    ref_loss = weissberger_loss(distance, foliage_depth_km, frequency_MHz)
+    
+    # 2) Sweep distances [min_d … max_distance_km]
+    min_d = 1  # km (~0.1 m) to avoid log10(0)
+    distances = np.linspace(min_d, max_distance_km, steps)
+    losses    = np.array([
+        weissberger_loss(d, foliage_depth_km, frequency_MHz)
+        for d in distances
+    ])
+
+    
+    # 3) Determine coverage radius under threshold_db
+    coverageRadius = calculate_coverage_radius(distances, losses, threshold_db) * 1000
+    
+    return {"value":ref_loss,"coverageRadius":coverageRadius}
 
 @app.get("/weissberger-signal-simulation")
 def run_weissberger_simulation_with_sinus(
@@ -839,6 +944,7 @@ def run_weissberger_simulation(
         "y_label":'Perte en db',        
     }
 
+
 @app.get("/longley-rice-path-loss")
 def longleyRacePathLoss(
     frequency_MHz: float = 900,
@@ -847,9 +953,26 @@ def longleyRacePathLoss(
     terrain_irregularity: float = 50,
     distance:float = 1,
     climate: str = 'Tempéré continental',
+
+    threshold_db:   float = 120.0,   # Max acceptable path loss (dB)
+    max_distance_km:float = 5.0,     # Sweep out to this distance (km)
+    steps:          int   = 1000     # Resolution of sweep
 ):
-    loss = calculate_longley_rice_loss(distance * 1000, frequency_MHz, h_b, h_m, terrain_irregularity, climate)
-    return {"value":loss}
+    
+    min_d = 1  # km (~0.1 m) to avoid log10(0)
+    distances = np.linspace(min_d, max_distance_km, steps)
+    losses    = np.array([
+        calculate_longley_rice_loss(d, frequency_MHz, h_b, h_m, terrain_irregularity, climate)
+        for d in distances
+    ])
+
+    
+    # 3) Determine coverage radius under threshold_db
+    coverageRadius = calculate_coverage_radius(distances, losses, threshold_db) * 1000
+
+
+    loss = calculate_longley_rice_loss(distance, frequency_MHz, h_b, h_m, terrain_irregularity, climate)
+    return {"value":loss,"coverageRadius":coverageRadius}
 
 @app.get("/longley-rice-signal-simulation")
 def simulate_longley_rice_signal(
@@ -1013,9 +1136,24 @@ def run_rician_pathLoss(
     distance:float = 10.0, 
     k_db: int = 10,
     frequency_hz: float = 900.0,      # Frequency of the sine wave in Hz
+
+    threshold_db:   float = 120.0,   # Max acceptable path loss (dB)
+    max_distance_km:float = 5.0,     # Sweep out to this distance (km)
+    steps:          int   = 1000     # Resolution of sweep
 ):
-    path_loss_dB = rician_path_loss(distance=distance, K=k_db, freq=frequency_hz * 1e6)  # distance in meters
-    return {"value":path_loss_dB}
+    min_d = 1  # km (~0.1 m) to avoid log10(0)
+    distances = np.linspace(min_d, max_distance_km, steps)
+    losses    = np.array([
+        rician_path_loss(distance=d* 1000, K=k_db, freq=frequency_hz * 1e6)  # distance in meters
+        for d in distances
+    ])
+
+    
+    # 3) Determine coverage radius under threshold_db
+    coverageRadius = calculate_coverage_radius(distances, losses, threshold_db) * 1000
+
+    path_loss_dB = rician_path_loss(distance=distance * 1000, K=k_db, freq=frequency_hz * 1e6)  # distance in meters
+    return {"value":path_loss_dB,"coverageRadius":coverageRadius}
 
 
 @app.get("/rician")
@@ -1081,26 +1219,42 @@ async def run_rician_model(
 def simulate_nakagami_fading_signal(
     m: float = 1.0,                    # Nakagami m parameter
     omega: float = 1.0,                # Nakagami ω parameter
-    distance: float = 10.0,            # Distance in meters
+    distance: float = 1.0,            # Distance in meters
     frequency_hz: float = 900e6,       # Carrier frequency in Hz    
-):    
-   # 1) Small-scale fading envelope (linear gain)
-    fading_power = nakagami_fading(m=m, omega=omega, size=1)[0]
-    h = np.sqrt(fading_power)         # amplitude envelope
 
-    # 2) Large-scale path loss (dB) at d0=1m, n=2.0
+    threshold_db:   float = 120.0,   # Max acceptable path loss (dB)
+    max_distance_km:float = 5.0,     # Sweep out to this distance (km)
+    steps:          int   = 1000     # Resolution of sweep
+):    
     c = 3e8
     wavelength = c / frequency_hz
-    PL0 = 20 * np.log10(4 * np.pi * 1.0 / wavelength)
-    PL_dB = PL0 + 10 * 2.0 * np.log10(distance *1000 / 1.0)
 
-    # 3) Small-scale fading loss in dB
-    fading_loss_dB = -20 * np.log10(h)
+    # 1) Reference large-scale path loss at distance_km (without fading)
+    d0_m  = distance * 1e3
+    PL0   = 20 * np.log10(4 * np.pi * d0_m / wavelength)
+    PL_ref_dB = PL0 + 20 * np.log10(d0_m / d0_m)  # = PL0
 
-    # 4) Total path loss + fading
-    total_loss_dB = PL_dB + fading_loss_dB
+    # 2) One Nakagami fade sample at the reference point
+    fading_power = nakagami_fading(m=m, omega=omega, size=1)[0]
+    h = np.sqrt(fading_power)
+    fading_loss_ref = -20 * np.log10(h)
 
-    return {"value": float(total_loss_dB)}
+    total_ref_dB = PL_ref_dB + fading_loss_ref
+
+    # 3) Sweep distances and compute *average* large-scale loss (no fading)
+    #    (so coverage isn’t random on each run)
+    distances_km = np.linspace(1e-4, max_distance_km, steps)
+    d_m = distances_km * 1e3
+    # path‐loss exponent n=2
+    PLs_db = 20 * np.log10(4 * np.pi * d_m / wavelength) + 20 * np.log10(d_m / d0_m)
+
+    # 4) Coverage radius under threshold_db
+    coverageRadius = calculate_coverage_radius(distances_km, PLs_db, threshold_db)
+
+    return {
+        "value_dB":           float(total_ref_dB),
+        "coverageRadius":  coverageRadius
+    }
 
 @app.get("/nakagami-fading-signal")
 def simulate_nakagami_fading_signal(
