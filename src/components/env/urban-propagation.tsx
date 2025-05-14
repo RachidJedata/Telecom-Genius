@@ -11,6 +11,8 @@ import { PropagationController } from "./propagation-controller"
 import { getModels3D } from "@/lib/action"
 import { simulation3D } from "@prisma/client"
 import { Parameters } from "@/lib/utils"
+import { Input } from "../UI/input"
+import { Switch } from "../UI/switch"
 
 
 interface ParametersContextType {
@@ -194,6 +196,7 @@ export default function Simulation3D() {
 
     // Multiple antennas support    
     const [mapCenter, setMapCenter] = useState<[number, number]>(initialPos);
+    const [showController, setShowController] = useState(true);
 
 
     const [antennas, setAntennas] = useState<Antenna[]>([
@@ -411,6 +414,7 @@ export default function Simulation3D() {
 
         const getData = async () => {
             const { loss, coverageRadius } = await fetchDataLoss(selectedAntenna, params);
+
             setLoss(loss);
             setCoverage(coverageRadius);
         }
@@ -623,7 +627,8 @@ export default function Simulation3D() {
             value={contextValue}
         >
             <div className="w-full h-screen bg-gradient-to-b from-slate-900 to-slate-800 flex">
-                <PropagationController />
+                <Switch className="absolute bottom-1 right-1 z-40" checked={showController} onCheckedChange={setShowController} />
+                {showController && (<PropagationController />)}
 
                 <Canvas camera={{ position: [0, 50, 200], fov: 45 }} shadows>
                     <color attach="background" args={[timeOfDay === "night" ? "#0a0f1a" : "#0f172a"]} />
