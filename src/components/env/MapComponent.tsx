@@ -32,8 +32,7 @@ export default function MapComponent() {
 
     const {
         mapZoom,
-        getCoverageForAntenna,
-        coverage,
+        coverages,
         showAllCoverages,
         mobileStationPosition,
         setMobileStationPosition,
@@ -62,23 +61,6 @@ export default function MapComponent() {
         })
     }, []);
 
-    const [coverages, setCoverages] = useState<number[]>([]);
-
-    useEffect(() => {
-        if (!showAllCoverages || !antennas.length) return;
-
-        const fetchCoverages = async () => {
-            const results = await Promise.all(
-                antennas.map((antenna) => getCoverageForAntenna(antenna))
-            );
-            setCoverages(results);
-            console.log("here is " + results.map(t => t + " "));
-        };
-
-        fetchCoverages();
-    }, [showAllCoverages, antennas]);
-
-    console.log("hello is : " + coverages.length);  
     return (
         <div className="h-[300px] rounded-lg overflow-hidden">
             <MapContainer center={mapCenter}
@@ -125,7 +107,7 @@ export default function MapComponent() {
                     <Circle
                         key={`coverage-${antenna.id}`}
                         center={antenna.position}
-                        radius={!Number.isFinite(coverages[index]) ? coverage : coverages[index]}
+                        radius={!Number.isFinite(coverages[antenna.id]) ? 0 : coverages[antenna.id]}
                         pathOptions={{
                             color: antenna.color,
                             fillColor: antenna.color,
@@ -139,7 +121,7 @@ export default function MapComponent() {
                     <>
                         <Circle
                             center={selectedAntenna.position}
-                            radius={coverage}
+                            radius={coverages[selectedAntenna.id]}
                             pathOptions={{
                                 color: selectedAntenna.color,
                                 fillColor: selectedAntenna.color,

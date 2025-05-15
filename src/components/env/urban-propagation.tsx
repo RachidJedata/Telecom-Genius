@@ -60,8 +60,6 @@ interface ParametersContextType {
     setTerrainType: React.Dispatch<React.SetStateAction<string>>;
     showAllCoverages: boolean;
     loss: number;
-    coverage: number;
-    getCoverageForAntenna: (antenna: Antenna) => Promise<number>;
     setShowAllCoverages: React.Dispatch<React.SetStateAction<boolean>>;
     changeModelType: (modelType: string) => void;
     addAntenna: () => void;
@@ -70,6 +68,7 @@ interface ParametersContextType {
     models: simulation3D[];
 
 
+    coverages: Record<number, number>;
     modelName: string;
     params: Parameters;
     handleParamChange: (param: string, value: number | string) => void;
@@ -115,7 +114,6 @@ export default function Simulation3D() {
     const [showPaths, setShowPaths] = useState(false)
     const [showPathLoss, setShowPathLoss] = useState(true);
     const [loss, setLoss] = useState<number>(0);
-    const [coverage, setCoverage] = useState<number>(0);
 
     const [terrainType, setTerrainType] = useState<string>("flat");
 
@@ -127,6 +125,7 @@ export default function Simulation3D() {
     const [timeOfDay, setTimeOfDay] = useState("day") // day, night
     const [weather, setWeather] = useState("clear") // clear, cloudy, rainy
     const [buildingStyle, setBuildingStyle] = useState("historic") // modern, historic, industrial
+    const [coverages, setCoverages] = useState<Record<number, number>>({});
 
     // const [distance, setDistance] = useState(1); // km        
 
@@ -416,18 +415,15 @@ export default function Simulation3D() {
             const { loss, coverageRadius } = await fetchDataLoss(selectedAntenna, params);
 
             setLoss(loss);
-            setCoverage(coverageRadius);
+
+            setCoverages((prev) => ({
+                ...prev,
+                [selectedAntennaId]: coverageRadius,
+            }));
         }
         getData();
     }, [params]);
     // }, [selectedAntenna, calculatedDistances, distance])
-
-    const getCoverageForAntenna = async (antenna: Antenna): Promise<number> => {
-        if (antenna.id === selectedAntennaId) return coverage;
-
-        const result = await fetchDataLoss(antenna, JSON.parse(antenna.params ?? ""));
-        return result.coverageRadius;
-    };
 
     // Add a new antenna
     const addAntenna = () => {
@@ -591,15 +587,14 @@ export default function Simulation3D() {
         showAllCoverages,
         setShowAllCoverages,
 
-        loss, getCoverageForAntenna, coverage,
-
+        loss, coverages,
         models, modelName,
         params,
         handleParamChange,
     }), [
         // list every _value_ that can change:
         showDirectPath,
-        showPaths,
+        showPaths, coverages,
         showPathLoss,
         timeOfDay,
         weather,
@@ -616,7 +611,7 @@ export default function Simulation3D() {
         calculatedDistances,
         activeMarker,
         showAllCoverages,
-        loss, coverage,
+        loss,
         models,
         params,
     ]);
