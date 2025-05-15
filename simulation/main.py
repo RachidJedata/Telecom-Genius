@@ -41,9 +41,9 @@ def generate_frequency(
     """    
     signal = np.abs(np.fft.fft(signal))
     N = signal.size
-    
+
     f = np.fft.fftfreq(N, d=Te)  
-    
+
     return f, signal
 
 def generate_sinus(t,amplitude:float,freq:float,phase:float) -> np.ndarray:
@@ -52,39 +52,39 @@ def generate_sinus(t,amplitude:float,freq:float,phase:float) -> np.ndarray:
 def generate_comb_signal(duration: float, period: float, Te: float) -> dict:
     """
     Generates a Dirac comb signal with impulses at specified intervals.
-    
+
     Parameters:
         duration (float): Total time window (centered around 0)
         period (float): Spacing between impulses (must be > 0)
         Te (float): Time resolution/sampling interval (must be > 0)
-    
+
     Returns:
         dict: {"x": list_of_timestamps, "y": list_of_0s_and_1s}
     """
     # Generate time axis from -duration/2 to duration/2 (centered)
     time_array = np.arange(-duration/2, duration/2, Te)
     time = time_array.tolist()
-    
+
     # Initialize signal with zeros (NumPy array for performance)
     signal = np.zeros_like(time_array, dtype=int)
-    
+
     if len(time_array) == 0:  # Handle empty time array edge case
         return {"x": time, "y": signal.tolist()}
-    
+
     # Calculate first/last impulse indices within the time range
     t_start, t_end = -duration/2, duration/2 - 1e-9  # Boundary adjustment
     n_min = math.ceil(t_start / period)
     n_max = math.floor(t_end / period)
-    
+
     # Place impulses at calculated positions
     for n in range(n_min, n_max + 1):
         t_impulse = n * period
         index = int(np.round((t_impulse - time_array[0]) / Te))
         if 0 <= index < len(signal):
             signal[index] = 1
-    
+
     return {"x": time, "y": signal.tolist()}
-             
+
 def validate_positive(**params):
     """Validate parameters are positive"""
     for name, value in params.items():
@@ -98,7 +98,7 @@ def rect(x: np.ndarray) -> np.ndarray:
 def apply_fading_with_input(input_samples, fading_model, num_paths):
     """
     Apply fading to the input_samples.
-    
+
     fading_model:
         0  -> No fading.
         1  -> Uniform profile.
@@ -155,12 +155,12 @@ def fspl(distance_m, frequency_hz):
 def weissberger_loss(distances_km, foliage_depth_km, frequency_MHz):
     """
     Calculate Weissberger path loss in dB.
-    
+
     Args:
         distances_km (np.ndarray): Distance array in kilometers
         foliage_depth_km (float): Depth of foliage in kilometers
         frequency_MHz (float): Frequency in MHz
-    
+
     Returns:
         np.ndarray: Loss in dB
     """
@@ -171,7 +171,7 @@ def weissberger_loss(distances_km, foliage_depth_km, frequency_MHz):
 def hata_loss(f, h_b, h_m, d, environment='urban', city_size='Grande'):
     """
     Calcule l'atténuation de propagation selon le modèle Okumura-Hata.
-    
+
     :param f: Fréquence en MHz (150 ≤ f ≤ 1500)
     :param h_b: Hauteur de l'antenne de la station de base en mètres (30 ≤ h_b ≤ 200)
     :param h_m: Hauteur de l'antenne mobile en mètres (1 ≤ h_m ≤ 10)
@@ -193,27 +193,27 @@ def hata_loss(f, h_b, h_m, d, environment='urban', city_size='Grande'):
             a_hm = (1.1 * np.log10(f) - 0.7) * h_m - (1.56 * np.log10(f) - 0.8)
     else:
         a_hm = (1.1 * np.log10(f) - 0.7) * h_m - (1.56 * np.log10(f) - 0.8)
-    
+
     L = 69.55 + 26.16 * np.log10(f) - 13.82 * np.log10(h_b) - a_hm \
         + (44.9 - 6.55 * np.log10(h_b)) * np.log10(d)
-    
+
     if environment == 'suburban':
         L -= 2 * (np.log10(f / 28))**2 - 5.4
     elif environment == 'rural':
         L -= 4.78 * (np.log10(f))**2 - 18.33 * np.log10(f) + 40.94
-    
+
     return L
 
 
 def nlos_loss(frequency_MHz, distance_km, delta_nlos=20):
     """
     Calculate NLOS loss in dB with additional attenuation.
-    
+
     Parameters:
         frequency_MHz (float): Frequency in MHz
         distance_km (float or np.ndarray): Distance in km
         delta_nlos (float): Additional attenuation in dB
-    
+
     Returns:
         float or np.ndarray: NLOS loss in dB
     """
@@ -292,7 +292,7 @@ def calculate_cost231(f: float, h_bs: float, h_ms: float, d: float, environment:
 
     C_values = {"urban": 3, "suburban": 0, "rural": 4.78 * (math.log10(f) ** 2) - 18.33 * math.log10(f) + 40.94}
     C = C_values.get(environment.lower(), 0)
-    
+
     # COST231-Hata path loss formula
     L = 46.3 + 33.9 * math.log10(f) - 13.82 * math.log10(h_bs) - a_hms + \
         (44.9 - 6.55 * math.log10(h_bs)) * math.log10(d) + C
@@ -303,7 +303,7 @@ def calculate_cost231(f: float, h_bs: float, h_ms: float, d: float, environment:
 def apply_fading(fading_model, num_paths,max_distance: float = 1000.0):
     """
     Apply multipath fading to input_samples, but return path-loss (in dB) for each path.
-    
+
     fading_model:
         0  -> No fading.
         1  -> Uniform profile.
@@ -351,7 +351,7 @@ def nakagami_fading(m, omega, size):
 def calculate_longley_rice_loss(distance_km: float, frequency_MHz: float, height_tx: float, height_rx: float, terrain_irregularity: float, climate: str) -> float:
     """
     Calculate the Longley-Rice propagation loss in dB (simplified version).
-    
+
     Args:
         distance_km (float): Distance in kilometers
         frequency_MHz (float): Frequency in MHz
@@ -359,7 +359,7 @@ def calculate_longley_rice_loss(distance_km: float, frequency_MHz: float, height
         height_rx (float): Receiver height in meters
         terrain_irregularity (float): Terrain irregularity in meters
         climate (str): Climate type (e.g., 'Tempéré continental')
-    
+
     Returns:
         float: Loss in dB
     """
@@ -439,7 +439,7 @@ def fading_endpoint(
     # Generate time array and sinusoidal signal.
     t = generate_time_array(duration, Te)
     signal = generate_sinus(t, amplitude, freq, phase)
-    
+
 
     if showLoss == "Oui":
         # Apply fading (multipath) to the sinusoidal signal.
@@ -448,8 +448,8 @@ def fading_endpoint(
         # In case the sampled signal is complex, we take the real part.
         signal = [float(x.real) for x in sampled_signal.tolist()]
         # signal = np.abs(sampled_signal).tolist()
-    
-    
+
+
     if showDomain == "domaine fréquentiel":
         f, signal = generate_frequency(signal=signal, Te=Te)
         return {
@@ -517,7 +517,7 @@ def simulate_parameters(
     carrier_freq = 20  # Visualizable frequency
     tx_power_dbm = 50  # Stronger signal for visibility 
     power_watts = db_to_watts(tx_power_dbm) / 1000 #it will give 100 Watt (realistic)
-    
+
     signal = generate_sinus(
         t=t,
         amplitude=power_watts,
@@ -528,11 +528,11 @@ def simulate_parameters(
     # Apply channel effects
     if(showLoss == "Oui"):
         signal *= db_to_watts(-attenuation)
-    
+
     if apply_fading == "Oui":
         signal *= np.random.rayleigh(scale=1.0, size=len(t))
 
-    
+
     if showDomain == "domaine fréquentiel":
         f, signal = generate_frequency(signal=signal, Te=sampling_interval)
         return {
@@ -554,7 +554,7 @@ def fsplPathLoss(
     threshold_db:            float = 120.0 # max acceptable loss in dB
 ):
     fspl_db = fspl(distance_m=distance * 1000, frequency_hz=carrier_frequency_GHz)    
-    
+
     # 2) Analytic coverage radius (km) for FSPL ≤ threshold_db
     #    d_max = 10^((threshold - 20·log10(f_GHz) - 92.45) / 20)
     coverageRadius = float(
@@ -572,17 +572,17 @@ def get_fspl(
     carrier_frequency_GHz: float = 2.4,  # Carrier frequency in GHz for FSPL * 10^9
     baseband_frequency_Hz: float = 10,  # Baseband signal frequency in Hz
     distance_m: float = 1,             # Distance in meters (e.g., 1km) en km               
-    
+
     duration:float = 1,    
     sampling_interval: float = 0.001,
     showLoss:str = "Oui",
     showDomain:str = "domaine temporel" #domaine temporel || domaine fréquentiel
 ):     
     t = generate_time_array(duration=duration, Te=sampling_interval)
-    
+
     # Generate baseband signal (sine wave at baseband frequency)
     signal = np.sin(2 * np.pi * baseband_frequency_Hz * t)
-    
+
     if showLoss == "Oui":
         # Calculate FSPL for the carrier frequency
         fspl_db = fspl(distance_m=distance_m, frequency_hz=carrier_frequency_GHz)    
@@ -590,8 +590,8 @@ def get_fspl(
         attenuation = db_to_amplitude(-fspl_db)            
         # Apply attenuation to the signal
         signal *= attenuation * 1e4
-    
-    
+
+
     if showDomain == "domaine fréquentiel":
         f, signal = generate_frequency(signal=signal, Te=sampling_interval)
         return {
@@ -645,7 +645,7 @@ def run_itu_r_p1411_simulation(
 ):
     """
     Simulate ITU-R P.1411 path loss model applied to a sinusoidal signal over time.
-    
+
     Parameters:
         frequency_MHz (float): Carrier frequency in MHz
         d_min (float): Minimum distance in meters
@@ -656,7 +656,7 @@ def run_itu_r_p1411_simulation(
         f_signal (float): Frequency of sinusoidal signal in Hz
         t_max (float): Maximum simulation time in seconds
         P0 (float): Average transmitted power in dBm
-    
+
     Returns:
         dict: {"x": list, "y": list, "parameters": dict}
     """ 
@@ -833,7 +833,7 @@ def run_two_ray_simulation(
 
     distances = np.linspace(d_min, d_max, 500)  # distances en mètres
     loss = two_ray_ground_loss(distances, ht, hr, frequency_MHz)
-    
+
     return {
         "x": distances.tolist(),
         "x_label":'distance ',
@@ -847,13 +847,13 @@ def run_weissberger_pathLoss(
     frequency_MHz: float = 900,
     foliage_depth_km: float = 0.1,
     distance:float = 0.1, #distance en km
-     
+
     threshold_db:   float = 120.0,   # Max acceptable path loss (dB)
     max_distance_km:float = 5.0,     # Sweep out to this distance (km)
     steps:          int   = 1000     # Resolution of sweep
 ):
     ref_loss = weissberger_loss(distance, foliage_depth_km, frequency_MHz)
-    
+
     # 2) Sweep distances [min_d … max_distance_km]
     min_d = 1e-4  # km (~0.1 m) to avoid log10(0)
     distances = np.linspace(min_d, max_distance_km, steps)
@@ -862,10 +862,10 @@ def run_weissberger_pathLoss(
         for d in distances
     ])
 
-    
+
     # 3) Determine coverage radius under threshold_db
     coverageRadius = calculate_coverage_radius(distances, losses, threshold_db) * 1000
-    
+
     return {"value":ref_loss,"coverageRadius":coverageRadius}
 
 @app.get("/weissberger-signal-simulation")
@@ -881,26 +881,26 @@ def run_weissberger_simulation_with_sinus(
 ):
     """
     Simulate a signal with Weissberger attenuation over a moving distance range.
-    
+
     Args:
         frequency_MHz (float): Carrier frequency in MHz
         foliage_depth_km (float): Foliage depth in kilometers
         d_min (float): Minimum distance in kilometers
         d_max (float): Maximum distance in kilometers
-    
+
     Returns:
         dict: Time, signal, and simulation parameters
     """
     # Time and frequency setup    
     t = generate_time_array(duration=duration,Te=sampling_interval)
     carrier_freq = frequency_MHz * 1e6  # Convert to Hz
-    
+
     # Distance varies linearly over time
     distances_km = np.linspace(d_min, d_max, len(t))
-        
+
     # Compute delays
     time_delays = (distances_km * 1000) / 299792458  # Delay in seconds
-    
+
     # Generate vectorized signal
     composite_signal = np.sin(2 * np.pi * carrier_freq * (t - time_delays))
 
@@ -909,12 +909,12 @@ def run_weissberger_simulation_with_sinus(
         losses = weissberger_loss(distances_km, foliage_depth_km, frequency_MHz)
         attenuation_factors = db_to_amplitude(-losses)  # Convert dB loss to linear scale
         composite_signal *= attenuation_factors
-    
+
     # Normalize to prevent clipping
     max_abs = np.max(np.abs(composite_signal))
     if max_abs > 0:
         composite_signal /= max_abs
-       
+
     if showDomain == "domaine fréquentiel":
         f,signal = generate_frequency(signal=composite_signal,Te=sampling_interval)
         return {
@@ -936,7 +936,7 @@ def run_weissberger_simulation(
 
     depths = np.linspace(1, max_depth, 400)  # Profondeurs de 1 m à max_depth m
     losses = [weissberger_loss(distances_km=d,frequency_MHz=frequency_MHz,foliage_depth_km=max_depth) for d in depths]
-      
+
     return {
         "x": depths.tolist(),
         "y": losses,
@@ -958,7 +958,7 @@ def longleyRacePathLoss(
     max_distance_km:float = 5.0,     # Sweep out to this distance (km)
     steps:          int   = 1000     # Resolution of sweep
 ):
-    
+
     min_d = 1e-4  # km (~0.1 m) to avoid log10(0)
     distances = np.linspace(min_d, max_distance_km, steps)
     losses    = np.array([
@@ -966,7 +966,7 @@ def longleyRacePathLoss(
         for d in distances
     ])
 
-    
+
     # 3) Determine coverage radius under threshold_db
     coverageRadius = calculate_coverage_radius(distances, losses, threshold_db) * 1000
 
@@ -990,7 +990,7 @@ def simulate_longley_rice_signal(
 ):
     """
     Simulate a radio signal with Longley-Rice attenuation for a moving receiver.
-    
+
     Args:
         frequency_MHz (float): Carrier frequency in MHz
         height_tx (float): Transmitter height in meters
@@ -999,7 +999,7 @@ def simulate_longley_rice_signal(
         d_max (float): Maximum distance in kilometers
         terrain_irregularity (float): Terrain irregularity in meters
         climate (str): Climate type (e.g., 'Tempéré continental')
-    
+
     Returns:
         dict: Time, simulated signal, and simulation parameters
     """    
@@ -1034,7 +1034,7 @@ def simulate_longley_rice_signal(
             "y":signal.tolist(),
             "x_label":"Fréquence (Hz)"
         }
-    
+
     return {
         "x": t.tolist(),
         "y": signal.tolist(),        
@@ -1051,7 +1051,7 @@ def run_longley_rice_loss_simulation(
 ):
     """
     Simulate Longley-Rice propagation loss over a range of distances.
-    
+
     Args:
         frequency_MHz (float): Frequency in MHz
         height_tx (float): Transmitter height in meters
@@ -1059,7 +1059,7 @@ def run_longley_rice_loss_simulation(
         terrain_irregularity (float): Terrain irregularity in meters
         climate (str): Climate type (e.g., 'Tempéré continental')
         num_points (int): Number of distance points to simulate
-    
+
     Returns:
         dict: Distances, losses, and simulation parameters
     """
@@ -1123,14 +1123,17 @@ async def ofdm_on_sine(
     real_signal = np.real(faded_complex)
     noise = np.random.normal(0, noise_std, len(real_signal))
     final_signal = real_signal + noise
-    
+
     # Prepare output
     if showDomain == "domaine temporel":                
         return {"x":t.tolist(),"y":final_signal.tolist()}
-    else:
-        f,signal = generate_frequency(signal=final_signal,Te=sampling_interval)
-        return {"x":f.tolist(),"y":signal.tolist(),"x_label":"Fréquence (Hz)"}
-        
+    else:        
+        N = len(final_signal)
+        fft_result = np.fft.fft(final_signal)
+        spectrum = np.abs(fft_result[:N // 2]) ** 2  # Power spectrum
+        freqs = np.fft.fftfreq(N, d=sampling_interval)[:N // 2]     # Only non-negative frequencies
+        return {"x":freqs.tolist(),"y":spectrum.tolist(),"x_label":"Fréquence (Hz)"}
+
 @app.get("/rician-path-loss")
 def run_rician_pathLoss(
     distance:float = 10.0, 
@@ -1148,7 +1151,7 @@ def run_rician_pathLoss(
         for d in distances
     ])
 
-    
+
     # 3) Determine coverage radius under threshold_db
     coverageRadius = calculate_coverage_radius(distances, losses, threshold_db) * 1000
 
@@ -1182,7 +1185,7 @@ async def run_rician_model(
 
     h = (sigma * np.random.randn(N) + mu) + 1j * (sigma * np.random.randn(N) + mu)
     h_mag = np.abs(h)        
-    
+
     obj = {}
     signal_type = ["rician_channel","ricianchannel_db","convol_sign"]
     if show_signal_type == signal_type[0]:        
@@ -1201,14 +1204,14 @@ async def run_rician_model(
             Y = np.convolve(h, signal, mode='same')
             signal = np.abs(Y)                           
 
-    
+
     if showDomain == "domaine temporel":
         obj["x"] = t.tolist()
     else:
         f,signal = generate_frequency(signal=signal,Te=sampling_interval)
         obj["x"] = f.tolist()
         obj["x_label"] = "Fréquence (Hz)"
-   
+
     obj["y"] = signal.tolist()    
 
     # Return JSON object
@@ -1283,13 +1286,13 @@ def simulate_nakagami_fading_signal(
     """
     # Generate time array    
     t = generate_time_array(duration=duration,Te=sampling_interval)
-    
+
     # Calculate amplitude from signal power (for sine wave, power = A^2 / 2)
     amplitude = np.sqrt(2 * signal_power)
-    
+
     # Generate sinusoidal signal
     signal = amplitude * np.sin(2 * np.pi * frequency_hz * t)
-    
+
     if showLoss == "Oui":
         # Generate Nakagami fading envelope
         # h^2 follows Gamma(m, omega/m), so h = sqrt(Gamma(m, omega/m))        

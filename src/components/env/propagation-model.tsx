@@ -263,9 +263,8 @@ export function PropagationModel() {
         };
 
     }, [weather, timeOfDay]);
+  
 
-
-    // Create paths
     useEffect(() => {
         if (!pathsRef.current || !mobileStationRef.current || !baseStationRef.current) return
 
@@ -278,53 +277,6 @@ export function PropagationModel() {
         const mobileStationPos = mobileStationRef.current.position;
         const baseStationPos = baseStationRef.current.position;
 
-
-
-        // Direct path
-        if (showDirectPath) {
-            const source = new THREE.Vector3(baseStationPos.x, selectedAntenna.height + 2, baseStationPos.z);
-            const destination = new THREE.Vector3(mobileStationPos.x, mobileStationPos.y + 15, mobileStationPos.z);
-
-            // Step 1: Add intermediate points between source and destination
-            const numPoints = 100; // More points = smoother animation
-            const points = [];
-            for (let i = 0; i <= numPoints; i++) {
-                const t = i / numPoints;
-                const point = new THREE.Vector3().lerpVectors(source, destination, t);
-                points.push(point);
-            }
-
-            const geometry = new THREE.BufferGeometry().setFromPoints(points);
-            geometry.setDrawRange(0, 0); // Hide initially
-
-            const material = new THREE.LineBasicMaterial({
-                color: new THREE.Color(selectedAntenna.color),
-                linewidth: 5,
-                opacity: 1,
-                transparent: true,
-            });
-
-
-
-            const directPath = new THREE.Line(geometry, material);
-            directPath.name = `directPath-${selectedAntenna.id}`;
-            pathsRef.current?.add(directPath);
-
-            // Step 2: Animate using GSAP
-            const drawParams = { count: 0 };
-            gsap.to(drawParams, {
-                count: points.length,
-                duration: 7, // seconds
-                ease: "power1.inOut",
-                onUpdate: () => {
-                    geometry.setDrawRange(0, Math.floor(drawParams.count));
-                },
-                // onComplete: () => {
-                //     setAnimatedFinished(true);
-                // }
-
-            });
-        }
 
         // Diffraction paths
         if (showPaths) {
@@ -387,8 +339,7 @@ export function PropagationModel() {
                 disposeGroup(pathsRef.current);
             }
         };
-    }, [
-        showDirectPath,
+    }, [        
         showPaths,
         mobileHeight,
         distance,
@@ -399,6 +350,84 @@ export function PropagationModel() {
         buildingHeights,
         selectedAntenna,
     ])
+
+    useEffect(() => {
+        if (!pathsRef.current || !mobileStationRef.current || !baseStationRef.current) return
+
+        // Clear previous paths
+        while (pathsRef.current.children.length) {
+            pathsRef.current.remove(pathsRef.current.children[0])
+        }
+
+
+        const mobileStationPos = mobileStationRef.current.position;
+        const baseStationPos = baseStationRef.current.position;
+
+
+
+        // Direct path
+        if (showDirectPath) {
+            const source = new THREE.Vector3(baseStationPos.x, selectedAntenna.height + 2, baseStationPos.z);
+            const destination = new THREE.Vector3(mobileStationPos.x, mobileStationPos.y + 15, mobileStationPos.z);
+
+            // Step 1: Add intermediate points between source and destination
+            const numPoints = 100; // More points = smoother animation
+            const points = [];
+            for (let i = 0; i <= numPoints; i++) {
+                const t = i / numPoints;
+                const point = new THREE.Vector3().lerpVectors(source, destination, t);
+                points.push(point);
+            }
+
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            geometry.setDrawRange(0, 0); // Hide initially
+
+            const material = new THREE.LineBasicMaterial({
+                color: new THREE.Color(selectedAntenna.color),
+                linewidth: 5,
+                opacity: 1,
+                transparent: true,
+            });
+
+
+
+            const directPath = new THREE.Line(geometry, material);
+            directPath.name = `directPath-${selectedAntenna.id}`;
+            pathsRef.current?.add(directPath);
+
+            // Step 2: Animate using GSAP
+            const drawParams = { count: 0 };
+            gsap.to(drawParams, {
+                count: points.length,
+                duration: 7, // seconds
+                ease: "power1.inOut",
+                onUpdate: () => {
+                    geometry.setDrawRange(0, Math.floor(drawParams.count));
+                },
+                // onComplete: () => {
+                //     setAnimatedFinished(true);
+                // }
+
+            });
+        }        
+
+        return () => {
+            if (pathsRef.current) {
+                disposeGroup(pathsRef.current);
+            }
+        };
+    }, [
+        showDirectPath,
+        mobileHeight,
+        distance,
+        urbanLength,
+        numBuildings,
+        baseStationOffset,
+        mobileStationOffset,
+        buildingHeights,
+        selectedAntenna,
+    ])
+
 
     // Create building based on style
     const buildingMaterial = useMemo(() => {
