@@ -60,7 +60,8 @@ export function PropagationModel() {
 
     const baseStationRef = useRef<THREE.Group>(null)
     const mobileStationRef = useRef<THREE.Group>(null)
-    const pathsRef = useRef<THREE.Group>(null)
+    const DirectPathsRef = useRef<THREE.Group>(null)
+    const DiffrationReflexionPathsRef = useRef<THREE.Group>(null)
     const measurementsRef = useRef<THREE.Group>(null)
     const pathLossVisualizationRef = useRef<THREE.Group>(null)
     const terrainRef = useRef<THREE.Group>(null)
@@ -263,14 +264,14 @@ export function PropagationModel() {
         };
 
     }, [weather, timeOfDay]);
-  
+
 
     useEffect(() => {
-        if (!pathsRef.current || !mobileStationRef.current || !baseStationRef.current) return
+        if (!DiffrationReflexionPathsRef.current || !mobileStationRef.current || !baseStationRef.current) return
 
         // Clear previous paths
-        while (pathsRef.current.children.length) {
-            pathsRef.current.remove(pathsRef.current.children[0])
+        while (DiffrationReflexionPathsRef.current.children.length) {
+            DiffrationReflexionPathsRef.current.remove(DiffrationReflexionPathsRef.current.children[0])
         }
 
 
@@ -318,7 +319,7 @@ export function PropagationModel() {
                 });
                 const line = new THREE.Line(geom, mat);
                 line.name = `reflectionPath-${bld.id}`;
-                pathsRef.current?.add(line);
+                DiffrationReflexionPathsRef.current?.add(line);
 
                 // 6) Animate the draw with GSAP
                 const params = { count: 0 };
@@ -335,11 +336,11 @@ export function PropagationModel() {
         }
 
         return () => {
-            if (pathsRef.current) {
-                disposeGroup(pathsRef.current);
+            if (DiffrationReflexionPathsRef.current) {
+                disposeGroup(DiffrationReflexionPathsRef.current);
             }
         };
-    }, [        
+    }, [
         showPaths,
         mobileHeight,
         distance,
@@ -352,11 +353,11 @@ export function PropagationModel() {
     ])
 
     useEffect(() => {
-        if (!pathsRef.current || !mobileStationRef.current || !baseStationRef.current) return
+        if (!DirectPathsRef.current || !mobileStationRef.current || !baseStationRef.current) return
 
         // Clear previous paths
-        while (pathsRef.current.children.length) {
-            pathsRef.current.remove(pathsRef.current.children[0])
+        while (DirectPathsRef.current.children.length) {
+            DirectPathsRef.current.remove(DirectPathsRef.current.children[0])
         }
 
 
@@ -393,7 +394,7 @@ export function PropagationModel() {
 
             const directPath = new THREE.Line(geometry, material);
             directPath.name = `directPath-${selectedAntenna.id}`;
-            pathsRef.current?.add(directPath);
+            DirectPathsRef.current?.add(directPath);
 
             // Step 2: Animate using GSAP
             const drawParams = { count: 0 };
@@ -409,11 +410,11 @@ export function PropagationModel() {
                 // }
 
             });
-        }        
+        }
 
         return () => {
-            if (pathsRef.current) {
-                disposeGroup(pathsRef.current);
+            if (DirectPathsRef.current) {
+                disposeGroup(DirectPathsRef.current);
             }
         };
     }, [
@@ -721,7 +722,8 @@ export function PropagationModel() {
                 </group>
 
                 {/* Paths Group */}
-                <group ref={pathsRef} />
+                <group ref={DiffrationReflexionPathsRef} />
+                <group ref={DirectPathsRef} />
 
                 {/* Measurements Group */}
                 <group ref={measurementsRef} />
