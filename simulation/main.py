@@ -8,12 +8,12 @@ app = FastAPI()
 
 # Add CORS middleware  <-- This is the critical part
 # More secure local development configuration
-app.add_middleware(
+app.add_middleware(  # 👈 must come before any @app.get / @app.post
     CORSMiddleware,
-    allow_origins=["*"],  # For development only
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*", "ngrok-skip-browser-warning"],  # 👈 add this
 )
 
 # --------------------------
