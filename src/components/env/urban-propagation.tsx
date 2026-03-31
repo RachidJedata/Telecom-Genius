@@ -385,7 +385,13 @@ export default function Simulation3D() {
             );
 
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_PYTHON_END_POINT}${antenna.modelType}?${queryParams}`
+                `${process.env.NEXT_PUBLIC_PYTHON_END_POINT}${antenna.modelType}?${queryParams}`,
+                {
+                    headers: {
+                        'ngrok-skip-browser-warning': 'true',
+                        'User-Agent': 'MyApp/1.0',
+                    },
+                }
             );
             if (!response.ok)
                 throw new Error(`HTTP error! status: ${response.status}`);
