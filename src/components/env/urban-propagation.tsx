@@ -385,14 +385,7 @@ export default function Simulation3D() {
             );
 
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_PYTHON_END_POINT}${antenna.modelType}?${queryParams}`,
-                {
-                    headers: {
-                        'ngrok-skip-browser-warning': 'true',
-                        'User-Agent': 'MyApp/1.0',
-                        'Content-Type': 'application/json',
-                    },
-                }
+                `/api/proxy?path=${antenna.modelType}&${queryParams}`,
             );
             if (!response.ok)
                 throw new Error(`HTTP error! status: ${response.status}`);
