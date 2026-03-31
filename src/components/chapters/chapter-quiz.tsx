@@ -98,7 +98,7 @@ export function ChapterQuiz({ quiz }: { quiz: Quizes[] }) {
 
               <div className="py-4">
                 <div className="text-lg font-medium mb-4">
-                  <MarkdownContent                    
+                  <MarkdownContent
                     content={currentQuestion.question} />
                 </div>
 
@@ -107,12 +107,12 @@ export function ChapterQuiz({ quiz }: { quiz: Quizes[] }) {
                   onValueChange={(value) => handleAnswerSelect(Number.parseInt(value))}
                   className="space-y-3"
                 >
-                  {currentQuestion.options.map((option, index) => (
+                  {currentQuestion.options.map((option: string, index: number) => (
                     <div key={index} className="flex items-center space-x-2">
                       <RadioGroupItem value={index.toString()} id={`option-${index}`} />
                       <Label htmlFor={`option-${index}`} className="cursor-pointer">
                         <MarkdownContent
-                          
+
                           content={option} />
                       </Label>
                     </div>
@@ -158,7 +158,7 @@ export function ChapterQuiz({ quiz }: { quiz: Quizes[] }) {
                         )}
                         <div>
                           <div className="font-medium">
-                            <MarkdownContent                              
+                            <MarkdownContent
                               content={question.question} />
                           </div>
 
@@ -166,7 +166,7 @@ export function ChapterQuiz({ quiz }: { quiz: Quizes[] }) {
                             <div className="font-medium">
                               Votre réponse:{" "}
                               {selectedAnswers[index] >= 0
-                                ? (<MarkdownContent                                  
+                                ? (<MarkdownContent
                                   content={question.options[selectedAnswers[index]]} />)
                                 : "No answer selected"}
                             </div>
@@ -174,14 +174,14 @@ export function ChapterQuiz({ quiz }: { quiz: Quizes[] }) {
                             {!isCorrect && (
                               <div className="font-medium text-green-600 dark:text-green-400 mt-1">
                                 <MarkdownContent
-                                  
+
                                   content={`Réponse correcte: ${question.options[question.correctAnswerIndex]}`} />
                               </div>
                             )}
 
                             <div className="mt-2 text-gray-600 dark:text-gray-400">
                               <MarkdownContent
-                                
+
                                 content={question.explaination} />
                             </div>
                           </div>
