@@ -3,8 +3,8 @@
 import Link from "next/link"
 import { Button } from "../UI/button"
 import { cn, turnToUrl } from "@/lib/utils"
-import { Chapters } from "@prisma/client"
 import IconDisplay from "../UI/iconDisplay"
+import { Chapters } from "@/generated/prisma/client"
 
 export function ChapterNavigation({ chapters, courseTitle, currentChapterId }: { chapters: Chapters[], currentChapterId: string, courseTitle: string }) {
   // console.log(chapters);

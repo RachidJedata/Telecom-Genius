@@ -1,7 +1,7 @@
+import { EnvironmentScenarios } from "@/generated/prisma/client";
 import Image from "next/image";
 import Link from "next/link";
 
-import { EnvironmentScenarios } from "@prisma/client";
 
 
 export async function YouMightLikeCards({ cards }: { cards: EnvironmentScenarios[] }) {

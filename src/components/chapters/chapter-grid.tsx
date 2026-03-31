@@ -4,8 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../UI
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import IconDisplay from "../UI/iconDisplay"
-import { Courses } from "@prisma/client"
 import { turnToUrl } from "@/lib/utils"
+import { Courses } from "@/generated/prisma/client"
 
 export function ChapterGrid({ courses }: { courses: Courses[] }) {
   const router = useRouter()

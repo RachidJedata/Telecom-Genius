@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/UI/card"
-import { EnvironmentScenarios } from "@prisma/client";
+import { EnvironmentScenarios } from "@/generated/prisma/client";
 import { Clock } from "lucide-react";
 import Image from "next/image";
 

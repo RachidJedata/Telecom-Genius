@@ -7,11 +7,11 @@ import { Slider } from "./UI/slider"
 import { Button } from "./UI/button"
 import { Card } from "./UI/card"
 import * as d3 from 'd3';
-import { Simulation } from "@prisma/client"
 import { Input } from "./UI/input"
 import { saveSimulationParameters } from "@/lib/action"
 import { toast } from "@/hooks/use-toast"
 import { Parameters } from "@/lib/utils"
+import { Simulation } from "@/generated/prisma/client"
 
 interface SignalData {
   parameters?: Parameters;

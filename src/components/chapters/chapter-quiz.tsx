@@ -4,12 +4,12 @@ import { useState } from "react"
 import { RadioGroup, RadioGroupItem } from "@/components/UI/radio-group"
 import { CheckCircle2, XCircle, Award, BookOpen } from "lucide-react"
 import { Progress } from "@/components/UI/progress"
-import { Quizes } from "@prisma/client"
 import { Button } from "../UI/button"
 import MarkdownContent from "../markDown"
 import { Label } from "../UI/label"
 import { Card } from "../UI/card"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../UI/dialog"
+import { Quizes } from "@/generated/prisma/client"
 
 
 export function ChapterQuiz({ quiz }: { quiz: Quizes[] }) {

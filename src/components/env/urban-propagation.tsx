@@ -9,10 +9,10 @@ import { toast } from "@/hooks/use-toast"
 import { PropagationModel } from './propagation-model';
 import { PropagationController } from "./propagation-controller"
 import { getModels3D } from "@/lib/action"
-import { simulation3D } from "@prisma/client"
 import { Parameters } from "@/lib/utils"
 import { Input } from "../UI/input"
 import { Switch } from "../UI/switch"
+import { simulation3D } from "@/generated/prisma/client"
 
 
 interface ParametersContextType {
