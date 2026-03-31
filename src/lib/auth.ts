@@ -4,7 +4,7 @@ import GitHubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
 import { compare } from "bcryptjs";
 import prisma from "@/lib/prisma";
-import { Providers } from "@prisma/client";
+import { Providers } from "@/generated/prisma/enums";
 
 
 

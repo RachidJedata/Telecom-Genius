@@ -1,6 +1,6 @@
 'use server'
 
-import { Chapters, ModelType, Prisma } from "@prisma/client";
+import { Chapters, ModelType, Prisma } from "@/generated/prisma/client";
 import prisma from "./prisma";
 import bcrypt from 'bcryptjs';
 import { FormState } from "./utils";
